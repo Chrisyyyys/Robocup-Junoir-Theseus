@@ -2,6 +2,8 @@
 #include <SparkFun_I2C_Mux_Arduino_Library.h>
 #include <VL53L0X.h>
 
+#include "DistanceSensor.h"
+
 QWIICMUX mux;
 VL53L0X sensor;
 
@@ -36,6 +38,7 @@ void setup() {
 }
 
 void loop() {
+  getDistance();
   for (int p = 0; p < 8; p++) {
     mux.setPort(p);
     delay(5);
