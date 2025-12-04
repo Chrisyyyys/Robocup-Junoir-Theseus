@@ -36,3 +36,20 @@ void loop(){
   encoderCountB = 0;
   
 }
+void initializeMap() {
+    for (int x = 0; x < MAP_SIZE; x++) {
+        for (int y = 0; y < MAP_SIZE; y++) {
+
+            mapGrid[x][y].discovered = false;
+            mapGrid[x][y].fullyExplored = false;
+
+            for (int d = 0; d < 4; d++) {
+                mapGrid[x][y].wall[d] = false;
+                mapGrid[x][y].edge[d] = false;
+            }
+
+            mapGrid[x][y].black = false;
+            mapGrid[x][y].victim = false;
+        }
+    }
+}
