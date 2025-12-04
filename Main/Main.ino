@@ -2,6 +2,8 @@
 #include <SparkFun_I2C_Mux_Arduino_Library.h>
 #include <VL53L0X.h>
 #include <Adafruit_MotorShield.h>
+#include "sensor_manager.h"
+#include "DistanceSensor.h"
 // set up mux and distance senosrs
 VL53L0X sensors[7];
 QWIICMUX myMux;
