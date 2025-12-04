@@ -23,14 +23,14 @@ struct Tile {
     bool wall[4];           // wall[d] = true if wall in direction d
     bool edge[4];           // edge[d] = true if robot has travelled through that direction
 
-    int tiletype;              // accounts for tiletypes (0 for normal, 1 for blue, 2 for black (later can adapt to other tiletypes if needed))
+    int tileType;              // accounts for tiletypes (0 for normal, 1 for blue, 2 for black (later can adapt to other tiletypes if needed))
     bool victim;            // True if victim detected on this tile
 
     // Constructor initializes all values
     Tile() {
         discovered = false;
         fullyExplored = false;
-        tiletype = 0;
+        tileType = 0;
         victim = false;
 
         wall[4] = {false}; //initializes all to false. no need to loop, saves processing time.

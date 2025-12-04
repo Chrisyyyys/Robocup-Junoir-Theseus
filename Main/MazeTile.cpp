@@ -15,7 +15,7 @@ struct Tile {
     Tile() {
         discovered = false;
         fullyExplored = false;
-        tiletype = 0;
+        tileType = 0;
         victim = false;
         
         wall[4] = {false}; //initializes all to false. no need to loop, saves processing time.

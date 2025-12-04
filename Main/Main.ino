@@ -48,7 +48,7 @@ void initializeMap() {
                 mapGrid[x][y].edge[d] = false;
             }
 
-            mapGrid[x][y].black = false;
+            mapGrid[x][y].tileType = false;
             mapGrid[x][y].victim = false;
         }
     }
