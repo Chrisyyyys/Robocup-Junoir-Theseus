@@ -10,6 +10,12 @@ enum Direction {
     WEST  = 3
 };
 
+enum TileTypes {
+    BLANK = 0,
+    BLUE = 1,
+    BLACK = 2
+};
+
 struct Tile {
     bool discovered;        // Tile has been visited at least once
     bool fullyExplored;     // All possible paths from this tile have been checked
@@ -17,20 +23,18 @@ struct Tile {
     bool wall[4];           // wall[d] = true if wall in direction d
     bool edge[4];           // edge[d] = true if robot has travelled through that direction
 
-    bool black;             // True if this tile is a black tile
+    int tiletype;              // accounts for tiletypes (0 for normal, 1 for blue, 2 for black (later can adapt to other tiletypes if needed))
     bool victim;            // True if victim detected on this tile
 
     // Constructor initializes all values
     Tile() {
         discovered = false;
         fullyExplored = false;
-        black = false;
+        tiletype = 0;
         victim = false;
 
-        for (int i = 0; i < 4; i++) {
-            wall[i] = false;
-            edge[i] = false;
-        }
+        wall[4] = {false}; //initializes all to false. no need to loop, saves processing time.
+        edge[4] = {false}; 
     }
 };
 
