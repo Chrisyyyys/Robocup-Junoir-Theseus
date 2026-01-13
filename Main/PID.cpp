@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include "PID.h"
 #include "PID.h"
@@ -16,7 +17,7 @@ double PID::getPID(double _error){
   double output = kp*error + ki*cumError + kd*delta;
   previousTime = currentTime;
   prevError = error; // update previousTime and prevError
-  return output
+  return output;
   
 }
 

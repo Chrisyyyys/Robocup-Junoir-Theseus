@@ -6,8 +6,8 @@ class PID{
     double kp, ki, kd; // define public variables kp, ki, kd
     double error, prevError, delta, cumError; // define error, previous error , deltaerror and cumulative error
     double currentTime, previousTime; // timer
-    PID(double , double , double ); // ?
-    getPID(double);
+    PID(double , double , double ); // PID inputs
+    double getPID(double);
   
 
 };
