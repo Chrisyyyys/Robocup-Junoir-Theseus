@@ -114,3 +114,24 @@ void initializeMap() {
         }
     }
 }
+Direction rotateDir(Direction base, int offset) {
+  return (Direction)((base + offset + 4) % 4);
+}
+//update tile position
+void stepForward(Direction d, int &x, int &y) {
+  if (d == NORTH) y++;
+  else if (d == EAST) x++;
+  else if (d == SOUTH) y--;
+  else if (d == WEST) x--;
+}
+//mark the edges
+void markEdgeBothWays(int x, int y, Direction d) {
+  int nx = x, ny = y;
+  stepForward(d, nx, ny);
+
+  // bounds check
+  if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) return;
+
+  mapGrid[x][y].edge[d] = true;
+  mapGrid[nx][ny].edge[opposite(d)] = true;
+}
