@@ -57,6 +57,7 @@ enum RobotState {
 RobotState state;
 // initialize 
 
+
 // when something is seen, it would wait for 5 detections.
 void setup(){
   Serial.begin(115200);
@@ -134,4 +135,25 @@ void markEdgeBothWays(int x, int y, Direction d) {
 
   mapGrid[x][y].edge[d] = true;
   mapGrid[nx][ny].edge[opposite(d)] = true;
+}
+void senseTile(bool wallOut[4], TileTypes &tileTypeOut, bool &victimOut) {
+  // TODO: fill using your sensors
+  // - set wallOut[NORTH/EAST/SOUTH/WEST]
+  // - tileTypeOut = BLANK/BLUE/BLACK 
+  // - victimOut = true if victim detected here
+
+  // placeholder:
+  for (int i=0;i<4;i++) wallOut[i]=false;
+  tileTypeOut = BLANK;
+  victimOut = false;
+}
+// if tile is good 
+bool isOpenAndUnvisited(int x, int y, Direction d) {
+  if (mapGrid[x][y].wall[d]) return false;
+
+  int nx = x, ny = y;
+  stepForward(d, nx, ny);
+  if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) return false;
+
+  return !mapGrid[nx][ny].discovered;
 }
