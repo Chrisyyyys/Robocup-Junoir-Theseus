@@ -54,6 +54,7 @@ enum RobotState {
   PLAN_NEXT,
   EXECUTE_MOVE
 };
+RobotState state;
 // initialize 
 
 // when something is seen, it would wait for 5 detections.
