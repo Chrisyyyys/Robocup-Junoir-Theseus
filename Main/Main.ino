@@ -44,6 +44,16 @@ const double wheel_diameter = 68.7; // millimeters.
 char classes[6] = {'H','S','U','R','Y','G'};
 // map size variables
 const int MAP_SIZE=20;
+int x_pos,y_pos;
+//states that the robot will be in
+enum RobotState {
+  SENSE_TILE,
+  UPDATE_MAP,
+  VICTIM_SIGNAL,
+  PLAN_NEXT,
+  EXECUTE_MOVE
+};
+// initialize 
 
 // when something is seen, it would wait for 5 detections.
 void setup(){
@@ -63,8 +73,11 @@ void setup(){
   
   delay(500);
   
-  
-  
+  //initialize map
+  initializeMap();
+  x_pos=MAZE_SIZE/2;
+  y_pos=MAZE_SIZE/2;
+
  
 }
 void loop(){
@@ -93,7 +106,7 @@ void initializeMap() {
                 mapGrid[x][y].edge[d] = false;
             }
 
-            mapGrid[x][y].tileType = false;
+            mapGrid[x][y].tileType = BLANK;
             mapGrid[x][y].victim = false;
         }
     }
