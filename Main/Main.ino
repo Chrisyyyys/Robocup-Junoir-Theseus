@@ -44,6 +44,7 @@ const double wheel_diameter = 68.7; // millimeters.
 char classes[6] = {'H','S','U','R','Y','G'};
 // map size variables
 const int MAP_SIZE=20;
+Tile mapGrid[MAP_SIZE][MAP_SIZE];
 int x_pos,y_pos;
 //states that the robot will be in
 enum RobotState {
@@ -75,8 +76,9 @@ void setup(){
   
   //initialize map
   initializeMap();
-  x_pos=MAZE_SIZE/2;
-  y_pos=MAZE_SIZE/2;
+  x_pos=MAP_SIZE/2;
+  y_pos=MAP_SIZE/2;
+  mapGrid[x_pos][y_pos].discovered = true; 
 
  
 }
