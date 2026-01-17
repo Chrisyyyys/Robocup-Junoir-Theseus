@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
 #include "PID.h"
-#include "PID.h"
+
 PID::PID(double _kp, double _ki, double _kd){
   kp = _kp; // public kp = inputted _kp
   ki = _ki;

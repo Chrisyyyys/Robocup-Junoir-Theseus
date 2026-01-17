@@ -60,7 +60,9 @@ void fwd(double dist){
 }
 void turn(double angle){
   // create PID instance.
-  PID myPID(5,0,0.3); double MOTORSPEED = 0;
+  PID myPID(10,0,0.3); double MOTORSPEED = 0;
+  // create timer to cut of turning
+  timer myTimer;
   double correction = 0;
   sensors_event_t event;
   bno.getEvent(&event);
@@ -70,6 +72,7 @@ void turn(double angle){
     motorD->run(BACKWARD);
     while(true){
       if(current_angle>=angle&& current_angle<190) break; // anti wraparound
+      if(myTimer.getTime() > 2*1000000) break;
       bno.getEvent(&event);
       current_angle = (float)event.orientation.x; // get the angle
       MOTORSPEED = myPID.getPID(angle-current_angle);
@@ -83,14 +86,15 @@ void turn(double angle){
     motorA->run(BACKWARD);
     motorC->run(BACKWARD);
     while(true){
-      if(current_angle<360+angle&&current_angle>180) break; // anti wraparound
+      if(current_angle<360+angle&&current_angle>190) break; // anti wraparound
+      if(myTimer.getTime() > 2*1000000) break;
       bno.getEvent(&event);
       current_angle = (float)event.orientation.x; // get the angle
-      MOTORSPEED = myPID.getPID(current_angle-angle);
-      motorA->setSpeed(MOTORSPEED);
-      motorB->setSpeed(MOTORSPEED);
-      motorC->setSpeed(MOTORSPEED);
-      motorD->setSpeed(MOTORSPEED);
+      MOTORSPEED = myPID.getPID(current_angle-(360+angle));
+      motorA->setSpeed(constrain(MOTORSPEED,0,255));
+      motorB->setSpeed(constrain(MOTORSPEED,0,255));
+      motorC->setSpeed(constrain(MOTORSPEED,0,255));
+      motorD->setSpeed(constrain(MOTORSPEED,0,255));
     }
   }
   Serial.println("finished turning");
@@ -102,5 +106,6 @@ void turn(double angle){
   motorB->run(FORWARD);
   motorC->run(FORWARD);
   motorD->run(FORWARD);
+  encoderCountA = 0; encoderCountB = 0; // reset encoder counters.
 }
 // full stop function

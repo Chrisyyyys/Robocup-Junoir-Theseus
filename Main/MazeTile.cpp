@@ -1,4 +1,4 @@
-#include "bitset"
+
 
 // Directions: 0 = NORTH, 1 = EAST, 2 = SOUTH, 3 = WEST
 struct Tile {
@@ -8,7 +8,7 @@ struct Tile {
     bool wall[4];           // true if wall in that direction
     bool edge[4];           // true if robot has traveled through that edge
 
-    int tiletype;           // accounts for tiletypes (0 for normal, 1 for blue, 2 for black (later can adapt to other tiletypes if needed))
+    int tileType;           // accounts for tiletypes (0 for normal, 1 for blue, 2 for black (later can adapt to other tiletypes if needed))
     bool victim;            // true if victim detected here
 
     // Constructor to initialize everything to false

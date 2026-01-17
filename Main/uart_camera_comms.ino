@@ -78,7 +78,7 @@ int readSerial2(){
 }
 void detectCam1(){
   // read buffer
-  // if there is content, take 5 samples and take the most common letter.
+  // if there is content, take 5 samples and take the most common letter( the model sometime misidentifies)
   int samples[5];
   int maxCount = 0;
   char res = 0;
@@ -143,6 +143,43 @@ void detectCam2(){
   else{
     //nothing right now.
     return;
+  }
+
+}
+void detect(){ // the robot goes forward until it detects something.
+  bool victimAtLeft = false;
+  bool victimAtRight = false;
+  while(true){
+    if(readSerial1() != -1){
+      victimAtLeft = true;
+      break;
+    }
+    if(readSerial2() != -1){
+      victimAtRight = true;
+      break;
+    }
+    motorA->setSpeed(150);
+    motorB->setSpeed(150);
+    motorC->setSpeed(150);
+    motorD->setSpeed(150);
+  }
+  motorA->setSpeed(0);
+  motorB->setSpeed(0);
+  motorC->setSpeed(0);
+  motorD->setSpeed(0);
+  delay(500);
+  if(victimAtLeft == true){
+    detectCam1();
+  }
+  else if(victimAtRight == true){
+    detectCam2();
+  }
+  // backpedal
+  while(encoderCountA > 0 & encoderCountB > 0){
+    motorA->setSpeed(150);
+    motorB->setSpeed(150);
+    motorC->setSpeed(150);
+    motorD->setSpeed(150);
   }
 
 }

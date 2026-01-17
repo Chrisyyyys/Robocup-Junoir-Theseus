@@ -8,6 +8,7 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 #include "PID.h"
+#include "timer.h"
 // set up mux and distance senosrs
 VL53L0X sensors[7];
 QWIICMUX myMux;
@@ -40,8 +41,9 @@ const double gear_ratio = 195;
 // wheel diameter
 const double wheel_diameter = 68.7; // millimeters.
 // detection classes
-char classes[6] = {'H','S','U','R','Y','G'};
+char classes[6] = {'H','S','U','R','Y','G'};\
 
+const int BLACK_THRESHOLD; // tune
 // when something is seen, it would wait for 5 detections.
 void setup(){
   Serial.begin(115200);
@@ -57,15 +59,31 @@ void setup(){
   
   init_color();
   init_drive();
-  
+  /*
   delay(500);
+  delay(200);
+  fwd(300);
+  delay(200);
+  turn(90);
+  delay(200);
+  fwd(300);
+  delay(200);
+  turn(180);
+  delay(200);
+  fwd(300);
+  delay(200);
+  turn(-90);
+  delay(200);
+  fwd(300);
+  */
+  turn(-90);
   
   
   
  
 }
 void loop(){
-  detectCam2();
+  
   //delay(1000);
   
   /*
