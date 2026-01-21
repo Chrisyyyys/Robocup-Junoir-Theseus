@@ -1,4 +1,4 @@
-const int BLACK_THRESHOLD; // tune
+
 void init_color(){
   //tcs.setInterrupt(true);
   
@@ -46,4 +46,5 @@ int read_color(){
   else{
     return 0;
   }
+}
   

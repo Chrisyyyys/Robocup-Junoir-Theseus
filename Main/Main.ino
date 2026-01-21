@@ -8,7 +8,11 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 #include "PID.h"
+
 #include "timer.h"
+
+// #include "MazeTile.h"
+
 // set up mux and distance senosrs
 VL53L0X sensors[7];
 QWIICMUX myMux;
@@ -41,7 +45,26 @@ const double gear_ratio = 195;
 // wheel diameter
 const double wheel_diameter = 68.7; // millimeters.
 // detection classes
-char classes[6] = {'H','S','U','R','Y','G'};\
+
+char classes[6] = {'H','S','U','R','Y','G'};
+
+/*
+// map size variables
+const int MAP_SIZE=20;
+Tile mapGrid[MAP_SIZE][MAP_SIZE];
+int x_pos,y_pos;
+//states that the robot will be in
+enum RobotState {
+  SENSE_TILE,
+  UPDATE_MAP,
+  VICTIM_SIGNAL,
+  PLAN_NEXT,
+  EXECUTE_MOVE
+};
+RobotState state;
+// initialize 
+
+*/
 
 const int BLACK_THRESHOLD; // tune
 // when something is seen, it would wait for 5 detections.
@@ -59,6 +82,7 @@ void setup(){
   
   init_color();
   init_drive();
+  fwd(300);
   /*
   delay(500);
   delay(200);
@@ -76,10 +100,15 @@ void setup(){
   delay(200);
   fwd(300);
   */
-  turn(-90);
-  
-  
-  
+  //detect();
+  /*
+  //initialize map
+  initializeMap();
+  x_pos=MAP_SIZE/2;
+  y_pos=MAP_SIZE/2;
+  mapGrid[x_pos][y_pos].discovered = true; 
+  */
+
  
 }
 void loop(){
@@ -96,3 +125,64 @@ void loop(){
   encoderCountB = 0;
   */
 }
+/*
+void initializeMap() {
+    for (int x = 0; x < MAP_SIZE; x++) {
+        for (int y = 0; y < MAP_SIZE; y++) {
+
+            mapGrid[x][y].discovered = false;
+            mapGrid[x][y].fullyExplored = false;
+
+            for (int d = 0; d < 4; d++) {
+                mapGrid[x][y].wall[d] = false;
+                mapGrid[x][y].edge[d] = false;
+            }
+
+            mapGrid[x][y].tileType = BLANK;
+            mapGrid[x][y].victim = false;
+        }
+    }
+}
+Direction rotateDir(Direction base, int offset) {
+  return (Direction)((base + offset + 4) % 4);
+}
+//update tile position
+void stepForward(Direction d, int &x, int &y) {
+  if (d == NORTH) y++;
+  else if (d == EAST) x++;
+  else if (d == SOUTH) y--;
+  else if (d == WEST) x--;
+}
+//mark the edges
+void markEdgeBothWays(int x, int y, Direction d) {
+  int nx = x, ny = y;
+  stepForward(d, nx, ny);
+
+  // bounds check
+  if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) return;
+
+  mapGrid[x][y].edge[d] = true;
+  mapGrid[nx][ny].edge[opposite(d)] = true;
+}
+void senseTile(bool wallOut[4], TileTypes &tileTypeOut, bool &victimOut) {
+  // TODO: fill using your sensors
+  // - set wallOut[NORTH/EAST/SOUTH/WEST]
+  // - tileTypeOut = BLANK/BLUE/BLACK 
+  // - victimOut = true if victim detected here
+
+  // placeholder:
+  for (int i=0;i<4;i++) wallOut[i]=false;
+  tileTypeOut = BLANK;
+  victimOut = false;
+}
+// if tile is good 
+bool isOpenAndUnvisited(int x, int y, Direction d) {
+  if (mapGrid[x][y].wall[d]) return false;
+
+  int nx = x, ny = y;
+  stepForward(d, nx, ny);
+  if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) return false;
+
+  return !mapGrid[nx][ny].discovered;
+}
+*/

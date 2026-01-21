@@ -107,7 +107,10 @@ void detectCam1(){
   }
   else{
     //nothing right now.
-    return;
+    while(Serial2.available()<5){
+      continue;
+    }
+    detectCam2();
   }
 
 }
@@ -142,13 +145,18 @@ void detectCam2(){
   }
   else{
     //nothing right now.
-    return;
+    while(Serial3.available()<5){
+      continue;
+    }
+    detectCam2();
   }
 
 }
 void detect(){ // the robot goes forward until it detects something.
   bool victimAtLeft = false;
   bool victimAtRight = false;
+  clearSerialBuffer1();
+  clearSerialBuffer2();
   while(true){
     if(readSerial1() != -1){
       victimAtLeft = true;
@@ -175,11 +183,20 @@ void detect(){ // the robot goes forward until it detects something.
     detectCam2();
   }
   // backpedal
+  motorA->run(BACKWARD);
+  motorB->run(BACKWARD);
+  motorC->run(BACKWARD);
+  motorD->run(BACKWARD);
   while(encoderCountA > 0 & encoderCountB > 0){
     motorA->setSpeed(150);
     motorB->setSpeed(150);
     motorC->setSpeed(150);
     motorD->setSpeed(150);
   }
+  motorA->setSpeed(0);
+  motorB->setSpeed(0);
+  motorC->setSpeed(0);
+  motorD->setSpeed(0);
+  encoderCountA = 0; encoderCountB = 0;
 
 }

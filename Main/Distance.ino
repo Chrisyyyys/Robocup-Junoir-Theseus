@@ -123,6 +123,50 @@ int measure(int sensor){
     
   }
 }
+// detects wall in a direction( 0 is north, 1 is east, etc..) If output = 0, there is a wall.
+int detectWall(int dir){
+  if(dir == 0){ // check if there is a wall at north
+    int a = measure(1);
+    int b = measure(2);
+    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
+      return 0; // there is a wall.
+    }
+    else{
+      return 1; // no wall
+    }
+  }
+  if(dir == 1){
+    int a = measure(3);
+    int b = measure(4);
+    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
+      return 0;
+    }
+    else{
+      return 1;
+    }
+  }
+  if(dir == 2){
+    int a = measure(5);
+    if(a<MIN_DIST&&a!=-1&&a!=8191){
+      return 0;
+    }
+    else{
+      return 1;
+    }
+  }
+  if(dir == 3){
+    int a = measure(6);
+    int b = measure(7);
+    
+    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
+      return 0;
+    }
+    else{
+      return 1;
+    }
+    
+  }
+}
 
 
 
