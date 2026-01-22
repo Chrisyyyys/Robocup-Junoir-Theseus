@@ -45,7 +45,7 @@ void init_drive(){
 }
 void fwd(double dist){
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
-  while(encoderCountA<= pulses & encoderCountB <= pulses){
+  while(encoderCountA<= pulses && encoderCountB <= pulses){
     motorA->setSpeed(255);
     motorB->setSpeed(255);
     motorC->setSpeed(255);
