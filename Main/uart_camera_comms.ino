@@ -76,7 +76,7 @@ int readSerial2(){
     return -1;
   }
 }
-void detectCam1(){
+void detectCam1(){ // doesn't return anything.
   // read buffer
   // if there is content, take 5 samples and take the most common letter( the model sometime misidentifies)
   int samples[5];
@@ -152,7 +152,7 @@ void detectCam2(){
   }
 
 }
-void detect(){ // the robot goes forward until it detects something.
+void detect(){ // the robot goes forward until it detects something( does not return)
   bool victimAtLeft = false;
   bool victimAtRight = false;
   clearSerialBuffer1();

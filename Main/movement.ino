@@ -43,7 +43,7 @@ void init_drive(){
     Serial.println("gyro found");
   }
 }
-void fwd(double dist){
+void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   while(encoderCountA<= pulses && encoderCountB <= pulses){
     motorA->setSpeed(255);
@@ -58,7 +58,7 @@ void fwd(double dist){
   encoderCountA = 0; encoderCountB = 0;
 
 }
-void turn(double angle){
+void turn(double angle){ 
   // create PID instance.
   PID myPID(10,0,0.3); double MOTORSPEED = 0;
   // create timer to cut of turning
@@ -71,8 +71,9 @@ void turn(double angle){
     motorB->run(BACKWARD);
     motorD->run(BACKWARD);
     while(true){
-      if(current_angle>=angle&& current_angle<190) break; // anti wraparound
+      if(current_angle>=angle&& current_angle<170) break; // anti wraparound
       if(myTimer.getTime() > 2*1000000) break;
+      
       bno.getEvent(&event);
       current_angle = (float)event.orientation.x; // get the angle
       MOTORSPEED = myPID.getPID(angle-current_angle);
@@ -86,7 +87,7 @@ void turn(double angle){
     motorA->run(BACKWARD);
     motorC->run(BACKWARD);
     while(true){
-      if(current_angle<360+angle&&current_angle>190) break; // anti wraparound
+      if(current_angle<360+angle&&current_angle>170) break; // anti wraparound
       if(myTimer.getTime() > 2*1000000) break;
       bno.getEvent(&event);
       current_angle = (float)event.orientation.x; // get the angle
