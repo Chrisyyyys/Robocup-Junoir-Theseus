@@ -1,8 +1,10 @@
 Direction rotateDir(Direction base, int offset) {
   return (Direction)((base + offset + 4) % 4);
 }
+// at orientation w, conver heading of x to local heading of y.
 
 void stepForward(Direction d, int &x, int &y) {
+  // global direction
   if (d == NORTH) y++;
   else if (d == EAST) x++;
   else if (d == SOUTH) y--;
@@ -34,8 +36,8 @@ void markEdgeBothWays(int x, int y, Direction d) {
   stepForward(d, nx, ny);
   if (!inBounds(nx, ny)) return;
 
-  mapGrid[x][y].edge[d] = true;
-  mapGrid[nx][ny].edge[opposite(d)] = true;
+  mapGrid[x][y].edge[d] = true; // connected
+  mapGrid[nx][ny].edge[opposite(d)] = true; // update both sides.
 }
 
 // update fullyExplored = all OPEN dirs have been traveled at least once
@@ -54,20 +56,20 @@ void updateFullyExploredAt(int x, int y) {
   t.fullyExplored = allDone;
 }
 // 0=front, 1=right, 2=back, 3=left
-void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) {
+void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // references needed here to update the variable values
   wallF = (detectWall(0) == 0);
   wallR = (detectWall(1) == 0);
   wallB = (detectWall(2) == 0);
   wallL = (detectWall(3) == 0);
 }
-//get the wall from L,R into N W
+//get the wall from L,R(local) into N W(global)
 void writeWallsToCurrentTile(bool wallF, bool wallR, bool wallB, bool wallL) {
   Tile &t = mapGrid[x_pos][y_pos];
   t.discovered = true;
-  // absolution
+  // shouldn't absolute directions be north south east west?
   Direction absF = currentDir;
   Direction absR = rotateDir(currentDir, +1);
-  Direction absB = rotateDir(currentDir, +2);
+  Direction absB = rotateDir(currentDir, +2); // south
   Direction absL = rotateDir(currentDir, -1);
 
   t.wall[absF] = wallF;
@@ -83,8 +85,8 @@ Direction pickNextDirection() {
   Direction absR = rotateDir(currentDir, +1);
   Direction absB = rotateDir(currentDir, +2);
 
-  auto open  = [&](Direction d){ return t.wall[d] == false; };
-  auto untr  = [&](Direction d){ return t.edge[d] == false; };
+  auto open  = [&](Direction d){ return t.wall[d] == false; }; // if a certain direction is open 
+  auto untr  = [&](Direction d){ return t.edge[d] == false; }; // if a certain direction is untravelled.
 
   // 1) try open + untraveled first
   if (open(absF) && untr(absF)) return absF;
@@ -99,6 +101,7 @@ Direction pickNextDirection() {
   if (open(absB)) return absB;
   // figure out BFS later
   // 3) trapped
+  
   return absB;
 }
 
@@ -109,3 +112,25 @@ int turnNeededDeg(Direction from, Direction to) {
   if (diff == 2) return 180;
   return -90; // diff==3
 }
+/*
+void returnToStart(x,y){
+  Tile &t = mapGrid[x_pos][y_pos];
+  // when it reaches beginning, stop.
+  if(x == 0 && y == 0){
+    return;
+  }
+  // loop through all edges
+  for(int i = 0; i< 4;i++){
+    if(t.edge[i] == true){
+      stepForward(i,x,y); // fwd in direction i 
+      plannedTurnDeg = turnNeededDeg(currentDir, i);
+      turn(plannedTurnDeg);
+      fwd(TILE_MM);
+      returnToStart(x,y);
+    }
+  }
+  // check for each.
+  
+  stepForward();
+}
+*/

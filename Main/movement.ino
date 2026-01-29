@@ -36,12 +36,7 @@ void init_drive(){
   motorC->run(FORWARD);
   motorD->run(FORWARD);
   // initialize gyro
-  if(!bno.begin()){
-    Serial.println("can't find gyro");
-  }
-  else{
-    Serial.println("gyro found");
-  }
+  myGyro.init_Gyro();
 }
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
@@ -60,27 +55,27 @@ void fwd(double dist){ // in mm
 }
 void turn(double angle){ 
   // create PID instance.
-  PID myPID(10,0,0.3); double MOTORSPEED = 0;
+  PID myPID(10,0,0.3); 
+  double MOTORSPEED = 0;
   // create timer to cut of turning
   timer myTimer;
-  double correction = 0;
-  sensors_event_t event;
-  bno.getEvent(&event);
-  double current_angle=(float)event.orientation.x;
+  myGyro.resetHeading();
+  double current_angle=myGyro.heading();
+  Serial.println("beginning heading");
+  Serial.println(current_angle);
   if(angle > 0){ // right turn
     motorB->run(BACKWARD);
     motorD->run(BACKWARD);
     while(true){
       if(current_angle>=angle&& current_angle<170) break; // anti wraparound
       if(myTimer.getTime() > 2*1000000) break;
-      
-      bno.getEvent(&event);
-      current_angle = (float)event.orientation.x; // get the angle
+      Serial.println(current_angle);
+      current_angle = myGyro.heading();
       MOTORSPEED = myPID.getPID(angle-current_angle);
-      motorA->setSpeed(constrain(MOTORSPEED,0,255));
-      motorB->setSpeed(constrain(MOTORSPEED,0,255));
-      motorC->setSpeed(constrain(MOTORSPEED,0,255));
-      motorD->setSpeed(constrain(MOTORSPEED,0,255));
+      motorA->setSpeed(constrain(MOTORSPEED,20,255));
+      motorB->setSpeed(constrain(MOTORSPEED,20,255));
+      motorC->setSpeed(constrain(MOTORSPEED,20,255));
+      motorD->setSpeed(constrain(MOTORSPEED,20,255));
     }
   }
   else if(angle<0){
@@ -89,8 +84,8 @@ void turn(double angle){
     while(true){
       if(current_angle<360+angle&&current_angle>170) break; // anti wraparound
       if(myTimer.getTime() > 2*1000000) break;
-      bno.getEvent(&event);
-      current_angle = (float)event.orientation.x; // get the angle
+      current_angle = myGyro.heading();
+      Serial.println(current_angle);
       MOTORSPEED = myPID.getPID(current_angle-(360+angle));
       motorA->setSpeed(constrain(MOTORSPEED,0,255));
       motorB->setSpeed(constrain(MOTORSPEED,0,255));
@@ -98,6 +93,50 @@ void turn(double angle){
       motorD->setSpeed(constrain(MOTORSPEED,0,255));
     }
   }
+  Serial.println("finished turning");
+  motorA->setSpeed(0);
+  motorB->setSpeed(0);
+  motorC->setSpeed(0);
+  motorD->setSpeed(0);
+  motorA->run(FORWARD);
+  motorB->run(FORWARD);
+  motorC->run(FORWARD);
+  motorD->run(FORWARD);
+  encoderCountA = 0; encoderCountB = 0; // reset encoder counters.
+}
+// absolute turning
+void absoluteturn(double angle){ 
+  // create PID instance.
+  PID myPID(10,0,0.3); 
+  double MOTORSPEED = 0;
+  // create timer to cut of turning
+  timer myTimer;
+  double current_angle=myGyro.heading();
+  if(angle - current_angle > 0){
+    while(true){
+      if(angle-current_angle<=0 && current_angle < 190) break;
+      if(myTimer.getTime() > 2*1000000) break;
+      current_angle = myGyro.heading();
+      MOTORSPEED = myPID.getPID(angle-current_angle);
+      motorA->setSpeed(constrain(MOTORSPEED,20,255));
+      motorB->setSpeed(constrain(MOTORSPEED,20,255));
+      motorC->setSpeed(constrain(MOTORSPEED,20,255));
+      motorD->setSpeed(constrain(MOTORSPEED,20,255));
+    }
+  } 
+  else if(angle-current_angle<0) {
+    while(true){
+      if(angle-current_angle>=0 && current_angle > 170) break;
+      if(myTimer.getTime() > 2*1000000) break;
+      current_angle = myGyro.heading();
+      MOTORSPEED = myPID.getPID(current_angle-angle);
+      motorA->setSpeed(constrain(MOTORSPEED,20,255));
+      motorB->setSpeed(constrain(MOTORSPEED,20,255));
+      motorC->setSpeed(constrain(MOTORSPEED,20,255));
+      motorD->setSpeed(constrain(MOTORSPEED,20,255));
+    }
+  }
+  
   Serial.println("finished turning");
   motorA->setSpeed(0);
   motorB->setSpeed(0);

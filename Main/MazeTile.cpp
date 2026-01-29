@@ -13,7 +13,7 @@ Tile::Tile() {
 }
 
 Direction opposite(Direction d) {
-  return (Direction)((d + 2) % 4);
+  return (Direction)((d + 2) % 4); // the opposite global direction.
 }
 
 

@@ -8,8 +8,8 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 #include "PID.h"
-
 #include "timer.h"
+#include "gyro.h"
 #define MIN_DIST 120          // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_C_THRESHOLD 120 // color clear-channel threshold (tune)
@@ -28,6 +28,7 @@ QWIICMUX myMux;
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X);
 // set up gyro
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
+gyro myGyro;
 // set up motorshield and motors.
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 Adafruit_DCMotor *motorA = AFMS.getMotor(1);
@@ -55,7 +56,7 @@ char classes[6] = {'H','S','U','R','Y','G'};
 
 // map size variables
 const int MAP_SIZE=20;
-Tile mapGrid[MAP_SIZE][MAP_SIZE];
+Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
 
 //states that the robot will be in
 enum RobotState {
@@ -118,10 +119,15 @@ void setup(){
   mapGrid[x_pos][y_pos].discovered = true; 
   currentDir = NORTH;
   state = SENSE_TILE;
-  
+  turn(90);
+  delay(500);
+  Serial.println("turning left");
+  turn(-90);
+  delay(500);
 
  
 }
+
 void loop(){
   static bool wallF, wallR, wallB, wallL;
 
@@ -130,7 +136,7 @@ void loop(){
 
 
     case SENSE_TILE: {
-      // Read sensors
+      // Read for walls
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
 
@@ -161,8 +167,6 @@ void loop(){
       state = PLAN_NEXT;
       break;
     }
-
-
     case VICTIM_SIGNAL: {
       /*
       // store + do your actual signaling / camera confirm
@@ -196,12 +200,14 @@ void loop(){
       fwd(TILE_MM);
       // 4) update robot position
       stepForward(currentDir, x_pos, y_pos);
+      delay(200);
       // safety clamp
       /*
       if (!inBounds(x_pos, y_pos)) {
         //stop motors or do something
       }
       */
+      //parallel();
       state = SENSE_TILE;
       break;
      
