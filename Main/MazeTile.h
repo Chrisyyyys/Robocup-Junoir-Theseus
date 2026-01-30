@@ -1,13 +1,19 @@
 #ifndef MAZE_TILE_H
 #define MAZE_TILE_H
+#include <stdint.h>
 
-// Directions: 0=NORTH,1=EAST,2=SOUTH,3=WEST
+//Directions: 0=NORTH,1=EAST,2=SOUTH,3=WEST
 enum Direction {
   NORTH = 0,
   EAST  = 1,
   SOUTH = 2,
   WEST  = 3
 };
+
+// enum Direction : uint8_t {
+//   NORTH = 0, EAST = 1, SOUTH = 2, WEST = 3,  // old names (main uses these)
+//   N = NORTH, E = EAST, S = SOUTH, W = WEST   // new short aliases
+// };
 
 enum TileTypes {
   BLANK = 0,
@@ -24,6 +30,10 @@ struct Tile {
 
   TileTypes tileType;
   bool victim;
+  // uint8_t wall[4];     // still indexed the same
+  // uint8_t edge[4];
+  // uint8_t discovered;
+  
 
   Tile();   // constructor
 };

@@ -2,6 +2,9 @@
 #include <Arduino.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <math.h>
+
+
 
 extern Adafruit_BNO055 bno;
 
@@ -25,6 +28,7 @@ double gyro::heading(){
   float heading = (double)event.orientation.x-headingOffset;
   Serial.println("heading");
   Serial.println(heading);
-  heading = (heading+ 360)%360;
+  //heading = (heading+ 360)%360;
+  heading = fmod(heading + 360.0, 360.0);
   return heading;
 }
