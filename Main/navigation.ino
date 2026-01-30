@@ -1,3 +1,4 @@
+// I assume is global?
 Direction rotateDir(Direction base, int offset) {
   return (Direction)((base + offset + 4) % 4);
 }
@@ -63,30 +64,30 @@ void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // refer
   wallL = (detectWall(3) == 0);
 }
 //get the wall from L,R(local) into N W(global)
+// absF is the absolute heading the the robot front is heading.
 void writeWallsToCurrentTile(bool wallF, bool wallR, bool wallB, bool wallL) {
   Tile &t = mapGrid[x_pos][y_pos];
   t.discovered = true;
   // shouldn't absolute directions be north south east west?
   Direction absF = currentDir;
   Direction absR = rotateDir(currentDir, +1);
-  Direction absB = rotateDir(currentDir, +2); // south
+  Direction absB = rotateDir(currentDir, +2);
   Direction absL = rotateDir(currentDir, -1);
-
   t.wall[absF] = wallF;
   t.wall[absR] = wallR;
   t.wall[absB] = wallB;
   t.wall[absL] = wallL;
 }
 Direction pickNextDirection() {
-  Tile &t = mapGrid[x_pos][y_pos];
+   Tile &t = mapGrid[x_pos][y_pos];
 
   Direction absL = rotateDir(currentDir, -1);
   Direction absF = currentDir;
   Direction absR = rotateDir(currentDir, +1);
   Direction absB = rotateDir(currentDir, +2);
 
-  auto open  = [&](Direction d){ return t.wall[d] == false; }; // if a certain direction is open 
-  auto untr  = [&](Direction d){ return t.edge[d] == false; }; // if a certain direction is untravelled.
+  auto open  = [&](Direction d){ return t.wall[d] == false; };
+  auto untr  = [&](Direction d){ return t.edge[d] == false; };
 
   // 1) try open + untraveled first
   if (open(absF) && untr(absF)) return absF;
@@ -101,16 +102,15 @@ Direction pickNextDirection() {
   if (open(absB)) return absB;
   // figure out BFS later
   // 3) trapped
-  
   return absB;
 }
 
-int turnNeededDeg(Direction from, Direction to) {
-  int diff = ((int)to - (int)from + 4) % 4;
-  if (diff == 0) return 0;
-  if (diff == 1) return +90;
-  if (diff == 2) return 180;
-  return -90; // diff==3
+int turnNeededDeg(Direction direction) {
+  
+  if (direction == 0) return 0;
+  if (direction == 1) return 90;
+  if (direction == 2) return 180;
+  return 270; // diff==3
 }
 /*
 void returnToStart(x,y){

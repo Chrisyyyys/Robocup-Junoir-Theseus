@@ -119,11 +119,7 @@ void setup(){
   mapGrid[x_pos][y_pos].discovered = true; 
   currentDir = NORTH;
   state = SENSE_TILE;
-  turn(90);
-  delay(500);
-  Serial.println("turning left");
-  turn(-90);
-  delay(500);
+  
 
  
 }
@@ -184,7 +180,7 @@ void loop(){
 
     case PLAN_NEXT: {
       plannedMoveDir = pickNextDirection();
-      plannedTurnDeg = turnNeededDeg(currentDir, plannedMoveDir);
+      plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       state = EXECUTE_MOVE;
       break;
     }
@@ -192,7 +188,7 @@ void loop(){
 
     case EXECUTE_MOVE: {
       Serial.print(plannedTurnDeg);//figure out motors stuff
-      turn(plannedTurnDeg);
+      absoluteturn(plannedTurnDeg);
       delay(500);
       // 2) mark edges on map BEFORE moving
       markEdgeBothWays(x_pos, y_pos, currentDir);

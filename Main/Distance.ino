@@ -172,7 +172,8 @@ int detectWall(int dir){
 void parallel(){
   if(detectWall(1) == 0){
     if(measure(2)-measure(3)>0){
-      while(abs(measure(2)-measure(3))>3){
+      while(abs(measure(2)-measure(3))>10){
+        
         motorB->run(BACKWARD);
         motorD->run(BACKWARD);
         motorA->setSpeed(50);
@@ -183,7 +184,7 @@ void parallel(){
       Serial.println("paralleled");
     }
     else if(measure(2)-measure(3)<0) {
-      while(abs(measure(2)-measure(3))>3){
+      while(abs(measure(2)-measure(3))>10){
         motorA->run(BACKWARD);
         motorC->run(BACKWARD);
         motorA->setSpeed(50);
@@ -195,7 +196,7 @@ void parallel(){
   }
   else if(detectWall(2) == 0){
     if(measure(6)-measure(5)>0){
-      while(abs(measure(6)-measure(5))>3){
+      while(abs(measure(6)-measure(5))>10){
         motorA->run(BACKWARD);
         motorC->run(BACKWARD);
         motorA->setSpeed(50);
@@ -205,7 +206,7 @@ void parallel(){
       }
     }
     else if(measure(6)-measure(5)<0){
-      while(abs(measure(6)-measure(5))>3){
+      while(abs(measure(6)-measure(5))>10){
         motorB->run(BACKWARD);
         motorD->run(BACKWARD);
         motorA->setSpeed(50);
