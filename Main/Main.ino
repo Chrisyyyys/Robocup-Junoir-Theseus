@@ -190,6 +190,8 @@ void loop(){
       Serial.print(plannedTurnDeg);//figure out motors stuff
       absoluteturn(plannedTurnDeg);
       delay(500);
+      //update currentDir
+      currentDir = plannedMoveDir;
       // 2) mark edges on map BEFORE moving
       markEdgeBothWays(x_pos, y_pos, currentDir);
       // 3) drive one tile

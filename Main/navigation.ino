@@ -77,6 +77,7 @@ void writeWallsToCurrentTile(bool wallF, bool wallR, bool wallB, bool wallL) {
   t.wall[absR] = wallR;
   t.wall[absB] = wallB;
   t.wall[absL] = wallL;
+  // need to mark both ways.
 }
 Direction pickNextDirection() {
    Tile &t = mapGrid[x_pos][y_pos];
