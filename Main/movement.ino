@@ -40,12 +40,32 @@ void init_drive(){
 }
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
+  Tile &t = mapGrid[x_pos][y_pos];
   while(encoderCountA<= pulses && encoderCountB <= pulses){
     motorA->setSpeed(255);
     motorB->setSpeed(255);
     motorC->setSpeed(255);
     motorD->setSpeed(255);
+    if(read_color() == -1){
+      t.wall[plannedMoveDir] = true;
+      blacktoggle = true;
+      while(encoderCountA >= 0 && encoderCountB >= 0){
+        motorA->run(BACKWARD);
+        motorB->run(BACKWARD);
+        motorC->run(BACKWARD);
+        motorD->run(BACKWARD);
+        motorA->setSpeed(150);
+        motorB->setSpeed(150);
+        motorC->setSpeed(150);
+        motorD->setSpeed(150);
+      }
+      break;
+    }
   }
+  motorA->run(FORWARD);
+  motorB->run(FORWARD);
+  motorC->run(FORWARD);
+  motorD->run(FORWARD);
   motorA->setSpeed(0);
   motorB->setSpeed(0);
   motorC->setSpeed(0);

@@ -64,7 +64,8 @@ enum RobotState {
   UPDATE_MAP,
   VICTIM_SIGNAL,
   PLAN_NEXT,
-  EXECUTE_MOVE
+  EXECUTE_MOVE,
+  BACKPEDAL
 };
 
 // initialize 
@@ -75,7 +76,7 @@ Direction plannedMoveDir = NORTH; // absolute direction robot will move next
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
-
+bool blacktoggle = false;
 
 
 
@@ -216,7 +217,14 @@ void loop(){
       // 3) drive one tile
       fwd(TILE_MM);
       // 4) update robot position
-      stepForward(currentDir, x_pos, y_pos);
+      if(blacktoggle == false){
+        stepForward(currentDir, x_pos, y_pos);
+      }
+      else{
+        state = BACKPEDAL;
+        break;
+      }
+      
       delay(200);
       // safety clamp
       /*
@@ -228,6 +236,15 @@ void loop(){
       state = SENSE_TILE;
       break;
      
+    }
+    case BACKPEDAL: {
+      plannedMoveDir = pickNextDirection();
+      Serial.println(plannedMoveDir);
+      plannedTurnDeg = turnNeededDeg(plannedMoveDir);
+      Serial.println(plannedTurnDeg);
+      state = EXECUTE_MOVE;
+      blacktoggle = false;
+      break;
     }
   }
  
