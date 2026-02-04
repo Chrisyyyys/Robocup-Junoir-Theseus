@@ -10,7 +10,7 @@
 #include "PID.h"
 #include "timer.h"
 #include "gyro.h"
-#define MIN_DIST 120          // mm (tune this)
+#define MIN_DIST 150         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_C_THRESHOLD 120 // color clear-channel threshold (tune)
 
@@ -128,7 +128,11 @@ void loop(){
   static bool wallF, wallR, wallB, wallL;
 
 
+
+
   switch (state) {
+
+
 
 
     case SENSE_TILE: {
@@ -136,8 +140,11 @@ void loop(){
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
 
+
       // Tile type
      
+
+
 
 
       // Victim quick check (optional)
@@ -150,11 +157,15 @@ void loop(){
       }
 
 
+
+
       state = UPDATE_MAP;
       break;
       */
       state = UPDATE_MAP; // next state.
     }
+
+
 
 
     case UPDATE_MAP: {
@@ -169,6 +180,8 @@ void loop(){
       mapGrid[x_pos][y_pos].victim = true;
 
 
+
+
       // If you want the full routines:
       detectCam1();
       detectCam2();
@@ -178,16 +191,22 @@ void loop(){
     }
 
 
+
+
     case PLAN_NEXT: {
       plannedMoveDir = pickNextDirection();
+      Serial.println(plannedMoveDir);
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
+      Serial.println(plannedTurnDeg);
       state = EXECUTE_MOVE;
       break;
     }
 
 
+
+
     case EXECUTE_MOVE: {
-      Serial.print(plannedTurnDeg);//figure out motors stuff
+     
       absoluteturn(plannedTurnDeg);
       delay(500);
       //update currentDir
@@ -213,6 +232,7 @@ void loop(){
   }
  
   //delay(1000);
+
  
   
   

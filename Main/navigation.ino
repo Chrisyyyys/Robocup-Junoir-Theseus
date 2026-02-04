@@ -58,10 +58,14 @@ void updateFullyExploredAt(int x, int y) {
 }
 // 0=front, 1=right, 2=back, 3=left
 void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // references needed here to update the variable values
-  wallF = (detectWall(0) == 0);
-  wallR = (detectWall(1) == 0);
-  wallB = (detectWall(2) == 0);
-  wallL = (detectWall(3) == 0);
+  wallF = (detectWall(0)==0);
+  wallR = (detectWall(1)==0);
+  wallB = (detectWall(2)==0);
+  wallL = (detectWall(3)==0);
+  Serial.println(wallF);
+  Serial.println(wallR);
+  Serial.println(wallB);
+  Serial.println(wallL);
 }
 //get the wall from L,R(local) into N W(global)
 // absF is the absolute heading the the robot front is heading.

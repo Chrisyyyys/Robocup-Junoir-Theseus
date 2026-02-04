@@ -69,9 +69,9 @@ void absoluteturn(double angle){
     motorD->run(BACKWARD);
     while(true){
       if(angle-current_angle<=0 && current_angle < 190) break;
-      if(myTimer.getTime() > 2*1000000) break;
+      if(myTimer.getTime() > 4*1000000) break;
       current_angle = myGyro.heading();
-      Serial.println(current_angle);
+      
       MOTORSPEED = myPID.getPID(angle-current_angle);
       motorA->setSpeed(constrain(MOTORSPEED,20,255));
       motorB->setSpeed(constrain(MOTORSPEED,20,255));
@@ -84,9 +84,9 @@ void absoluteturn(double angle){
     motorC->run(BACKWARD);
     while(true){
       if(angle-current_angle>=0 && current_angle > 170) break;
-      if(myTimer.getTime() > 2*1000000) break;
+      if(myTimer.getTime() > 4*1000000) break;
       current_angle = myGyro.heading();
-      Serial.println(current_angle);
+      
       MOTORSPEED = myPID.getPID(current_angle-angle);
       motorA->setSpeed(constrain(MOTORSPEED,20,255));
       motorB->setSpeed(constrain(MOTORSPEED,20,255));
