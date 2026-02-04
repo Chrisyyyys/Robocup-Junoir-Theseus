@@ -38,13 +38,13 @@ int read_color(){
  
   if(c<BLACK_THRESHOLD){
     Serial.println(c);
-    return -1;
+    return -1; // black
   }
   if(blue>green&&blue>red){
-    return 1;
+    return 1; // blue
   }
   else{
-    return 0;
+    return 0; // good
   }
 }
   
