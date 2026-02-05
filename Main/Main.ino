@@ -117,7 +117,7 @@ void setup(){
   initializeMap();
   x_pos=MAP_SIZE/2;
   y_pos=MAP_SIZE/2;
-  mapGrid[x_pos][y_pos].discovered = true; 
+  mapGrid[x_pos][y_pos].setDiscovered(true); 
   currentDir = NORTH;
   state = SENSE_TILE;
   
@@ -178,11 +178,6 @@ void loop(){
     case VICTIM_SIGNAL: {
       /*
       // store + do your actual signaling / camera confirm
-      mapGrid[x_pos][y_pos].victim = true;
-
-
-
-
       // If you want the full routines:
       detectCam1();
       detectCam2();
@@ -254,5 +249,3 @@ void loop(){
   
   
 }
-
-

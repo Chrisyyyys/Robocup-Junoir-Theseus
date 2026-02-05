@@ -47,8 +47,8 @@ void fwd(double dist){ // in mm
     motorC->setSpeed(255);
     motorD->setSpeed(255);
     if(read_color() == -1){
-      //Do you mean  t.wall[plannedMoveDir] = true
-      t.wall[plannedMoveDir] == true;
+      //Do you mean  t.setWall(plannedMoveDir, true)
+      t.setWall(plannedMoveDir, true);
       blacktoggle = true;
       while(encoderCountA >= 0 && encoderCountB >= 0){
         motorA->run(BACKWARD);
