@@ -221,7 +221,7 @@ void loop(){
         stepForward(currentDir, x_pos, y_pos);
       }
       else{
-        state = BACKPEDAL
+        state = BACKPEDAL;
         break;
       }
       
