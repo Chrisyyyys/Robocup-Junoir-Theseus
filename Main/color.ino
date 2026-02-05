@@ -28,7 +28,7 @@ int read_color(){
   
   tcs.setInterrupt(true);  // turn on LED
 
-  delay(60);  // takes 50ms to read
+  delay(50);  // takes 50ms to read
 
   tcs.getRGB(&red, &green, &blue);
   

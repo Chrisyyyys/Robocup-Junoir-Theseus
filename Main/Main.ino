@@ -212,7 +212,7 @@ void loop(){
       // 3) drive one tile
       fwd(TILE_MM);
       // 4) update robot position
-      if(blacktoggle = false){
+      if(blacktoggle == false){
         stepForward(currentDir, x_pos, y_pos);
       }
       else{
@@ -238,6 +238,7 @@ void loop(){
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       Serial.println(plannedTurnDeg);
       state = EXECUTE_MOVE;
+      blacktoggle = false;
       break;
     }
   }
