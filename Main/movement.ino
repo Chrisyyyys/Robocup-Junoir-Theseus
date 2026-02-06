@@ -75,6 +75,15 @@ void fwd(double dist){ // in mm
 
 }
 
+
+// relative turn helper: converts relative command to absolute heading target.
+void turnRelative(double deltaAngle){
+  double target = myGyro.heading() + deltaAngle;
+  while(target >= 360) target -= 360;
+  while(target < 0) target += 360;
+  absoluteturn(target);
+}
+
 // absolute turning
 void absoluteturn(double angle){ 
   // create PID instance.
