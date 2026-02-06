@@ -164,6 +164,7 @@ void loop(){
       break;
       */
       state = UPDATE_MAP; // next state.
+      break;
     }
 
 
@@ -207,13 +208,14 @@ void loop(){
       delay(500);
       //update currentDir
       currentDir = plannedMoveDir;
-      // 2) mark edges on map BEFORE moving
-      markEdgeBothWays(x_pos, y_pos, currentDir);
-      // 3) drive one tile
+      
+      
+      // 2) drive one tile
       fwd(TILE_MM);
-      // 4) update robot position
+      // 3) update robot position
       if(blacktoggle == false){
         stepForward(currentDir, x_pos, y_pos);
+        markEdgeBothWays(x_pos, y_pos, currentDir);
       }
       else{
         state = BACKPEDAL;
