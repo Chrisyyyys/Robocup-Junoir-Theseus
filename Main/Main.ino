@@ -204,16 +204,15 @@ void loop(){
 
     case EXECUTE_MOVE: {
      
-      absoluteturn(plannedTurnDeg);
+      turnRelative(plannedTurnDeg);
       delay(500);
       //update currentDir
       currentDir = plannedMoveDir;
-      
-      
       // 2) drive one tile
       fwd(TILE_MM);
-      // 3) update robot position
+      // 3) update map + robot position only on successful move
       if(blacktoggle == false){
+        markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos);
         markEdgeBothWays(x_pos, y_pos, currentDir);
       }
