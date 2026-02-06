@@ -13,6 +13,7 @@ enum Direction {
 enum TileTypes {
   BLANK = 0,
   BLUE  = 1,
+  CHECKPOINT =2
 
 };
 
@@ -25,7 +26,7 @@ struct Tile {
   //first 4 bit is wall, last 4 bit is edge
   //set amount of bits
   Bitset<16> bitset;
-
+  TileTypes tileType;
   public:
   //get and set functions
   bool getWall(unsigned dir)
@@ -55,11 +56,17 @@ struct Tile {
   bool setFully(bool stat){
     bitset.set(9,stat);
   }
+  TileType getType(){
+    return tileType;
+  }
+  TileType setType(TileType type){
+    tileType=type;
+  }
 
   //bool wall[4];
   //bool edge[4];
 
-  TileTypes tileType;
+  
   //bool tileType
   //bool victim;
 
