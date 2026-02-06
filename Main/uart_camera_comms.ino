@@ -187,7 +187,7 @@ void detect(){ // the robot goes forward until it detects something( does not re
   motorB->run(BACKWARD);
   motorC->run(BACKWARD);
   motorD->run(BACKWARD);
-  while(encoderCountA > 0 & encoderCountB > 0){
+  while(encoderCountA > 0 && encoderCountB > 0){
     motorA->setSpeed(150);
     motorB->setSpeed(150);
     motorC->setSpeed(150);
