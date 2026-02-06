@@ -55,7 +55,7 @@ char classes[6] = {'H','S','U','R','Y','G'};
 
 
 // map size variables
-const int MAP_SIZE=30;
+const int MAP_SIZE=20;
 Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
 
 //states that the robot will be in
