@@ -25,7 +25,7 @@ void initializeMap() {
         mapGrid[x][y].setWall(d, false);
         mapGrid[x][y].setEdge(d, false);
       }
-      mapGrid[x][y].tileType = BLANK;
+      mapGrid[x][y].setType(BLANK);
     }
   }
 }
