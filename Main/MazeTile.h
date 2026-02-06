@@ -62,6 +62,12 @@ struct Tile {
   TileType setType(TileType type){
     tileType=type;
   }
+  bool getVictim(){
+    return bitset.get(10);
+  }
+  bool setVictim(bool vic){
+    bitset.set(10,vic);
+  }
 
   //bool wall[4];
   //bool edge[4];
