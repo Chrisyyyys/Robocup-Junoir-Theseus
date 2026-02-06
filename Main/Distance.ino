@@ -122,6 +122,8 @@ int measure(int sensor){
     return sensors[4].readRangeContinuousMillimeters();
     
   }
+
+  return -1;
 }
 // detects wall in a direction( 0 is north, 1 is east, etc..) If output = 0, there is a wall.
 // realtive directions(local).
@@ -129,7 +131,7 @@ int detectWall(int dir){
   if(dir == 0){ // check if there is a wall at north
     int a = measure(1);
     int b = measure(7);
-    if((a<MIN_DIST&&a!=-1&a!=8191)||(b<MIN_DIST&b!=-1&b!=8191)){
+    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
       return 0; // there is a wall.
     }
     else{
@@ -139,7 +141,7 @@ int detectWall(int dir){
   if(dir == 1){
     int a = measure(2);
     int b = measure(3);
-    if((a<MIN_DIST&a!=-1&a!=8191)||(b<MIN_DIST&b!=-1&b!=8191)){
+    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
       return 0;
     }
     else{
@@ -167,6 +169,8 @@ int detectWall(int dir){
     }
     
   }
+
+  return 1;
 }
 
 void parallel(){
@@ -218,7 +222,6 @@ void parallel(){
     }
   }
 }
-
 
 
 
