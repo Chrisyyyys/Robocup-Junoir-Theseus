@@ -26,7 +26,7 @@ int read_color(){
 
   tcs.getRawData(&r, &g, &b, &c);
   
-  tcs.setInterrupt(true);  // turn on LED
+  tcs.setInterrupt(false);  // turn on LED
 
   delay(50);  // takes 50ms to read
 

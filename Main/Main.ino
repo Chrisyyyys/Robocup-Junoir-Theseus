@@ -41,8 +41,8 @@ const int encoderPin_A_B = 5;
 const int encoderPin_B_A = 2;
 const int encoderPin_B_B = 4; 
 // encoder counters
-int encoderCountB;
-int encoderCountA;
+volatile long encoderCountB = 0;
+volatile long encoderCountA = 0;
 // wheel cpr
 const double wheel_cpr = 5; // 20/4
 //gear ratio
@@ -203,6 +203,11 @@ void loop(){
 
 
     case EXECUTE_MOVE: {
+      Tile &t = mapGrid[x_pos][y_pos];
+      if (t.getWall(plannedMoveDir)) {
+        state = SENSE_TILE;
+        break;
+      }
      
       turnRelative(plannedTurnDeg);
       delay(500);
@@ -212,8 +217,16 @@ void loop(){
       fwd(TILE_MM);
       // 3) update map + robot position only on successful move
       if(blacktoggle == false){
-        markEdgeBothWays(x_pos, y_pos, currentDir);
-        stepForward(currentDir, x_pos, y_pos);
+        int nx = x_pos;
+        int ny = y_pos;
+        stepForward(currentDir, nx, ny);
+        if (inBounds(nx, ny)) {
+          markEdgeBothWays(x_pos, y_pos, currentDir);
+          x_pos = nx;
+          y_pos = ny;
+        } else {
+          mapGrid[x_pos][y_pos].setWall(currentDir, true);
+        }
       }
       else{
         state = BACKPEDAL;

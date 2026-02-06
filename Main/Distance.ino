@@ -37,7 +37,6 @@ void init_dist() {
  
   for(int i = 0; i<7; i++){
     myMux.setPort(i);
-    sensors[i].setAddress(0x30); // conflict with TCS34725 for some reason.
     delay(10);
     if(!sensors[i].init()){
       Serial.println("Sensor "+String(i)+" failed to initialize");
