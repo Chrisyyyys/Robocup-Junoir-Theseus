@@ -8,7 +8,7 @@ private:
     static constexpr unsigned W = 8; // bits per uint8_t
     static constexpr unsigned WORDS = (size + W - 1) / W;
 
-    char mem[WORDS]{}; // zero-initialized
+    unsigned char mem[WORDS]{}; // zero-initialized
 
 public:
     bool get(unsigned i) const
@@ -24,10 +24,10 @@ public:
         if (i >= size) return;                    // or throw/assert
         const unsigned word = i / W;
         const unsigned bit  = i % W;
-        const char mask = static_cast<char>(1u << bit);
+        const unsigned char mask = static_cast<unsigned char>(1u << bit);
 
         if (b) mem[word] |= mask;
-        else   mem[word] &= static_cast<char>(~mask);
+        else   mem[word] &= static_cast<unsigned char>(~mask);
     }
 };
 
