@@ -164,6 +164,7 @@ void loop(){
       break;
       */
       state = UPDATE_MAP; // next state.
+      break;
     }
 
 
@@ -213,6 +214,7 @@ void loop(){
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos);
+        markEdgeBothWays(x_pos, y_pos, currentDir);
       }
       else{
         state = BACKPEDAL;
