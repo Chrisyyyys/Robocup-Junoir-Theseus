@@ -33,39 +33,39 @@ struct Tile {
   {
     return bitset.get(dir);
   }
-  bool setWall(unsigned dir,bool stat){
+  void setWall(unsigned dir,bool stat){
     bitset.set(dir, stat);
   }
   //+4 is index to the target bit
   bool getEdge(unsigned dir){
     return bitset.get(dir+4);
   }
-  bool setEdge(unsigned dir,bool stat){
+  void setEdge(unsigned dir,bool stat){
     bitset.set(dir+4, stat);
   }
   bool getDiscovered(){
     return bitset.get(8);
   }
 
-  bool setDiscovered(bool stat){
+  void setDiscovered(bool stat){
     bitset.set(8,stat);
   }
   bool getFully(){
     return bitset.get(9);
   }
-  bool setFully(bool stat){
+  void setFully(bool stat){
     bitset.set(9,stat);
   }
-  TileType getType(){
+  TileTypes getType(){
     return tileType;
   }
-  TileType setType(TileType type){
+  void setType(TileTypes type){
     tileType=type;
   }
   bool getVictim(){
     return bitset.get(10);
   }
-  bool setVictim(bool vic){
+  void setVictim(bool vic){
     bitset.set(10,vic);
   }
 
@@ -82,4 +82,3 @@ struct Tile {
 Direction opposite(Direction d);
 
 #endif
-
