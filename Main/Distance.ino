@@ -176,51 +176,60 @@ int detectWall(int dir){
 void parallel(){
   if(detectWall(1) == 0){
     if(measure(2)-measure(3)>0){
-      while(abs(measure(2)-measure(3))>10){
+      while(abs(measure(2)-measure(3))>3){
         
         motorB->run(BACKWARD);
         motorD->run(BACKWARD);
-        motorA->setSpeed(50);
-        motorB->setSpeed(50);
-        motorC->setSpeed(50);
-        motorD->setSpeed(50);
+        motorA->setSpeed(100);
+        motorB->setSpeed(100);
+        motorC->setSpeed(100);
+        motorD->setSpeed(100);
       }
       Serial.println("paralleled");
     }
     else if(measure(2)-measure(3)<0) {
-      while(abs(measure(2)-measure(3))>10){
+      while(abs(measure(2)-measure(3))>3){
+        
         motorA->run(BACKWARD);
         motorC->run(BACKWARD);
-        motorA->setSpeed(50);
-        motorB->setSpeed(50);
-        motorC->setSpeed(50);
-        motorD->setSpeed(50);
+        motorA->setSpeed(100);
+        motorB->setSpeed(100);
+        motorC->setSpeed(100);
+        motorD->setSpeed(100);
       }
     }
   }
-  else if(detectWall(2) == 0){
+  else if(detectWall(3) == 0){
     if(measure(6)-measure(5)>0){
-      while(abs(measure(6)-measure(5))>10){
+      while(abs(measure(6)-measure(5))>3){
         motorA->run(BACKWARD);
         motorC->run(BACKWARD);
-        motorA->setSpeed(50);
-        motorB->setSpeed(50);
-        motorC->setSpeed(50);
-        motorD->setSpeed(50);
+        motorA->setSpeed(100);
+        motorB->setSpeed(100);
+        motorC->setSpeed(100);
+        motorD->setSpeed(100);
       }
     }
     else if(measure(6)-measure(5)<0){
-      while(abs(measure(6)-measure(5))>10){
+      while(abs(measure(6)-measure(5))>3){
         motorB->run(BACKWARD);
         motorD->run(BACKWARD);
-        motorA->setSpeed(50);
-        motorB->setSpeed(50);
-        motorC->setSpeed(50);
-        motorD->setSpeed(50);
+        motorA->setSpeed(100);
+        motorB->setSpeed(100);
+        motorC->setSpeed(100);
+        motorD->setSpeed(100);
       }
       
     }
   }
+  motorA->run(FORWARD);
+  motorB->run(FORWARD);
+  motorC->run(FORWARD);
+  motorD->run(FORWARD);
+  motorA->setSpeed(0);
+  motorB->setSpeed(0);
+  motorC->setSpeed(0);
+  motorD->setSpeed(0);
 }
 
 

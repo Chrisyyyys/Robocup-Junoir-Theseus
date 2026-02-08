@@ -111,11 +111,18 @@ Direction pickNextDirection() {
 
 int turnNeededDeg(Direction direction) {
   // Compute relative turn from current heading to target heading.
+  /*
   int diff = (static_cast<int>(direction) - static_cast<int>(currentDir) + 4) % 4;
   if (diff == 0) return 0;
   if (diff == 1) return 90;
   if (diff == 2) return 180;
   return -90; // diff == 3, turn left
+  */
+  if (direction == 0) return 0;
+  if (direction == 1) return 90;
+  if (direction == 2) return 180;
+  return 270; // diff==3
+
 }
 /*
 void returnToStart(x,y){

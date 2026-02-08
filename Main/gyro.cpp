@@ -20,6 +20,6 @@ void gyro::init_Gyro(){
 double gyro::heading(){
   sensors_event_t event; bno.getEvent(&event);
   float heading = (double)event.orientation.x;
-  
+  if (abs(360-heading)< 5) heading = 0; // wraparound
   return heading;
 }

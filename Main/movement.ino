@@ -41,7 +41,8 @@ void init_drive(){
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   Tile &t = mapGrid[x_pos][y_pos];
-  while(encoderCountA<= pulses && encoderCountB <= pulses){
+  int a = measure(7); int b = measure(1);
+  while((encoderCountA<= pulses && encoderCountB <= pulses)&&(abs(measure(7)-a) <= dist&&abs(measure(1)-b) <= dist)){
     motorA->setSpeed(255);
     motorB->setSpeed(255);
     motorC->setSpeed(255);
@@ -77,12 +78,14 @@ void fwd(double dist){ // in mm
 
 
 // relative turn helper: converts relative command to absolute heading target.
+/*
 void turnRelative(double deltaAngle){
   double target = myGyro.heading() + deltaAngle;
   while(target >= 360) target -= 360;
   while(target < 0) target += 360;
   absoluteturn(target);
 }
+*/
 
 // absolute turning
 void absoluteturn(double angle){ 
@@ -92,17 +95,23 @@ void absoluteturn(double angle){
  
   
   double current_angle=myGyro.heading();
+  
+  double init_angle = current_angle;
+  Serial.println(current_angle);
    // create timer to cut of turning
   timer myTimer;
+
   if(angle - current_angle > 0){
     motorB->run(BACKWARD);
     motorD->run(BACKWARD);
     while(true){
       if(angle-current_angle<=0 && current_angle < 190) break;
-      if(myTimer.getTime() > 4*1000000) break;
+      
+      if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break;
       current_angle = myGyro.heading();
       
       MOTORSPEED = myPID.getPID(angle-current_angle);
+      
       motorA->setSpeed(constrain(MOTORSPEED,20,255));
       motorB->setSpeed(constrain(MOTORSPEED,20,255));
       motorC->setSpeed(constrain(MOTORSPEED,20,255));
@@ -114,7 +123,7 @@ void absoluteturn(double angle){
     motorC->run(BACKWARD);
     while(true){
       if(angle-current_angle>=0 && current_angle > 170) break;
-      if(myTimer.getTime() > 4*1000000) break;
+      if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break;
       current_angle = myGyro.heading();
       
       MOTORSPEED = myPID.getPID(current_angle-angle);

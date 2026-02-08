@@ -67,7 +67,7 @@ enum RobotState {
   EXECUTE_MOVE,
   BACKPEDAL
 };
-
+const int POWERPIN = 41;
 // initialize 
 
 Direction currentDir = NORTH;     // robot heading in map coords (0..3)
@@ -81,6 +81,7 @@ bool blacktoggle = false;
 
 
 void setup(){
+  pinMode(POWERPIN,41);
   Serial.begin(115200);
   Serial2.begin(115200);
   Serial3.begin(115200);
@@ -94,24 +95,6 @@ void setup(){
   
   init_color();
   init_drive();
-  
-  /*
-  delay(500);
-  delay(200);
-  fwd(300);
-  delay(200);
-  turn(90);
-  delay(200);
-  fwd(300);
-  delay(200);
-  turn(180);
-  delay(200);
-  fwd(300);
-  delay(200);
-  turn(-90);
-  delay(200);
-  fwd(300);
-  */
   //detect();
   //initialize map
   initializeMap();
@@ -121,33 +104,18 @@ void setup(){
   currentDir = NORTH;
   state = SENSE_TILE;
   
-
+  
  
 }
 
 void loop(){
   static bool wallF, wallR, wallB, wallL;
-
-
-
-
   switch (state) {
-
-
-
-
     case SENSE_TILE: {
       // Read for walls
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
-
-
       // Tile type
-     
-
-
-
-
       // Victim quick check (optional)
       /*
       int vL =
@@ -155,21 +123,13 @@ void loop(){
       if (vL != -1 || vR != -1) {
         state = VICTIM_SIGNAL;
         break;
-      }
-
-
-
-
+  
       state = UPDATE_MAP;
       break;
       */
       state = UPDATE_MAP; // next state.
       break;
     }
-
-
-
-
     case UPDATE_MAP: {
       writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
       updateFullyExploredAt(x_pos, y_pos);
@@ -186,25 +146,16 @@ void loop(){
       state = UPDATE_MAP;  // continue
       break;
     }
-
-
-
-
     case PLAN_NEXT: {
       plannedMoveDir = pickNextDirection();
-      Serial.println(plannedMoveDir);
+     
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-      Serial.println(plannedTurnDeg);
+     
       state = EXECUTE_MOVE;
       break;
     }
-
-
-
-
     case EXECUTE_MOVE: {
-     
-      turnRelative(plannedTurnDeg);
+      absoluteturn(plannedTurnDeg);
       delay(500);
       //update currentDir
       currentDir = plannedMoveDir;
@@ -219,8 +170,9 @@ void loop(){
         state = BACKPEDAL;
         break;
       }
-      
       delay(200);
+      parallel();
+      delay(100);
       // safety clamp
       /*
       if (!inBounds(x_pos, y_pos)) {
@@ -234,19 +186,12 @@ void loop(){
     }
     case BACKPEDAL: {
       plannedMoveDir = pickNextDirection();
-      Serial.println(plannedMoveDir);
+     
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-      Serial.println(plannedTurnDeg);
+     
       state = EXECUTE_MOVE;
       blacktoggle = false;
       break;
     }
   }
- 
-  //delay(1000);
-
- 
-  
-  
-  
 }
