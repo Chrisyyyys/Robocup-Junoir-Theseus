@@ -121,6 +121,8 @@ int measure(int sensor){
     return sensors[4].readRangeContinuousMillimeters();
     
   }
+
+  return -1;
 }
 // detects wall in a direction( 0 is north, 1 is east, etc..) If output = 0, there is a wall.
 // realtive directions(local).
@@ -128,7 +130,7 @@ int detectWall(int dir){
   if(dir == 0){ // check if there is a wall at north
     int a = measure(1);
     int b = measure(7);
-    if((a<MIN_DIST&&a!=-1&a!=8191)||(b<MIN_DIST&b!=-1&b!=8191)){
+    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
       return 0; // there is a wall.
     }
     else{
@@ -138,7 +140,7 @@ int detectWall(int dir){
   if(dir == 1){
     int a = measure(2);
     int b = measure(3);
-    if((a<MIN_DIST&a!=-1&a!=8191)||(b<MIN_DIST&b!=-1&b!=8191)){
+    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
       return 0;
     }
     else{
@@ -166,12 +168,15 @@ int detectWall(int dir){
     }
     
   }
+
+  return 1;
 }
 
 void parallel(){
   if(detectWall(1) == 0){
     if(measure(2)-measure(3)>0){
-      while(abs(measure(2)-measure(3))>3){
+      while(abs(measure(2)-measure(3))>10){
+        
         motorB->run(BACKWARD);
         motorD->run(BACKWARD);
         motorA->setSpeed(50);
@@ -182,7 +187,7 @@ void parallel(){
       Serial.println("paralleled");
     }
     else if(measure(2)-measure(3)<0) {
-      while(abs(measure(2)-measure(3))>3){
+      while(abs(measure(2)-measure(3))>10){
         motorA->run(BACKWARD);
         motorC->run(BACKWARD);
         motorA->setSpeed(50);
@@ -194,7 +199,7 @@ void parallel(){
   }
   else if(detectWall(2) == 0){
     if(measure(6)-measure(5)>0){
-      while(abs(measure(6)-measure(5))>3){
+      while(abs(measure(6)-measure(5))>10){
         motorA->run(BACKWARD);
         motorC->run(BACKWARD);
         motorA->setSpeed(50);
@@ -204,7 +209,7 @@ void parallel(){
       }
     }
     else if(measure(6)-measure(5)<0){
-      while(abs(measure(6)-measure(5))>3){
+      while(abs(measure(6)-measure(5))>10){
         motorB->run(BACKWARD);
         motorD->run(BACKWARD);
         motorA->setSpeed(50);
@@ -216,7 +221,6 @@ void parallel(){
     }
   }
 }
-
 
 
 

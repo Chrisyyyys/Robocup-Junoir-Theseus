@@ -40,12 +40,34 @@ void init_drive(){
 }
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
-  while(encoderCountA<= pulses && encoderCountB <= pulses){
+  Tile &t = mapGrid[x_pos][y_pos];
+  while(encoderCountA<= pulses || encoderCountB <= pulses){
     motorA->setSpeed(255);
     motorB->setSpeed(255);
     motorC->setSpeed(255);
     motorD->setSpeed(255);
+    delay(1);
+    if(read_color() == -1){
+      //Do you mean  t.setWall(plannedMoveDir, true)
+      t.setWall(plannedMoveDir, true);
+      blacktoggle = true;
+      while(encoderCountA > 0 || encoderCountB > 0){
+        motorA->run(BACKWARD);
+        motorB->run(BACKWARD);
+        motorC->run(BACKWARD);
+        motorD->run(BACKWARD);
+        motorA->setSpeed(150);
+        motorB->setSpeed(150);
+        motorC->setSpeed(150);
+        motorD->setSpeed(150);
+      }
+      break;
+    }
   }
+  motorA->run(FORWARD);
+  motorB->run(FORWARD);
+  motorC->run(FORWARD);
+  motorD->run(FORWARD);
   motorA->setSpeed(0);
   motorB->setSpeed(0);
   motorC->setSpeed(0);
@@ -53,88 +75,48 @@ void fwd(double dist){ // in mm
   encoderCountA = 0; encoderCountB = 0;
 
 }
-void turn(double angle){ 
-  // create PID instance.
-  PID myPID(10,0,0.3); 
-  double MOTORSPEED = 0;
-  // create timer to cut of turning
-  timer myTimer;
-  myGyro.resetHeading();
-  double current_angle=myGyro.heading();
-  Serial.println("beginning heading");
-  Serial.println(current_angle);
-  if(angle > 0){ // right turn
-    motorB->run(BACKWARD);
-    motorD->run(BACKWARD);
-    while(true){
-      if(current_angle>=angle&& current_angle<170) break; // anti wraparound
-      if(myTimer.getTime() > 2*1000000) break;
-      Serial.println(current_angle);
-      current_angle = myGyro.heading();
-      MOTORSPEED = myPID.getPID(angle-current_angle);
-      motorA->setSpeed(constrain(MOTORSPEED,20,255));
-      motorB->setSpeed(constrain(MOTORSPEED,20,255));
-      motorC->setSpeed(constrain(MOTORSPEED,20,255));
-      motorD->setSpeed(constrain(MOTORSPEED,20,255));
-    }
-  }
-  else if(angle<0){
-    motorA->run(BACKWARD);
-    motorC->run(BACKWARD);
-    while(true){
-      if(current_angle<360+angle&&current_angle>170) break; // anti wraparound
-      if(myTimer.getTime() > 2*1000000) break;
-      current_angle = myGyro.heading();
-      Serial.println(current_angle);
-      MOTORSPEED = myPID.getPID(current_angle-(360+angle));
-      motorA->setSpeed(constrain(MOTORSPEED,0,255));
-      motorB->setSpeed(constrain(MOTORSPEED,0,255));
-      motorC->setSpeed(constrain(MOTORSPEED,0,255));
-      motorD->setSpeed(constrain(MOTORSPEED,0,255));
-    }
-  }
-  Serial.println("finished turning");
-  motorA->setSpeed(0);
-  motorB->setSpeed(0);
-  motorC->setSpeed(0);
-  motorD->setSpeed(0);
-  motorA->run(FORWARD);
-  motorB->run(FORWARD);
-  motorC->run(FORWARD);
-  motorD->run(FORWARD);
-  encoderCountA = 0; encoderCountB = 0; // reset encoder counters.
+
+
+// relative turn helper: converts relative command to absolute heading target.
+void turnRelative(double deltaAngle){
+  double target = myGyro.heading() + deltaAngle;
+  while(target >= 360) target -= 360;
+  while(target < 0) target += 360;
+  absoluteturn(target);
 }
+
 // absolute turning
 void absoluteturn(double angle){ 
-  // create PID instance.
   PID myPID(10,0,0.3); 
   double MOTORSPEED = 0;
-  // create timer to cut of turning
   timer myTimer;
-  double current_angle=myGyro.heading();
-  if(angle - current_angle > 0){
-    while(true){
-      if(angle-current_angle<=0 && current_angle < 190) break;
-      if(myTimer.getTime() > 2*1000000) break;
-      current_angle = myGyro.heading();
-      MOTORSPEED = myPID.getPID(angle-current_angle);
-      motorA->setSpeed(constrain(MOTORSPEED,20,255));
-      motorB->setSpeed(constrain(MOTORSPEED,20,255));
-      motorC->setSpeed(constrain(MOTORSPEED,20,255));
-      motorD->setSpeed(constrain(MOTORSPEED,20,255));
+
+  while(true){
+    double current_angle = myGyro.heading();
+    double error = angle - current_angle;
+    if (error > 180) error -= 360;
+    if (error < -180) error += 360;
+
+    if (abs(error) <= 2) break;
+    if (myTimer.getTime() > 4*1000000) break;
+
+    if(error > 0){
+      motorB->run(BACKWARD);
+      motorD->run(BACKWARD);
+      motorA->run(FORWARD);
+      motorC->run(FORWARD);
+    } else {
+      motorA->run(BACKWARD);
+      motorC->run(BACKWARD);
+      motorB->run(FORWARD);
+      motorD->run(FORWARD);
     }
-  } 
-  else if(angle-current_angle<0) {
-    while(true){
-      if(angle-current_angle>=0 && current_angle > 170) break;
-      if(myTimer.getTime() > 2*1000000) break;
-      current_angle = myGyro.heading();
-      MOTORSPEED = myPID.getPID(current_angle-angle);
-      motorA->setSpeed(constrain(MOTORSPEED,20,255));
-      motorB->setSpeed(constrain(MOTORSPEED,20,255));
-      motorC->setSpeed(constrain(MOTORSPEED,20,255));
-      motorD->setSpeed(constrain(MOTORSPEED,20,255));
-    }
+
+    MOTORSPEED = myPID.getPID(abs(error));
+    motorA->setSpeed(constrain(MOTORSPEED,20,255));
+    motorB->setSpeed(constrain(MOTORSPEED,20,255));
+    motorC->setSpeed(constrain(MOTORSPEED,20,255));
+    motorD->setSpeed(constrain(MOTORSPEED,20,255));
   }
   
   Serial.println("finished turning");
