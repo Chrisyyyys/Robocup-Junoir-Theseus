@@ -28,7 +28,7 @@ int read_color(){
   
   tcs.setInterrupt(false);  // turn on LED
 
-  delay(50);  // takes 50ms to read
+  delay(60);  // takes 50ms to read
 
   tcs.getRGB(&red, &green, &blue);
   
@@ -38,13 +38,13 @@ int read_color(){
  
   if(c<BLACK_THRESHOLD){
     Serial.println(c);
-    return -1; // black
+    return -1;
   }
   if(blue>green&&blue>red){
-    return 1; // blue
+    return 1;
   }
   else{
-    return 0; // good
+    return 0;
   }
 }
   

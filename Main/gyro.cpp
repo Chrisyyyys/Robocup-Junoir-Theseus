@@ -2,11 +2,14 @@
 #include <Arduino.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <math.h>
+
+
 
 extern Adafruit_BNO055 bno;
 
 gyro::gyro(){
-  
+  double headingOffset = 0;
 }
 void gyro::init_Gyro(){
   if(!bno.begin()){
@@ -16,10 +19,16 @@ void gyro::init_Gyro(){
     Serial.println("gyro found");
   }
 }
-
+void gyro::resetHeading(){
+  sensors_event_t event; bno.getEvent(&event);
+  headingOffset = (float)event.orientation.x;
+}
 double gyro::heading(){
   sensors_event_t event; bno.getEvent(&event);
-  float heading = (double)event.orientation.x;
-  
+  float heading = (double)event.orientation.x-headingOffset;
+  Serial.println("heading");
+  Serial.println(heading);
+  //heading = (heading+ 360)%360;
+  heading = fmod(heading + 360.0, 360.0);
   return heading;
 }

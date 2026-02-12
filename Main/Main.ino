@@ -10,7 +10,7 @@
 #include "PID.h"
 #include "timer.h"
 #include "gyro.h"
-#define MIN_DIST 150         // mm (tune this)
+#define MIN_DIST 120          // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_C_THRESHOLD 120 // color clear-channel threshold (tune)
 
@@ -41,8 +41,8 @@ const int encoderPin_A_B = 5;
 const int encoderPin_B_A = 2;
 const int encoderPin_B_B = 4; 
 // encoder counters
-volatile long encoderCountB = 0;
-volatile long encoderCountA = 0;
+int encoderCountB;
+int encoderCountA;
 // wheel cpr
 const double wheel_cpr = 5; // 20/4
 //gear ratio
@@ -64,8 +64,7 @@ enum RobotState {
   UPDATE_MAP,
   VICTIM_SIGNAL,
   PLAN_NEXT,
-  EXECUTE_MOVE,
-  BACKPEDAL
+  EXECUTE_MOVE
 };
 
 // initialize 
@@ -76,7 +75,7 @@ Direction plannedMoveDir = NORTH; // absolute direction robot will move next
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
-bool blacktoggle = false;
+
 
 
 
@@ -117,10 +116,14 @@ void setup(){
   initializeMap();
   x_pos=MAP_SIZE/2;
   y_pos=MAP_SIZE/2;
-  mapGrid[x_pos][y_pos].setDiscovered(true); 
+  mapGrid[x_pos][y_pos].discovered = true; 
   currentDir = NORTH;
   state = SENSE_TILE;
-  
+  turn(90);
+  delay(500);
+  Serial.println("turning left");
+  turn(-90);
+  delay(500);
 
  
 }
@@ -129,11 +132,7 @@ void loop(){
   static bool wallF, wallR, wallB, wallL;
 
 
-
-
   switch (state) {
-
-
 
 
     case SENSE_TILE: {
@@ -141,11 +140,8 @@ void loop(){
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
 
-
       // Tile type
      
-
-
 
 
       // Victim quick check (optional)
@@ -158,16 +154,11 @@ void loop(){
       }
 
 
-
-
       state = UPDATE_MAP;
       break;
       */
       state = UPDATE_MAP; // next state.
-      break;
     }
-
-
 
 
     case UPDATE_MAP: {
@@ -179,6 +170,9 @@ void loop(){
     case VICTIM_SIGNAL: {
       /*
       // store + do your actual signaling / camera confirm
+      mapGrid[x_pos][y_pos].victim = true;
+
+
       // If you want the full routines:
       detectCam1();
       detectCam2();
@@ -188,51 +182,24 @@ void loop(){
     }
 
 
-
-
     case PLAN_NEXT: {
       plannedMoveDir = pickNextDirection();
-      Serial.println(plannedMoveDir);
-      plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-      Serial.println(plannedTurnDeg);
+      plannedTurnDeg = turnNeededDeg(currentDir, plannedMoveDir);
       state = EXECUTE_MOVE;
       break;
     }
 
 
-
-
     case EXECUTE_MOVE: {
-      Tile &t = mapGrid[x_pos][y_pos];
-      if (t.getWall(plannedMoveDir)) {
-        state = SENSE_TILE;
-        break;
-      }
-     
-      turnRelative(plannedTurnDeg);
+      Serial.print(plannedTurnDeg);//figure out motors stuff
+      turn(plannedTurnDeg);
       delay(500);
-      //update currentDir
-      currentDir = plannedMoveDir;
-      // 2) drive one tile
+      // 2) mark edges on map BEFORE moving
+      markEdgeBothWays(x_pos, y_pos, currentDir);
+      // 3) drive one tile
       fwd(TILE_MM);
-      // 3) update map + robot position only on successful move
-      if(blacktoggle == false){
-        int nx = x_pos;
-        int ny = y_pos;
-        stepForward(currentDir, nx, ny);
-        if (inBounds(nx, ny)) {
-          markEdgeBothWays(x_pos, y_pos, currentDir);
-          x_pos = nx;
-          y_pos = ny;
-        } else {
-          mapGrid[x_pos][y_pos].setWall(currentDir, true);
-        }
-      }
-      else{
-        state = BACKPEDAL;
-        break;
-      }
-      
+      // 4) update robot position
+      stepForward(currentDir, x_pos, y_pos);
       delay(200);
       // safety clamp
       /*
@@ -245,21 +212,13 @@ void loop(){
       break;
      
     }
-    case BACKPEDAL: {
-      plannedMoveDir = pickNextDirection();
-      Serial.println(plannedMoveDir);
-      plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-      Serial.println(plannedTurnDeg);
-      state = EXECUTE_MOVE;
-      blacktoggle = false;
-      break;
-    }
   }
  
   //delay(1000);
-
  
   
   
   
 }
+
+

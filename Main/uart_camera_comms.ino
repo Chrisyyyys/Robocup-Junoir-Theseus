@@ -107,11 +107,10 @@ void detectCam1(){ // doesn't return anything.
   }
   else{
     //nothing right now.
-    unsigned long start = millis();
     while(Serial2.available()<5){
-      if (millis() - start > 500) return;
+      continue;
     }
-    return;
+    detectCam2();
   }
 
 }
@@ -146,11 +145,10 @@ void detectCam2(){
   }
   else{
     //nothing right now.
-    unsigned long start = millis();
     while(Serial3.available()<5){
-      if (millis() - start > 500) return;
+      continue;
     }
-    return;
+    detectCam2();
   }
 
 }
@@ -189,7 +187,7 @@ void detect(){ // the robot goes forward until it detects something( does not re
   motorB->run(BACKWARD);
   motorC->run(BACKWARD);
   motorD->run(BACKWARD);
-  while(encoderCountA > 0 || encoderCountB > 0){
+  while(encoderCountA > 0 & encoderCountB > 0){
     motorA->setSpeed(150);
     motorB->setSpeed(150);
     motorC->setSpeed(150);
