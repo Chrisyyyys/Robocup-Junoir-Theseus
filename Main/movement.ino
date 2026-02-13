@@ -2,10 +2,10 @@ void encoder_update_B(){ // why the fuck is it high when going backwards???
   int encoderState = digitalRead(encoderPin_B_B);
   
   if(encoderState == LOW){
-    encoderCountB++;
+    encoderCountB--;
   }
   else{
-    encoderCountB--;
+    encoderCountB++;
   }
 }
 void encoder_update_A(){ // every pulse consists for once going up and once going down.
@@ -47,15 +47,26 @@ void fwd(double dist){ // in mm
     motorB->setSpeed(255);
     motorC->setSpeed(255);
     motorD->setSpeed(255);
+    if(read_color() == 1){
+      motorA->setSpeed(0);
+      motorB->setSpeed(0);
+      motorC->setSpeed(0);
+      motorD->setSpeed(0);
+      delay(5000)
+    }
     if(read_color() == -1){
+      delay(100);
+      
       //Do you mean  t.setWall(plannedMoveDir, true)
       t.setWall(plannedMoveDir, true);
       blacktoggle = true;
+      
       while(encoderCountA >= 0 && encoderCountB >= 0){
         motorA->run(BACKWARD);
         motorB->run(BACKWARD);
         motorC->run(BACKWARD);
         motorD->run(BACKWARD);
+       
         motorA->setSpeed(150);
         motorB->setSpeed(150);
         motorC->setSpeed(150);

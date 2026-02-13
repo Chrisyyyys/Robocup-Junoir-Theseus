@@ -1,8 +1,8 @@
 
 void init_color(){
   //tcs.setInterrupt(true);
-  
-  digitalWrite(POWERPIN,HIGH);
+  myMux.setPort(TCS_PORT);
+  //digitalWrite(POWERPIN,HIGH);
   //tcs.enable();
   if (tcs.begin()) {
     Serial.println("Found tcs34725 sensor");
@@ -16,7 +16,7 @@ void init_color(){
   }
 }
 int read_color(){
- 
+  myMux.setPort(TCS_PORT);          
   
   float red, green, blue;
   uint16_t r, g, b, c, colorTemp, lux;
@@ -30,8 +30,8 @@ int read_color(){
   tcs.getRGB(&red, &green, &blue);
   
   
-  tcs.setInterrupt(true);  // turn off LED
-  //Serial.println(c);
+  
+  Serial.println(c);
  
   if(c<BLACK_THRESHOLD){
     Serial.println(c);
@@ -39,6 +39,9 @@ int read_color(){
   }
   if(blue>green&&blue>red){
     return 1; // blue
+  }
+  if(red>green&&red>blue){
+    return 2;
   }
   else{
     return 0; // good

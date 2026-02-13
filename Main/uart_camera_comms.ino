@@ -157,6 +157,7 @@ void detect(){ // the robot goes forward until it detects something( does not re
   bool victimAtRight = false;
   clearSerialBuffer1();
   clearSerialBuffer2();
+  timer myTimer;
   while(true){
     if(readSerial1() != -1){
       victimAtLeft = true;
@@ -166,6 +167,7 @@ void detect(){ // the robot goes forward until it detects something( does not re
       victimAtRight = true;
       break;
     }
+    if(myTimer.getTime >= 1000000*1.5) break; // give 1.5 seconds to detect.
     motorA->setSpeed(150);
     motorB->setSpeed(150);
     motorC->setSpeed(150);

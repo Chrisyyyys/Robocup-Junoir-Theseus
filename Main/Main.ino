@@ -12,7 +12,7 @@
 #include "gyro.h"
 #define MIN_DIST 150         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define BLACK_C_THRESHOLD 120 // color clear-channel threshold (tune)
+#define BLACK_THRESHOLD 120 // color clear-channel threshold (tune)
 
 #include "MazeTile.h"
 
@@ -23,9 +23,10 @@ QWIICMUX myMux;
 #define PCA_ADDR 0x60
 #define MODE1    0x00
 #define ALLCALL_BIT 0x01  // MODE1 bit0
-#define BLACK_THRESHOLD BLACK_C_THRESHOLD   
+
 // set up color sensor
-Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X);
+#define TCS_PORT 7
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X);
 // set up gyro
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 gyro myGyro;
@@ -109,7 +110,7 @@ void setup(){
 }
 
 void loop(){
-  static bool wallF, wallR, wallB, wallL;
+ static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
       // Read for walls
@@ -123,7 +124,7 @@ void loop(){
       if (vL != -1 || vR != -1) {
         state = VICTIM_SIGNAL;
         break;
-  
+ 
       state = UPDATE_MAP;
       break;
       */
@@ -194,4 +195,5 @@ void loop(){
       break;
     }
   }
+
 }
