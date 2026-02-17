@@ -38,6 +38,17 @@ void init_drive(){
   // initialize gyro
   myGyro.init_Gyro();
 }
+// full stop
+void fullstop(){
+  motorA->run(FORWARD);
+  motorB->run(FORWARD);
+  motorC->run(FORWARD);
+  motorD->run(FORWARD);
+  motorA->setSpeed(0);
+  motorB->setSpeed(0);
+  motorC->setSpeed(0);
+  motorD->setSpeed(0);
+}
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   Tile &t = mapGrid[x_pos][y_pos];
@@ -52,9 +63,10 @@ void fwd(double dist){ // in mm
       motorB->setSpeed(0);
       motorC->setSpeed(0);
       motorD->setSpeed(0);
-      delay(5000)
+      delay(5000);
     }
     if(read_color() == -1){
+      fullstop();
       delay(100);
       
       //Do you mean  t.setWall(plannedMoveDir, true)
@@ -75,14 +87,7 @@ void fwd(double dist){ // in mm
       break;
     }
   }
-  motorA->run(FORWARD);
-  motorB->run(FORWARD);
-  motorC->run(FORWARD);
-  motorD->run(FORWARD);
-  motorA->setSpeed(0);
-  motorB->setSpeed(0);
-  motorC->setSpeed(0);
-  motorD->setSpeed(0);
+  fullstop();
   encoderCountA = 0; encoderCountB = 0;
 
 }
@@ -146,14 +151,7 @@ void absoluteturn(double angle){
   }
   
   Serial.println("finished turning");
-  motorA->setSpeed(0);
-  motorB->setSpeed(0);
-  motorC->setSpeed(0);
-  motorD->setSpeed(0);
-  motorA->run(FORWARD);
-  motorB->run(FORWARD);
-  motorC->run(FORWARD);
-  motorD->run(FORWARD);
+  fullstop();
   encoderCountA = 0; encoderCountB = 0; // reset encoder counters.
 }
 // full stop function

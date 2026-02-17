@@ -68,6 +68,13 @@ enum RobotState {
   EXECUTE_MOVE,
   BACKPEDAL
 };
+enum Steps {
+  TURN,
+  PARALLEL,
+  BACKTRACK,
+  FWD,
+};
+Steps steps = TURN;
 const int POWERPIN = 41;
 // initialize 
 
@@ -110,90 +117,6 @@ void setup(){
 }
 
 void loop(){
- static bool wallF, wallR, wallB, wallL;
-  switch (state) {
-    case SENSE_TILE: {
-      // Read for walls
-      readWallsRel(wallF, wallR, wallB, wallL);
-      delay(500);
-      // Tile type
-      // Victim quick check (optional)
-      /*
-      int vL =
-      int vR = readSerial2();
-      if (vL != -1 || vR != -1) {
-        state = VICTIM_SIGNAL;
-        break;
- 
-      state = UPDATE_MAP;
-      break;
-      */
-      state = UPDATE_MAP; // next state.
-      break;
-    }
-    case UPDATE_MAP: {
-      writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
-      updateFullyExploredAt(x_pos, y_pos);
-      state = PLAN_NEXT;
-      break;
-    }
-    case VICTIM_SIGNAL: {
-      /*
-      // store + do your actual signaling / camera confirm
-      // If you want the full routines:
-      detectCam1();
-      detectCam2();
-      */
-      state = UPDATE_MAP;  // continue
-      break;
-    }
-    case PLAN_NEXT: {
-      plannedMoveDir = pickNextDirection();
-     
-      plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-     
-      state = EXECUTE_MOVE;
-      break;
-    }
-    case EXECUTE_MOVE: {
-      absoluteturn(plannedTurnDeg);
-      delay(500);
-      //update currentDir
-      currentDir = plannedMoveDir;
-      // 2) drive one tile
-      fwd(TILE_MM);
-      // 3) update map + robot position only on successful move
-      if(blacktoggle == false){
-        markEdgeBothWays(x_pos, y_pos, currentDir);
-        stepForward(currentDir, x_pos, y_pos);
-      }
-      else{
-        state = BACKPEDAL;
-        break;
-      }
-      delay(200);
-      parallel();
-      delay(100);
-      // safety clamp
-      /*
-      if (!inBounds(x_pos, y_pos)) {
-        //stop motors or do something
-      }
-      */
-      //parallel();
-      state = SENSE_TILE;
-      break;
-     
-    }
-    case BACKPEDAL: {
-      plannedMoveDir = pickNextDirection();
-     
-      plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-     
-      state = EXECUTE_MOVE;
-      blacktoggle = false;
-      break;
-    }
-  }
+ obstacleavoidance(1);
 
 }

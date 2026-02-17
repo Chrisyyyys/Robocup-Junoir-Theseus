@@ -222,14 +222,122 @@ void parallel(){
       
     }
   }
-  motorA->run(FORWARD);
-  motorB->run(FORWARD);
-  motorC->run(FORWARD);
-  motorD->run(FORWARD);
-  motorA->setSpeed(0);
-  motorB->setSpeed(0);
-  motorC->setSpeed(0);
-  motorD->setSpeed(0);
+  fullstop();
+}
+int leftright = 0;
+void obstacleavoidance(int leftright){
+  while(true){
+    switch (steps){
+      case TURN:{
+        if(leftright == 1){ // obstacle at left
+          while(measure(7) < MIN_DIST){
+            motorB->run(BACKWARD);
+            motorD->run(BACKWARD);
+            motorA->setSpeed(255);
+            motorB->setSpeed(255);
+            motorC->setSpeed(255);
+            motorD->setSpeed(255);
+          }
+        }
+        else if(leftright == 0){ // obstacle at right
+          while(measure(1)<MIN_DIST){
+            motorA->run(BACKWARD);
+            motorC->run(BACKWARD);
+            motorA->setSpeed(255);
+            motorB->setSpeed(255);
+            motorC->setSpeed(255);
+            motorD->setSpeed(255);
+          }
+          
+        }
+        fullstop();
+        delay(200);
+        motorA->setSpeed(255);
+        motorB->setSpeed(255);
+        motorC->setSpeed(255);
+        motorD->setSpeed(255);
+        delay(300);
+        fullstop();
+        delay(200);
+        steps = PARALLEL;
+        break;
+      }
+      case PARALLEL:{
+        PID pid(1,0,0.1);
+        if(leftright == 1){
+          while(measure(2)>=25){
+            double increment = pid.getPID(abs(measure(3)-measure(2))); // get close to the edge as possible.
+            motorA->setSpeed(constrain(100-increment,30,255));
+            motorB->setSpeed(constrain(100+increment,30,225));
+            motorC->setSpeed(constrain(100-increment,30,255));
+            motorD->setSpeed(constrain(100+increment,30,225));
+            if(abs(measure(3)-measure(2))<=5){
+              fullstop();
+              delay(200);
+              steps = FWD;
+              goto end;
+            }
+          }
+          
+        }
+        else if(leftright == 0){
+          while(measure(6)>=25){
+            double increment = pid.getPID(abs(measure(6)-measure(5))); // get close to the edge as possible.
+            motorA->setSpeed(constrain(100-increment,30,255));
+            motorB->setSpeed(constrain(100+increment,30,225));
+            motorC->setSpeed(constrain(100-increment,30,225));
+            motorD->setSpeed(constrain(100+increment,30,225));
+            if(abs(measure(6)-measure(5))<=5){
+              fullstop();
+              delay(200);
+              steps = FWD;
+              goto end;
+            }
+          }
+          
+        }
+        steps = BACKTRACK; // put switch step in front of end( always meet it)
+        break;
+        end:
+          break;
+        
+      }
+      case BACKTRACK:{
+        Serial.println("backtracking");
+        if(leftright == 0){
+          while(measure(6)<=25){
+            motorA->run(BACKWARD);
+            motorB->run(BACKWARD);
+            motorC->run(BACKWARD);
+            motorD->run(BACKWARD);
+            motorA->setSpeed(100);
+            motorB->setSpeed(100);
+            motorC->setSpeed(100);
+            motorD->setSpeed(100);
+          }
+        }
+        else if(leftright == 1){
+          while(measure(2)<=40){
+            motorA->run(BACKWARD);
+            motorB->run(BACKWARD);
+            motorC->run(BACKWARD);
+            motorD->run(BACKWARD);
+            motorA->setSpeed(100);
+            motorB->setSpeed(100);
+            motorC->setSpeed(100);
+            motorD->setSpeed(100);
+          }
+        }
+        fullstop();
+        delay(200);
+        steps = PARALLEL;
+        break;
+      }
+      case FWD:{
+        fwd(300);
+      }
+    }
+  }
 }
 
 
