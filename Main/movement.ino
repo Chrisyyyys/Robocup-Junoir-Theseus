@@ -51,6 +51,7 @@ void fullstop(){
 }
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
+  bool bluetoggle = false;
   Tile &t = mapGrid[x_pos][y_pos];
   int a = measure(7); int b = measure(1);
   while((encoderCountA<= pulses && encoderCountB <= pulses)&&(abs(measure(7)-a) <= dist&&abs(measure(1)-b) <= dist)){
@@ -58,14 +59,16 @@ void fwd(double dist){ // in mm
     motorB->setSpeed(255);
     motorC->setSpeed(255);
     motorD->setSpeed(255);
-    if(read_color() == 1){
+    int color = read_color()
+    if(color == 1 && bluetoggle = false){
+      bluetoggle = true
       motorA->setSpeed(0);
       motorB->setSpeed(0);
       motorC->setSpeed(0);
       motorD->setSpeed(0);
       delay(5000);
     }
-    if(read_color() == -1){
+    if(color == -1){
       fullstop();
       delay(100);
       
@@ -84,8 +87,9 @@ void fwd(double dist){ // in mm
         motorC->setSpeed(150);
         motorD->setSpeed(150);
       }
-      break;
+      
     }
+    break;
   }
   fullstop();
   encoderCountA = 0; encoderCountB = 0;
