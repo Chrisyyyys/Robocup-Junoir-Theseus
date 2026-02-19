@@ -16,6 +16,142 @@ bool inBounds(int x, int y) {
   return x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE;
 }
 
+bool isFullyExplored(Tile &t) {
+  for (int d = 0; d < 4; d++) {
+    if (!t.getWall(d) && !t.getEdge(d)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool isFullyExploredAt(int x, int y) {
+  if (!inBounds(x, y)) return false;
+  return isFullyExplored(mapGrid[x][y]);
+}
+
+void recordVisitedTile(int x, int y) {
+  if (!inBounds(x, y)) return;
+
+  if (historyLen >= MAX_TILE_HISTORY) {
+    for (int i = 1; i < MAX_TILE_HISTORY; i++) {
+      historyX[i - 1] = historyX[i];
+      historyY[i - 1] = historyY[i];
+    }
+    historyLen = MAX_TILE_HISTORY - 1;
+  }
+
+  historyX[historyLen] = x;
+  historyY[historyLen] = y;
+  historyLen++;
+}
+
+bool findLastNotFullyExploredFromHistory(int &targetX, int &targetY) {
+  for (int i = historyLen - 1; i >= 0; i--) {
+    int hx = historyX[i];
+    int hy = historyY[i];
+
+    if (!inBounds(hx, hy)) continue;
+    if (!mapGrid[hx][hy].getDiscovered()) continue;
+
+    if (!isFullyExploredAt(hx, hy)) {
+      targetX = hx;
+      targetY = hy;
+      return true;
+    }
+  }
+  return false;
+}
+
+int bfsPath(int startX, int startY, int targetX, int targetY, Direction outPath[], int maxLen) {
+  if (!inBounds(startX, startY) || !inBounds(targetX, targetY)) return 0;
+  if (!mapGrid[startX][startY].getDiscovered() || !mapGrid[targetX][targetY].getDiscovered()) return 0;
+
+  const int maxNodes = MAP_SIZE * MAP_SIZE;
+  int queueX[maxNodes];
+  int queueY[maxNodes];
+  bool visited[MAP_SIZE][MAP_SIZE];
+  int parentX[MAP_SIZE][MAP_SIZE];
+  int parentY[MAP_SIZE][MAP_SIZE];
+  Direction parentDir[MAP_SIZE][MAP_SIZE];
+
+  for (int x = 0; x < MAP_SIZE; x++) {
+    for (int y = 0; y < MAP_SIZE; y++) {
+      visited[x][y] = false;
+      parentX[x][y] = -1;
+      parentY[x][y] = -1;
+      parentDir[x][y] = NORTH;
+    }
+  }
+
+  int head = 0;
+  int tail = 0;
+  queueX[tail] = startX;
+  queueY[tail] = startY;
+  tail++;
+  visited[startX][startY] = true;
+
+  bool found = false;
+  while (head < tail) {
+    int cx = queueX[head];
+    int cy = queueY[head];
+    head++;
+
+    if (cx == targetX && cy == targetY) {
+      found = true;
+      break;
+    }
+
+    Tile &ct = mapGrid[cx][cy];
+    for (int d = 0; d < 4; d++) {
+      Direction dir = (Direction)d;
+      if (ct.getWall(dir)) continue;
+
+      int nx = cx;
+      int ny = cy;
+      stepForward(dir, nx, ny);
+      if (!inBounds(nx, ny)) continue;
+      if (!mapGrid[nx][ny].getDiscovered()) continue;
+      if (visited[nx][ny]) continue;
+
+      visited[nx][ny] = true;
+      parentX[nx][ny] = cx;
+      parentY[nx][ny] = cy;
+      parentDir[nx][ny] = dir;
+      queueX[tail] = nx;
+      queueY[tail] = ny;
+      tail++;
+    }
+  }
+
+  if (!found) return 0;
+
+  Direction reversePath[maxNodes];
+  int count = 0;
+  int cx = targetX;
+  int cy = targetY;
+
+  while (!(cx == startX && cy == startY)) {
+    if (count >= maxNodes) return 0;
+    Direction stepDir = parentDir[cx][cy];
+    reversePath[count++] = stepDir;
+
+    int px = parentX[cx][cy];
+    int py = parentY[cx][cy];
+    if (px < 0 || py < 0) return 0;
+    cx = px;
+    cy = py;
+  }
+
+  if (count > maxLen) return 0;
+
+  for (int i = 0; i < count; i++) {
+    outPath[i] = reversePath[count - 1 - i];
+  }
+
+  return count;
+}
+
 void initializeMap() {
   for (int x = 0; x < MAP_SIZE; x++) {
     for (int y = 0; y < MAP_SIZE; y++) {
@@ -43,17 +179,7 @@ void markEdgeBothWays(int x, int y, Direction d) {
 // update fullyExplored = all OPEN dirs have been traveled at least once
 void updateFullyExploredAt(int x, int y) {
   Tile &t = mapGrid[x][y];
-  bool allDone = true;
-
-  for (int d = 0; d < 4; d++) {
-    if (t.getWall(d) == false) {     // open
-      if (t.getEdge(d) == false) {   // not traveled yet
-        allDone = false;
-        break;
-      }
-    }
-  }
-  t.setFully(allDone);
+  t.setFully(isFullyExplored(t));
 }
 // 0=front, 1=right, 2=back, 3=left
 void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // references needed here to update the variable values

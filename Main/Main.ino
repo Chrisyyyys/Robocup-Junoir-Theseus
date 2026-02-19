@@ -86,6 +86,17 @@ int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
 bool blacktoggle = false;
 
+const int MAX_TILE_HISTORY = MAP_SIZE * MAP_SIZE * 2;
+int historyX[MAX_TILE_HISTORY];
+int historyY[MAX_TILE_HISTORY];
+int historyLen = 0;
+
+const int MAX_BFS_PATH = MAP_SIZE * MAP_SIZE;
+Direction bfsPathBuffer[MAX_BFS_PATH];
+int bfsPathLen = 0;
+int bfsPathIndex = 0;
+bool followingBfsPath = false;
+
 
 
 void setup(){
@@ -109,6 +120,7 @@ void setup(){
   x_pos=MAP_SIZE/2;
   y_pos=MAP_SIZE/2;
   mapGrid[x_pos][y_pos].setDiscovered(true); 
+  recordVisitedTile(x_pos, y_pos);
   currentDir = NORTH;
   state = SENSE_TILE;
   
@@ -117,7 +129,7 @@ void setup(){
 }
 
 void loop(){
- tatic bool wallF, wallR, wallB, wallL;
+ static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
       // Read for walls
@@ -155,6 +167,37 @@ void loop(){
       break;
     }
     case PLAN_NEXT: {
+      if (followingBfsPath) {
+        if (bfsPathIndex < bfsPathLen) {
+          plannedMoveDir = bfsPathBuffer[bfsPathIndex++];
+          plannedTurnDeg = turnNeededDeg(plannedMoveDir);
+          state = EXECUTE_MOVE;
+          break;
+        }
+        followingBfsPath = false;
+        bfsPathLen = 0;
+        bfsPathIndex = 0;
+      }
+
+      if (isFullyExploredAt(x_pos, y_pos)) {
+        int targetX = x_pos;
+        int targetY = y_pos;
+        bool hasTarget = findLastNotFullyExploredFromHistory(targetX, targetY);
+
+        if (hasTarget && !(targetX == x_pos && targetY == y_pos)) {
+          int newPathLen = bfsPath(x_pos, y_pos, targetX, targetY, bfsPathBuffer, MAX_BFS_PATH);
+          if (newPathLen > 0) {
+            bfsPathLen = newPathLen;
+            bfsPathIndex = 1;
+            followingBfsPath = true;
+            plannedMoveDir = bfsPathBuffer[0];
+            plannedTurnDeg = turnNeededDeg(plannedMoveDir);
+            state = EXECUTE_MOVE;
+            break;
+          }
+        }
+      }
+
       plannedMoveDir = pickNextDirection();
      
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
@@ -173,6 +216,7 @@ void loop(){
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos);
+        recordVisitedTile(x_pos, y_pos);
       }
       else{
         state = BACKPEDAL;
