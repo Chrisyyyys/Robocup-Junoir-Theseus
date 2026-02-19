@@ -57,6 +57,13 @@ char classes[6] = {'H','S','U','R','Y','G'};
 // map size variables
 const int MAP_SIZE=20;
 Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
+const int MAX_HISTORY = MAP_SIZE * MAP_SIZE * 4;
+const int MAX_BFS_PATH = MAP_SIZE * MAP_SIZE;
+
+struct Coord {
+  int8_t x;
+  int8_t y;
+};
 
 //states that the robot will be in
 enum RobotState {
@@ -77,6 +84,12 @@ int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
 bool blacktoggle = false;
+Coord visitedHistory[MAX_HISTORY];
+int visitedHistoryCount = 0;
+Direction bfsPathDirs[MAX_BFS_PATH];
+int bfsPathLen = 0;
+int bfsPathIndex = 0;
+bool bfsActive = false;
 
 
 
@@ -118,6 +131,11 @@ void setup(){
   x_pos=MAP_SIZE/2;
   y_pos=MAP_SIZE/2;
   mapGrid[x_pos][y_pos].setDiscovered(true); 
+  visitedHistoryCount = 0;
+  visitedHistory[visitedHistoryCount++] = {(int8_t)x_pos, (int8_t)y_pos};
+  bfsPathLen = 0;
+  bfsPathIndex = 0;
+  bfsActive = false;
   currentDir = NORTH;
   state = SENSE_TILE;
   
@@ -191,7 +209,27 @@ void loop(){
 
 
     case PLAN_NEXT: {
-      plannedMoveDir = pickNextDirection();
+      if (bfsActive) {
+        if (bfsPathIndex < bfsPathLen) {
+          plannedMoveDir = bfsPathDirs[bfsPathIndex++];
+        } else {
+          bfsActive = false;
+          state = SENSE_TILE;
+          break;
+        }
+      } else if (isFullyExplored(x_pos, y_pos)) {
+        Coord target = findLastNotFullyExploredFromHistory();
+        if (target.x != -1 && !(target.x == x_pos && target.y == y_pos) && bfsPath(x_pos, y_pos, target.x, target.y)) {
+          bfsActive = true;
+          bfsPathIndex = 0;
+          plannedMoveDir = bfsPathDirs[bfsPathIndex++];
+        } else {
+          state = SENSE_TILE;
+          break;
+        }
+      } else {
+        plannedMoveDir = pickNextDirection();
+      }
       Serial.println(plannedMoveDir);
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       Serial.println(plannedTurnDeg);
@@ -224,6 +262,9 @@ void loop(){
           markEdgeBothWays(x_pos, y_pos, currentDir);
           x_pos = nx;
           y_pos = ny;
+          if (visitedHistoryCount < MAX_HISTORY) {
+            visitedHistory[visitedHistoryCount++] = {(int8_t)x_pos, (int8_t)y_pos};
+          }
         } else {
           mapGrid[x_pos][y_pos].setWall(currentDir, true);
         }

@@ -16,6 +16,113 @@ bool inBounds(int x, int y) {
   return x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE;
 }
 
+
+bool isFullyExplored(int x, int y) {
+  Tile &t = mapGrid[x][y];
+  for (int d = 0; d < 4; d++) {
+    if (!t.getWall(d) && !t.getEdge(d)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Coord findLastNotFullyExploredFromHistory() {
+  for (int i = visitedHistoryCount - 1; i >= 0; i--) {
+    int hx = visitedHistory[i].x;
+    int hy = visitedHistory[i].y;
+    if (inBounds(hx, hy) && mapGrid[hx][hy].getDiscovered() && !isFullyExplored(hx, hy)) {
+      return {(int8_t)hx, (int8_t)hy};
+    }
+  }
+  return {-1, -1};
+}
+
+bool bfsPath(int startX, int startY, int targetX, int targetY) {
+  bool visited[MAP_SIZE][MAP_SIZE];
+  int16_t parentX[MAP_SIZE][MAP_SIZE];
+  int16_t parentY[MAP_SIZE][MAP_SIZE];
+
+  for (int x = 0; x < MAP_SIZE; x++) {
+    for (int y = 0; y < MAP_SIZE; y++) {
+      visited[x][y] = false;
+      parentX[x][y] = -1;
+      parentY[x][y] = -1;
+    }
+  }
+
+  Coord queue[MAP_SIZE * MAP_SIZE];
+  int qHead = 0;
+  int qTail = 0;
+
+  queue[qTail++] = {(int8_t)startX, (int8_t)startY};
+  visited[startX][startY] = true;
+
+  while (qHead < qTail) {
+    Coord c = queue[qHead++];
+    if (c.x == targetX && c.y == targetY) break;
+
+    Tile &t = mapGrid[c.x][c.y];
+    for (int d = 0; d < 4; d++) {
+      if (t.getWall(d)) continue;
+
+      int nx = c.x;
+      int ny = c.y;
+      stepForward((Direction)d, nx, ny);
+      if (!inBounds(nx, ny)) continue;
+      if (!mapGrid[nx][ny].getDiscovered()) continue;
+      if (visited[nx][ny]) continue;
+
+      visited[nx][ny] = true;
+      parentX[nx][ny] = c.x;
+      parentY[nx][ny] = c.y;
+      queue[qTail++] = {(int8_t)nx, (int8_t)ny};
+    }
+  }
+
+  if (!visited[targetX][targetY]) {
+    bfsPathLen = 0;
+    return false;
+  }
+
+  Coord rev[MAX_BFS_PATH];
+  int revLen = 0;
+  int cx = targetX;
+  int cy = targetY;
+
+  while (!(cx == startX && cy == startY) && revLen < MAX_BFS_PATH) {
+    rev[revLen++] = {(int8_t)cx, (int8_t)cy};
+    int px = parentX[cx][cy];
+    int py = parentY[cx][cy];
+    if (px < 0 || py < 0) {
+      bfsPathLen = 0;
+      return false;
+    }
+    cx = px;
+    cy = py;
+  }
+
+  bfsPathLen = 0;
+  int px = startX;
+  int py = startY;
+  for (int i = revLen - 1; i >= 0; i--) {
+    int nx = rev[i].x;
+    int ny = rev[i].y;
+    if (nx == px && ny == py + 1) bfsPathDirs[bfsPathLen++] = NORTH;
+    else if (nx == px + 1 && ny == py) bfsPathDirs[bfsPathLen++] = EAST;
+    else if (nx == px && ny == py - 1) bfsPathDirs[bfsPathLen++] = SOUTH;
+    else if (nx == px - 1 && ny == py) bfsPathDirs[bfsPathLen++] = WEST;
+    else {
+      bfsPathLen = 0;
+      return false;
+    }
+    px = nx;
+    py = ny;
+  }
+
+  return bfsPathLen > 0;
+}
+
 void initializeMap() {
   for (int x = 0; x < MAP_SIZE; x++) {
     for (int y = 0; y < MAP_SIZE; y++) {
