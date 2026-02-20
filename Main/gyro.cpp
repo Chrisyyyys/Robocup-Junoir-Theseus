@@ -23,3 +23,8 @@ double gyro::heading(){
   if (abs(360-heading)< 5) heading = 0; // wraparound
   return heading;
 }
+double gyro::yaw_heading(){
+  sensors_event_t event; bno.getEvent(&event);
+  float yaw_heading = (double)event.orientation.x;
+  return yaw_heading;
+}
