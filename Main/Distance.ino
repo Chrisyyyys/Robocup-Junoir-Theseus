@@ -89,37 +89,51 @@ int measure(int sensor){
   
   if(sensor ==1){
     myMux.setPort(2);
-    return sensors[2].readRangeContinuousMillimeters();
+    int value = sensors[2].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
       
   }
   if(sensor == 2){
     myMux.setPort(1);
-    return sensors[1].readRangeContinuousMillimeters();
+    int value = sensors[1].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
       
   }
   if(sensor==3){
     myMux.setPort(0);
-    return sensors[0].readRangeContinuousMillimeters();
+    int value = sensors[0].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
     
   }
   if(sensor==4){
     myMux.setPort(3);
-    return sensors[3].readRangeContinuousMillimeters();
+    int value = sensors[3].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
     
   }
   if(sensor==5){
     myMux.setPort(6);
-    return sensors[6].readRangeContinuousMillimeters();
+    int value = sensors[6].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
     
   }
   if(sensor==6){
     myMux.setPort(5);
-    return sensors[5].readRangeContinuousMillimeters();
+    int value = sensors[5].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
     
   }
   if(sensor==7){
     myMux.setPort(4);
-    return sensors[4].readRangeContinuousMillimeters();
+    int value = sensors[4].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
     
   }
 

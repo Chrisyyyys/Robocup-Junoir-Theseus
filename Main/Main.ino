@@ -12,7 +12,7 @@
 #include "gyro.h"
 #define MIN_DIST 150         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define BLACK_THRESHOLD 120 // color clear-channel threshold (tune)
+#define BLACK_THRESHOLD 60 // color clear-channel threshold (tune)
 
 #include "MazeTile.h"
 
@@ -85,6 +85,7 @@ int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
 bool blacktoggle = false;
+bool bluetoggle = false;
 
 
 
@@ -112,12 +113,13 @@ void setup(){
   currentDir = NORTH;
   state = SENSE_TILE;
   
+
   
  
 }
 
 void loop(){
- tatic bool wallF, wallR, wallB, wallL;
+  static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
       // Read for walls
@@ -170,6 +172,11 @@ void loop(){
       // 2) drive one tile
       fwd(TILE_MM);
       // 3) update map + robot position only on successful move
+      if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
+        fullstop();
+        delay(5000);
+      }
+      bluetoggle = false;
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos);
@@ -202,6 +209,9 @@ void loop(){
       break;
     }
   }
+
+
+
 
 
 }
