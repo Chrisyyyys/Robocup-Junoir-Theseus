@@ -188,54 +188,79 @@ int detectWall(int dir){
 }
 
 void parallel(){
-  if(detectWall(1) == 0){
-    if(measure(2)-measure(3)>0){
-      while(abs(measure(2)-measure(3))>3){
-        
-        motorB->run(BACKWARD);
-        motorD->run(BACKWARD);
-        motorA->setSpeed(100);
-        motorB->setSpeed(100);
-        motorC->setSpeed(100);
-        motorD->setSpeed(100);
-      }
+  const int PARALLEL_TOL_MM = 3;
+  const int PARALLEL_SPEED = 90;
+  const unsigned long PARALLEL_TIMEOUT_MS = 700;
+  const double MAX_PARALLEL_ROTATION_DEG = 45.0;
+
+  int sensorA = -1;
+  int sensorB = -1;
+
+  // Prefer aligning to the right wall; otherwise use left wall.
+  if (detectWall(1) == 0) {
+    sensorA = 2;
+    sensorB = 3;
+  } else if (detectWall(3) == 0) {
+    sensorA = 6;
+    sensorB = 5;
+  } else {
+    fullstop();
+    return;
+  }
+
+  unsigned long startMs = millis();
+  double startHeading = myGyro.heading();
+
+  while (true) {
+    int a = measure(sensorA);
+    int b = measure(sensorB);
+
+    // Invalid reading: stop correction to avoid runaway spinning.
+    if (a < 0 || b < 0) {
+      Serial.println("parallel: invalid sensor reading, aborting correction");
+      break;
+    }
+
+    int diff = a - b;
+    if (abs(diff) <= PARALLEL_TOL_MM) {
       Serial.println("paralleled");
+      break;
     }
-    else if(measure(2)-measure(3)<0) {
-      while(abs(measure(2)-measure(3))>3){
-        
-        motorA->run(BACKWARD);
-        motorC->run(BACKWARD);
-        motorA->setSpeed(100);
-        motorB->setSpeed(100);
-        motorC->setSpeed(100);
-        motorD->setSpeed(100);
-      }
+
+    double headingDelta = myGyro.heading() - startHeading;
+    while (headingDelta > 180.0) headingDelta -= 360.0;
+    while (headingDelta < -180.0) headingDelta += 360.0;
+
+    if (abs(headingDelta) >= MAX_PARALLEL_ROTATION_DEG) {
+      Serial.println("parallel: rotation limit hit, aborting correction");
+      break;
     }
+
+    if ((millis() - startMs) >= PARALLEL_TIMEOUT_MS) {
+      Serial.println("parallel: timeout, aborting correction");
+      break;
+    }
+
+    // Reset wheel directions then apply correction turn.
+    motorA->run(FORWARD);
+    motorB->run(FORWARD);
+    motorC->run(FORWARD);
+    motorD->run(FORWARD);
+
+    if (diff > 0) {
+      motorB->run(BACKWARD);
+      motorD->run(BACKWARD);
+    } else {
+      motorA->run(BACKWARD);
+      motorC->run(BACKWARD);
+    }
+
+    motorA->setSpeed(PARALLEL_SPEED);
+    motorB->setSpeed(PARALLEL_SPEED);
+    motorC->setSpeed(PARALLEL_SPEED);
+    motorD->setSpeed(PARALLEL_SPEED);
   }
-  else if(detectWall(3) == 0){
-    if(measure(6)-measure(5)>0){
-      while(abs(measure(6)-measure(5))>3){
-        motorA->run(BACKWARD);
-        motorC->run(BACKWARD);
-        motorA->setSpeed(100);
-        motorB->setSpeed(100);
-        motorC->setSpeed(100);
-        motorD->setSpeed(100);
-      }
-    }
-    else if(measure(6)-measure(5)<0){
-      while(abs(measure(6)-measure(5))>3){
-        motorB->run(BACKWARD);
-        motorD->run(BACKWARD);
-        motorA->setSpeed(100);
-        motorB->setSpeed(100);
-        motorC->setSpeed(100);
-        motorD->setSpeed(100);
-      }
-      
-    }
-  }
+
   fullstop();
 }
 int leftright = 0;
@@ -353,7 +378,6 @@ void obstacleavoidance(int leftright){
     }
   }
 }
-
 
 
 
