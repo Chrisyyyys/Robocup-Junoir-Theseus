@@ -226,7 +226,7 @@ void parallel(){
       Serial.println("paralleled");
       break;
     }
-
+    // break out after rotation.
     double headingDelta = myGyro.heading() - startHeading;
     while (headingDelta > 180.0) headingDelta -= 360.0;
     while (headingDelta < -180.0) headingDelta += 360.0;

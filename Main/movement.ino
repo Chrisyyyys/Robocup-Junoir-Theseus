@@ -56,7 +56,7 @@ void fwd(double dist){ // in mm
   Tile &t = mapGrid[x_pos][y_pos];
   int a = measure(7); int b = measure(1);
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
-  while((encoderCountA<= pulses && encoderCountB <= pulses)&&(climbtoggle=true||(abs(measure(7)-a) <= dist&&abs(measure(1)-b) <= dist))&&black!=true){
+  while((encoderCountA<= pulses && encoderCountB <= pulses)&&(climbtoggle==true||(abs(measure(7)-a) <= dist&&abs(measure(1)-b) <= dist))&&black!=true){
     motorA->setSpeed(255);
     motorB->setSpeed(255);
     motorC->setSpeed(255);
