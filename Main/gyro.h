@@ -8,6 +8,7 @@ class gyro{
     void init_Gyro();
     double heading();
     double yaw_heading();
+    int modulus(int);
     
 
 };

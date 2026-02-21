@@ -59,6 +59,7 @@ char classes[6] = {'H','S','U','R','Y','G'};
 const int MAP_SIZE=20;
 Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
 
+
 //states that the robot will be in
 enum RobotState {
   SENSE_TILE,
@@ -84,8 +85,12 @@ Direction plannedMoveDir = NORTH; // absolute direction robot will move next
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
+// black blue toggles
 bool blacktoggle = false;
 bool bluetoggle = false;
+// victim toggles
+bool victimtoggle = false;
+
 
 
 
@@ -125,18 +130,6 @@ void loop(){
       // Read for walls
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
-      // Tile type
-      // Victim quick check (optional)
-      /*
-      int vL =
-      int vR = readSerial2();
-      if (vL != -1 || vR != -1) {
-        state = VICTIM_SIGNAL;
-        break;
- 
-      state = UPDATE_MAP;
-      break;
-      */
       state = UPDATE_MAP; // next state.
       break;
     }
@@ -147,6 +140,12 @@ void loop(){
       break;
     }
     case VICTIM_SIGNAL: {
+      if(mapGrid[x_pos][y_pos].getVictim() == false){
+        detect();
+        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+        victimtoggle = false;
+      }
+      // label victim in square.
       /*
       // store + do your actual signaling / camera confirm
       // If you want the full routines:

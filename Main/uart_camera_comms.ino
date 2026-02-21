@@ -161,10 +161,12 @@ void detect(){ // the robot goes forward until it detects something( does not re
   while(true){
     if(readSerial1() != -1){
       victimAtLeft = true;
+      victimtoggle = true;
       break;
     }
     if(readSerial2() != -1){
       victimAtRight = true;
+      victimtoggle = true;
       break;
     }
     if(myTimer.getTime() >= 1000000*1.5) break; // give 1.5 seconds to detect.
