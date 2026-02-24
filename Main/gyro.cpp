@@ -29,7 +29,7 @@ double gyro::heading(){
 }
 double gyro::yaw_heading(){
   sensors_event_t event; bno.getEvent(&event);
-  float yaw_heading = (double)event.orientation.x;
+  float yaw_heading = (double)event.orientation.y;
   
   return yaw_heading;
 }

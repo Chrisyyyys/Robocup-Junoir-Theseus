@@ -90,15 +90,30 @@ bool blacktoggle = false;
 bool bluetoggle = false;
 // victim toggles
 bool victimtoggle = false;
+// LED pins
+const int pinHarmed = 41;
+const int pinStable = 37;
+const int pinUnharmed = 29;
 
 
 
 
 void setup(){
-  pinMode(POWERPIN,41);
+  // initialize LED puns
+  
+  pinMode(pinHarmed,OUTPUT);
+  pinMode(pinStable,OUTPUT);
+  pinMode(pinUnharmed,OUTPUT);
+  // begin UART communication.
   Serial.begin(115200);
   Serial2.begin(115200);
   Serial3.begin(115200);
+  uint8_t cause = MCUSR;
+  MCUSR = 0;
+
+  
+  Serial.print("Reset cause: ");
+  Serial.println(cause, BIN);
   Wire.begin();
   disableAllCall();
   myMux.begin();
@@ -118,9 +133,6 @@ void setup(){
   currentDir = NORTH;
   state = SENSE_TILE;
   
-
-  
- 
 }
 
 void loop(){
@@ -208,9 +220,8 @@ void loop(){
       break;
     }
   }
-
-
-
+  
+  
 
 
 }

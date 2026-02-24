@@ -56,15 +56,15 @@ void fwd(double dist){ // in mm
   Tile &t = mapGrid[x_pos][y_pos];
   int a = measure(7); int b = measure(1);
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
-  while((encoderCountA<= pulses && encoderCountB <= pulses)&&(climbtoggle==true||(abs(measure(7)-a) <= dist&&abs(measure(1)-b) <= dist))&&black!=true){
+  while((encoderCountA<= pulses && encoderCountB <= pulses)&&black!=true){
     motorA->setSpeed(255);
     motorB->setSpeed(255);
     motorC->setSpeed(255);
     motorD->setSpeed(255);
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
-    if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 25) climbtoggle = true; // ignore distance
-    while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 25){
+    while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
+      Serial.println("climbing");
       detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
       detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
       motorA->setSpeed(255);
