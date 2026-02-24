@@ -30,6 +30,6 @@ double gyro::heading(){
 double gyro::yaw_heading(){
   sensors_event_t event; bno.getEvent(&event);
   float yaw_heading = (double)event.orientation.y;
-  
+  if (abs(360-yaw_heading)< 5) heading = 0;
   return yaw_heading;
 }
