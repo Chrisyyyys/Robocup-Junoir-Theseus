@@ -195,14 +195,17 @@ void parallel(){
 
   int sensorA = -1;
   int sensorB = -1;
+  int wallDir;
 
   // Prefer aligning to the right wall; otherwise use left wall.
   if (detectWall(1) == 0) {
     sensorA = 2;
     sensorB = 3;
+    wallDir=1;
   } else if (detectWall(3) == 0) {
     sensorA = 6;
     sensorB = 5;
+    wallDir=3;
   } else {
     fullstop();
     return;
@@ -247,7 +250,7 @@ void parallel(){
     motorC->run(FORWARD);
     motorD->run(FORWARD);
 
-    if (diff > 0) {
+    if ((diff > 0 && wallDir == 1)||(diff < 0 && wallDir==3)) {
       motorB->run(BACKWARD);
       motorD->run(BACKWARD);
     } else {
