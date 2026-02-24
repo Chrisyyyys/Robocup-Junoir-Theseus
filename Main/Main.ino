@@ -136,6 +136,7 @@ void setup(){
 }
 
 void loop(){
+
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -219,9 +220,9 @@ void loop(){
       blacktoggle = false;
       break;
     }
-  }
+ }
   
-  
+
 
 
 }
