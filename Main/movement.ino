@@ -51,16 +51,31 @@ void fullstop(){
 }
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
-  
   bool black = false;
+  bool climbtoggle = false;
   Tile &t = mapGrid[x_pos][y_pos];
-  int a = measure(7); int b = measure(1);
-  while((encoderCountA<= pulses && encoderCountB <= pulses)&&(abs(measure(7)-a) <= dist&&abs(measure(1)-b) <= dist)&&black!=true){
+  
+  int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
+  while((encoderCountA<= pulses && encoderCountB <= pulses)&&black!=true){
     motorA->setSpeed(255);
     motorB->setSpeed(255);
     motorC->setSpeed(255);
     motorD->setSpeed(255);
-    Serial.println(encoderCountA);
+    if(measure(1)<=40||measure(7)<=40) break;
+    // check yaw heading
+    // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
+    while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
+      Serial.println("climbing");
+      detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
+      detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
+      motorA->setSpeed(255);
+      motorB->setSpeed(255);
+      motorC->setSpeed(255);
+      motorD->setSpeed(255);
+    }
+    attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING);
+    attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
+
     int color = read_color();
     if(color == 1){
       bluetoggle = true;

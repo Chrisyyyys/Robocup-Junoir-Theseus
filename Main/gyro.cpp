@@ -16,7 +16,11 @@ void gyro::init_Gyro(){
     Serial.println("gyro found");
   }
 }
-
+int gyro::modulus(int val){
+  if(val> 180) {val = val - 360;}
+  else{val = val%360;}
+  return val;
+}
 double gyro::heading(){
   sensors_event_t event; bno.getEvent(&event);
   float heading = (double)event.orientation.x;
@@ -25,6 +29,7 @@ double gyro::heading(){
 }
 double gyro::yaw_heading(){
   sensors_event_t event; bno.getEvent(&event);
-  float yaw_heading = (double)event.orientation.x;
+  float yaw_heading = (double)event.orientation.y;
+  if (abs(360-yaw_heading)< 5) heading = 0;
   return yaw_heading;
 }
