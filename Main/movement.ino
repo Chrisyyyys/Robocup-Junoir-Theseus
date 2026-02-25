@@ -51,38 +51,51 @@ void fullstop(){
 }
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
-  bool black = false;
-  bool climbtoggle = false;
-  Tile &t = mapGrid[x_pos][y_pos];
-  
+  bool black = false; // toggle for black tile
+  bool climbtoggle = false; // toggle for climbing
+  double difference = 0; // centering distance
+  Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
+  PID myPID(0.6,0,0.2);
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   while((encoderCountA<= pulses && encoderCountB <= pulses)&&black!=true){
-    motorA->setSpeed(255);
-    motorB->setSpeed(255);
-    motorC->setSpeed(255);
-    motorD->setSpeed(255);
+    // PID centering
+    difference = center();
+    //Serial.println(center());
+    double adjustment = myPID.getPID(difference);
+    // emergency
     
     if((measure(1)<=50&&measure(1)!=-1)||(measure(7)<=50&&measure(7)!=-1)){
       Serial.println("stopping");
+      Serial.println(measure(1));
+      Serial.println(measure(7));
       fullstop();
       delay(50);
       break;
     }
+    
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
-    while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
-      Serial.println("climbing");
-      detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
-      detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
-      motorA->setSpeed(255);
-      motorB->setSpeed(255);
-      motorC->setSpeed(255);
-      motorD->setSpeed(255);
+    if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
+      while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
+      climbtoggle = true;
+        Serial.println("climbing");
+        detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
+        detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
+        motorA->setSpeed(255);
+        motorB->setSpeed(255);
+        motorC->setSpeed(255);
+        motorD->setSpeed(255);
+      }
+      attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING);
+      attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
     }
-    attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING);
-    attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
-
-    int color = read_color();
+    
+    
+    motorA->setSpeed(200+adjustment);
+    motorC->setSpeed(200+adjustment);
+    motorB->setSpeed(200-adjustment);
+    motorD->setSpeed(200-adjustment);
+    int color = read_color(); // read color
     if(color == 1){
       bluetoggle = true;
     }
@@ -108,6 +121,15 @@ void fwd(double dist){ // in mm
       black = true;
     }
     
+  }
+  // sometimes it barely makes it over the slope
+  if(climbtoggle == true){
+    Serial.println("compensating");
+    motorA->setSpeed(255);
+    motorB->setSpeed(255);
+    motorC->setSpeed(255);
+    motorD->setSpeed(255);
+    delay(200);
   }
   fullstop();
   encoderCountA = 0; encoderCountB = 0;

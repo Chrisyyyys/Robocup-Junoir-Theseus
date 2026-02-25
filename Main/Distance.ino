@@ -271,6 +271,12 @@ void parallel(){
 
   fullstop();
 }
+int center(){
+  int a = measure(2);
+  int b = measure(6);
+  if(a<MIN_DIST && a != -1 && b<MIN_DIST && b != -1) return (measure(2)-measure(6));
+  else return 0;
+}
 int leftright = 0;
 void obstacleavoidance(int leftright){
   while(true){

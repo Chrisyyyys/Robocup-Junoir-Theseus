@@ -10,7 +10,7 @@
 #include "PID.h"
 #include "timer.h"
 #include "gyro.h"
-#define MIN_DIST 150         // mm (tune this)
+#define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 60 // color clear-channel threshold (tune)
 
@@ -132,11 +132,14 @@ void setup(){
   mapGrid[x_pos][y_pos].setDiscovered(true); 
   currentDir = NORTH;
   state = SENSE_TILE;
-  delay(2000);
+  
+  
+  
   
 }
 
 void loop(){
+
   
   
   static bool wallF, wallR, wallB, wallL;
@@ -164,7 +167,9 @@ void loop(){
         if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
         victimtoggle = false;
       }
-     
+      delay(200);
+      parallel();
+      delay(100);
       state = PLAN_NEXT;  // continue
       break;
     }
@@ -178,7 +183,9 @@ void loop(){
     }
     case EXECUTE_MOVE: {
       absoluteturn(plannedTurnDeg);
-      delay(500);
+      delay(200);
+      parallel();
+      delay(100);
       //update currentDir
       currentDir = plannedMoveDir;
       // 2) drive one tile

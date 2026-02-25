@@ -142,6 +142,7 @@ void detectCam2(){
   timer myTimer;
   while(Serial3.available()<5){
     if(myTimer.getTime() > 5*1000000) return;
+    Serial.println(myTimer.getTime());
   }
   for(int i =0; i<5;i++){
     int value = readSerial2();
@@ -165,19 +166,25 @@ void detectCam2(){
 }
 void detect(){ // the robot goes forward until it detects something( does not return)
   fullstop();
-  bool victimAtLeft = false;
-  bool victimAtRight = false;
+  bool victimAtLeft = false; // victim at left
+  bool victimAtRight = false; // victim at right
+  // clear buffers
   clearSerialBuffer1();
   clearSerialBuffer2();
+  // don't detect if there is no wall( prevent misdetection)
+  bool wallAtLeft = false;
+  bool wallAtRight = false;
+  if(measure(2) <MIN_DIST&&measure(2)!=-1) wallAtRight == true;
+  if(measure(6)<MIN_DIST&&measure(6)!=-1) wallAtLeft == true;
   timer myTimer;
   while(true){
-    if(readSerial1() != -1){
+    if(readSerial1() != -1&&wallAtLeft == true){
       Serial.println("left");
       victimAtLeft = true;
       victimtoggle = true;
       break;
     }
-    if(readSerial2() != -1){
+    if(readSerial2() != -1&&wallAtRight == true){
       victimAtRight = true;
       victimtoggle = true;
       break;
