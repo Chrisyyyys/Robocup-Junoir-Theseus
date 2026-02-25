@@ -90,6 +90,7 @@ int measure(int sensor){
   if(sensor ==1){
     myMux.setPort(2);
     int value = sensors[2].readRangeContinuousMillimeters();
+    
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
       
@@ -223,6 +224,9 @@ void parallel(){
       Serial.println("parallel: invalid sensor reading, aborting correction");
       break;
     }
+    if(a>MIN_DIST||b>MIN_DIST){
+      break;
+    }
 
     int diff = a - b;
     if (abs(diff) <= PARALLEL_TOL_MM) {
@@ -230,6 +234,7 @@ void parallel(){
       break;
     }
     // break out after rotation.
+
     double headingDelta = myGyro.heading() - startHeading;
     while (headingDelta > 180.0) headingDelta -= 360.0;
     while (headingDelta < -180.0) headingDelta += 360.0;

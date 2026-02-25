@@ -61,7 +61,13 @@ void fwd(double dist){ // in mm
     motorB->setSpeed(255);
     motorC->setSpeed(255);
     motorD->setSpeed(255);
-    if(measure(1)<=40||measure(7)<=40) break;
+    
+    if((measure(1)<=50&&measure(1)!=-1)||(measure(7)<=50&&measure(7)!=-1)){
+      Serial.println("stopping");
+      fullstop();
+      delay(50);
+      break;
+    }
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
     while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){

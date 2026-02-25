@@ -132,11 +132,13 @@ void setup(){
   mapGrid[x_pos][y_pos].setDiscovered(true); 
   currentDir = NORTH;
   state = SENSE_TILE;
+  delay(2000);
   
 }
 
 void loop(){
-
+  
+  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -149,23 +151,21 @@ void loop(){
     case UPDATE_MAP: {
       writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
       updateFullyExploredAt(x_pos, y_pos);
-      state = PLAN_NEXT;
+      state = VICTIM_SIGNAL;
       break;
     }
     case VICTIM_SIGNAL: {
+      
       if(mapGrid[x_pos][y_pos].getVictim() == false){
-        detect();
+        if(measure(1)>MIN_DIST){
+          detect();
+        }
+        
         if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
         victimtoggle = false;
       }
-      // label victim in square.
-      /*
-      // store + do your actual signaling / camera confirm
-      // If you want the full routines:
-      detectCam1();
-      detectCam2();
-      */
-      state = UPDATE_MAP;  // continue
+     
+      state = PLAN_NEXT;  // continue
       break;
     }
     case PLAN_NEXT: {
@@ -200,13 +200,7 @@ void loop(){
       delay(200);
       parallel();
       delay(100);
-      // safety clamp
-      /*
-      if (!inBounds(x_pos, y_pos)) {
-        //stop motors or do something
-      }
-      */
-      //parallel();
+      
       state = SENSE_TILE;
       break;
      
@@ -221,6 +215,7 @@ void loop(){
       break;
     }
  }
+ 
   
 
 
