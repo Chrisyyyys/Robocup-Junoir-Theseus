@@ -10,6 +10,24 @@ void clearSerialBuffer2() {
     Serial3.read();  // Read and discard one byte from the buffer
   }
 }
+// led
+void flashLED(char victimState){
+  if(victimState == 'H'){
+    digitalWrite(pinHarmed,HIGH);
+    delay(5000);
+  }
+  else if(victimState == 'S'){
+    digitalWrite(pinStable,HIGH);
+    delay(5000);
+  }
+  else{
+    digitalWrite(pinUnharmed,HIGH);
+    delay(5000);
+  }
+  digitalWrite(pinHarmed,LOW);
+  digitalWrite(pinStable,LOW);
+  digitalWrite(pinUnharmed,LOW);
+}
 int readSerial1(){ // 
   char sample;
   int output;
@@ -83,36 +101,36 @@ void detectCam1(){ // doesn't return anything.
   int maxCount = 0;
   char res = 0;
   char output;
-  if(Serial2.available()>=5){
-    Serial.println("letters incoming");
-    
-    for(int i =0; i<5;i++){
-      int value = readSerial1();
-      samples[i] = value;
-      Serial.println(value);
-      
+  timer myTimer;
+  while(Serial2.available()<5){
+    Serial.println(myTimer.getTime());
+    if(myTimer.getTime() > 5*1000000){
+      Serial.println("out of time");
+      return;
     }
-    
-    for(int i=0;i<6;i++){
-      int count = 0;
-      for(int j = 0;j<5;j++){
-        if(samples[j] == i) count++;
-      }
-      if(count > maxCount){
-        maxCount = count;
-        res = classes[i];
-      }
-    }
-    Serial.println(res);
   }
-  else{
-    //nothing right now.
-    while(Serial2.available()<5){
-      continue;
-    }
-    detectCam2();
+  Serial.println("letters incoming");
+  
+  for(int i =0; i<5;i++){
+    int value = readSerial1();
+    samples[i] = value;
+    Serial.println(value);
+    
   }
-
+  
+  for(int i=0;i<6;i++){
+    int count = 0;
+    for(int j = 0;j<5;j++){
+      if(samples[j] == i) count++;
+    }
+    if(count > maxCount){
+      maxCount = count;
+      res = classes[i];
+    }
+  }
+  flashLED(res);
+  
+  return;
 }
 void detectCam2(){
   // read buffer
@@ -121,38 +139,32 @@ void detectCam2(){
   int maxCount = 0;
   char res = 0;
   char output;
-  if(Serial3.available()>=5){
-    Serial.println("letters incoming");
-    
-    for(int i =0; i<5;i++){
-      int value = readSerial2();
-      samples[i] = value;
-      Serial.println(value);
-      
-    }
-    
-    for(int i=0;i<6;i++){
-      int count = 0;
-      for(int j = 0;j<5;j++){
-        if(samples[j] == i) count++;
-      }
-      if(count > maxCount){
-        maxCount = count;
-        res = classes[i];
-      }
-    }
-    Serial.println(res);
+  timer myTimer;
+  while(Serial3.available()<5){
+    if(myTimer.getTime() > 5*1000000) return;
   }
-  else{
-    //nothing right now.
-    while(Serial3.available()<5){
-      continue;
-    }
-    detectCam2();
+  for(int i =0; i<5;i++){
+    int value = readSerial2();
+    samples[i] = value;
+    Serial.println(value);
+    
   }
-
+  
+  for(int i=0;i<6;i++){
+    int count = 0;
+    for(int j = 0;j<5;j++){
+      if(samples[j] == i) count++;
+    }
+    if(count > maxCount){
+      maxCount = count;
+      res = classes[i];
+    }
+  }
+  flashLED(res);
+  return;
 }
 void detect(){ // the robot goes forward until it detects something( does not return)
+  fullstop();
   bool victimAtLeft = false;
   bool victimAtRight = false;
   clearSerialBuffer1();
@@ -160,36 +172,43 @@ void detect(){ // the robot goes forward until it detects something( does not re
   timer myTimer;
   while(true){
     if(readSerial1() != -1){
+      Serial.println("left");
       victimAtLeft = true;
+      victimtoggle = true;
       break;
     }
     if(readSerial2() != -1){
       victimAtRight = true;
+      victimtoggle = true;
       break;
     }
     if(myTimer.getTime() >= 1000000*1.5) break; // give 1.5 seconds to detect.
-    motorA->setSpeed(150);
-    motorB->setSpeed(150);
-    motorC->setSpeed(150);
-    motorD->setSpeed(150);
+    motorA->setSpeed(100);
+    motorB->setSpeed(100);
+    motorC->setSpeed(100);
+    motorD->setSpeed(100);
   }
   motorA->setSpeed(0);
   motorB->setSpeed(0);
   motorC->setSpeed(0);
   motorD->setSpeed(0);
-  delay(500);
+  delay(200);
   if(victimAtLeft == true){
+    clearSerialBuffer1();
     detectCam1();
   }
   else if(victimAtRight == true){
+    clearSerialBuffer2();
     detectCam2();
   }
+  
   // backpedal
   motorA->run(BACKWARD);
   motorB->run(BACKWARD);
   motorC->run(BACKWARD);
   motorD->run(BACKWARD);
-  while(encoderCountA > 0 && encoderCountB > 0){
+  while(encoderCountA > 0){
+    Serial.println("backtracking");
     motorA->setSpeed(150);
     motorB->setSpeed(150);
     motorC->setSpeed(150);

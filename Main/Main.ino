@@ -12,7 +12,7 @@
 #include "gyro.h"
 #define MIN_DIST 150         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define BLACK_THRESHOLD 120 // color clear-channel threshold (tune)
+#define BLACK_THRESHOLD 60 // color clear-channel threshold (tune)
 
 #include "MazeTile.h"
 
@@ -59,6 +59,7 @@ char classes[6] = {'H','S','U','R','Y','G'};
 const int MAP_SIZE=20;
 Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
 
+
 //states that the robot will be in
 enum RobotState {
   SENSE_TILE,
@@ -84,15 +85,35 @@ Direction plannedMoveDir = NORTH; // absolute direction robot will move next
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
+// black blue toggles
 bool blacktoggle = false;
+bool bluetoggle = false;
+// victim toggles
+bool victimtoggle = false;
+// LED pins
+const int pinHarmed = 41;
+const int pinStable = 37;
+const int pinUnharmed = 29;
+
 
 
 
 void setup(){
-  pinMode(POWERPIN,41);
+  // initialize LED puns
+  
+  pinMode(pinHarmed,OUTPUT);
+  pinMode(pinStable,OUTPUT);
+  pinMode(pinUnharmed,OUTPUT);
+  // begin UART communication.
   Serial.begin(115200);
   Serial2.begin(115200);
   Serial3.begin(115200);
+  uint8_t cause = MCUSR;
+  MCUSR = 0;
+
+  
+  Serial.print("Reset cause: ");
+  Serial.println(cause, BIN);
   Wire.begin();
   disableAllCall();
   myMux.begin();
@@ -112,29 +133,16 @@ void setup(){
   currentDir = NORTH;
   state = SENSE_TILE;
   
-  
- 
 }
 
 void loop(){
- tatic bool wallF, wallR, wallB, wallL;
+
+  static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
       // Read for walls
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
-      // Tile type
-      // Victim quick check (optional)
-      /*
-      int vL =
-      int vR = readSerial2();
-      if (vL != -1 || vR != -1) {
-        state = VICTIM_SIGNAL;
-        break;
- 
-      state = UPDATE_MAP;
-      break;
-      */
       state = UPDATE_MAP; // next state.
       break;
     }
@@ -145,6 +153,12 @@ void loop(){
       break;
     }
     case VICTIM_SIGNAL: {
+      if(mapGrid[x_pos][y_pos].getVictim() == false){
+        detect();
+        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+        victimtoggle = false;
+      }
+      // label victim in square.
       /*
       // store + do your actual signaling / camera confirm
       // If you want the full routines:
@@ -170,6 +184,11 @@ void loop(){
       // 2) drive one tile
       fwd(TILE_MM);
       // 3) update map + robot position only on successful move
+      if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
+        fullstop();
+        delay(5000);
+      }
+      bluetoggle = false;
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos);
@@ -201,7 +220,9 @@ void loop(){
       blacktoggle = false;
       break;
     }
-  }
+ }
+  
+
 
 
 }
