@@ -83,30 +83,29 @@ void writeWallsToCurrentTile(bool wallF, bool wallR, bool wallB, bool wallL) {
   // need to mark both ways.
 }
 Direction pickNextDirection() {
-   Tile &t = mapGrid[x_pos][y_pos];
+  Tile &t = mapGrid[x_pos][y_pos];
 
-  Direction absL = rotateDir(currentDir, -1);
-  Direction absF = currentDir;
-  Direction absR = rotateDir(currentDir, +1);
-  Direction absB = rotateDir(currentDir, +2);
+  // Plan directly in absolute map directions.
+  const Direction priority[4] = {NORTH, EAST, SOUTH, WEST};
 
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
 
   // 1) try open + untraveled first
-  if (open(absF) && untr(absF)) return absF;
-  if (open(absL) && untr(absL)) return absL;
-  if (open(absR) && untr(absR)) return absR;
-  if (open(absB) && untr(absB)) return absB;
+  for (int i = 0; i < 4; i++) {
+    Direction d = priority[i];
+    if (open(d) && untr(d)) return d;
+  }
 
-  // 2) else any open (front-priority fallback)
-  if (open(absF)) return absF;
-  if (open(absL)) return absL;
-  if (open(absR)) return absR;
-  if (open(absB)) return absB;
+  // 2) else any open using the same absolute priority.
+  for (int i = 0; i < 4; i++) {
+    Direction d = priority[i];
+    if (open(d)) return d;
+  }
+
   // figure out BFS later
   // 3) trapped
-  return absB;
+  return currentDir;
 }
 
 int turnNeededDeg(Direction direction) {
