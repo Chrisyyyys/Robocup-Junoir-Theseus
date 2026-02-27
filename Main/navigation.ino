@@ -21,6 +21,7 @@ void initializeMap() {
     for (int y = 0; y < MAP_SIZE; y++) {
       mapGrid[x][y].setDiscovered(false);
       mapGrid[x][y].setFully(false);
+      mapGrid[x][y].setVisited(false);
       for (int d = 0; d < 4; d++) {
         mapGrid[x][y].setWall(d, false);
         mapGrid[x][y].setEdge(d, false);
@@ -44,7 +45,7 @@ void markEdgeBothWays(int x, int y, Direction d) {
 void updateFullyExploredAt(int x, int y) {
   Tile &t = mapGrid[x][y];
   bool allDone = true;
-
+  t.setVisited(true);
   for (int d = 0; d < 4; d++) {
     if (t.getWall(d) == false) {     // open
       if (t.getEdge(d) == false) {   // not traveled yet
@@ -90,15 +91,19 @@ Direction pickNextDirection() {
   Direction absR = rotateDir(currentDir, +1);
   Direction absB = rotateDir(currentDir, +2);
   // Plan directly in absolute map directions.
-  const Direction priority[4] = {absF, absL, absR, absB};
+  const Direction priority[4] = {absF, absR, absL, absB};
 
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
 
   // 1) try open + untraveled first
   for (int i = 0; i < 4; i++) {
+    int nx = x_pos, ny = y_pos;
+    
     Direction d = priority[i];
-    if (open(d) && untr(d)) return d;
+    stepForward(d,nx,ny);
+
+    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()) return d;
   }
 
   // 2) else any open using the same absolute priority.
@@ -109,7 +114,7 @@ Direction pickNextDirection() {
 
   // figure out BFS later
   // 3) trapped
-  return currentDir;
+  return absB;
 }
 
 int turnNeededDeg(Direction direction) {
