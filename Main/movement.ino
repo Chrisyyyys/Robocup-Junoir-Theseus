@@ -77,7 +77,7 @@ void fwd(double dist){ // in mm
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
     if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
       while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
-      climbtoggle = true;
+        climbtoggle = true;
         Serial.println("climbing");
         detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
         detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
@@ -86,6 +86,7 @@ void fwd(double dist){ // in mm
         motorC->setSpeed(255);
         motorD->setSpeed(255);
       }
+      use_color++;
       attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING);
       attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
     }
@@ -96,10 +97,10 @@ void fwd(double dist){ // in mm
     motorB->setSpeed(200-adjustment);
     motorD->setSpeed(200-adjustment);
     int color = read_color(); // read color
-    if(color == 1){
+    if(color == 1&&use_color%2==0){
       bluetoggle = true;
     }
-    if(color == -1){
+    if(color == -1&&use_color%2==0){
       fullstop();
       delay(100);
       
@@ -124,6 +125,12 @@ void fwd(double dist){ // in mm
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){
+    /*
+    writeWallsToCurrentTile(0, 1, 0, 1);
+    updateFullyExploredAt(x_pos, y_pos);
+    markEdgeBothWays(x_pos, y_pos, currentDir);
+    stepForward(currentDir, x_pos, y_pos);
+    */
     Serial.println("compensating");
     motorA->setSpeed(255);
     motorB->setSpeed(255);

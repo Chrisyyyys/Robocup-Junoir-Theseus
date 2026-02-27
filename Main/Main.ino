@@ -94,7 +94,10 @@ bool victimtoggle = false;
 const int pinHarmed = 41;
 const int pinStable = 37;
 const int pinUnharmed = 29;
-
+// de-activate color sensor while climbing
+int use_color = 0;
+// if tile has been fully checked:
+bool tilecheck = false;
 
 
 
@@ -131,14 +134,13 @@ void setup(){
   mapGrid[x_pos][y_pos].setDiscovered(true); 
   currentDir = NORTH;
   state = SENSE_TILE;
-  
   delay(2000);
-  
-  
   
 }
 
 void loop(){
+  
+  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -158,9 +160,9 @@ void loop(){
       
       if(mapGrid[x_pos][y_pos].getVictim() == false){
         if(measure(1)>MIN_DIST){
+          tilecheck = true;
           detect();
         }
-        
         if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
         victimtoggle = false;
       }
@@ -181,6 +183,16 @@ void loop(){
     }
     case EXECUTE_MOVE: {
       absoluteturn(plannedTurnDeg);
+      if(tilecheck == false){
+        if(mapGrid[x_pos][y_pos].getVictim() == false){
+        if(measure(1)>MIN_DIST){
+          tilecheck = true;
+          detect();
+        }
+        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+          victimtoggle = false;
+        }
+      }
       delay(200);
       parallel();
       delay(100);
@@ -205,7 +217,7 @@ void loop(){
       delay(200);
       parallel();
       delay(100);
-      
+      tilecheck = false;
       state = SENSE_TILE;
       break;
      
@@ -221,7 +233,7 @@ void loop(){
     }
  }
  
-  
+ 
 
 
 
