@@ -42,8 +42,8 @@ const int encoderPin_A_B = 5;
 const int encoderPin_B_A = 2;
 const int encoderPin_B_B = 4; 
 // encoder counters
-int encoderCountB;
-int encoderCountA;
+volatile int encoderCountB;
+volatile int encoderCountA;
 // wheel cpr
 const double wheel_cpr = 5; // 20/4
 //gear ratio
@@ -112,8 +112,7 @@ void setup(){
   MCUSR = 0;
 
   
-  Serial.print("Reset cause: ");
-  Serial.println(cause, BIN);
+ 
   Wire.begin();
   disableAllCall();
   myMux.begin();
@@ -133,15 +132,13 @@ void setup(){
   currentDir = NORTH;
   state = SENSE_TILE;
   
+  delay(2000);
   
   
   
 }
 
 void loop(){
-
-  
-  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -170,6 +167,7 @@ void loop(){
       delay(200);
       parallel();
       delay(100);
+      
       state = PLAN_NEXT;  // continue
       break;
     }

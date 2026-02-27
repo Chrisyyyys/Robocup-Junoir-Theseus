@@ -55,7 +55,7 @@ void fwd(double dist){ // in mm
   bool climbtoggle = false; // toggle for climbing
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
-  PID myPID(0.6,0,0.2);
+  PID myPID(0.4,0,0.2);
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   while((encoderCountA<= pulses && encoderCountB <= pulses)&&black!=true){
     // PID centering
@@ -167,7 +167,7 @@ void absoluteturn(double angle){
     while(true){
       if(angle-current_angle<=0 && current_angle < 190) break;
       
-      if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break;
+      if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break; // turning limit
       current_angle = myGyro.heading();
       
       MOTORSPEED = myPID.getPID(angle-current_angle);

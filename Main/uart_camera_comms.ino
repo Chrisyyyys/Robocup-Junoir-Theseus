@@ -174,8 +174,8 @@ void detect(){ // the robot goes forward until it detects something( does not re
   // don't detect if there is no wall( prevent misdetection)
   bool wallAtLeft = false;
   bool wallAtRight = false;
-  if(measure(2) <MIN_DIST&&measure(2)!=-1) wallAtRight == true;
-  if(measure(6)<MIN_DIST&&measure(6)!=-1) wallAtLeft == true;
+  if(measure(2) <MIN_DIST&&measure(2)!=-1) wallAtRight = true;
+  if(measure(6)<MIN_DIST&&measure(6)!=-1) wallAtLeft = true;
   timer myTimer;
   while(true){
     if(readSerial1() != -1&&wallAtLeft == true){
@@ -185,11 +185,12 @@ void detect(){ // the robot goes forward until it detects something( does not re
       break;
     }
     if(readSerial2() != -1&&wallAtRight == true){
+      Serial.println("right");
       victimAtRight = true;
       victimtoggle = true;
       break;
     }
-    if(myTimer.getTime() >= 1000000*1.5) break; // give 1.5 seconds to detect.
+    if(myTimer.getTime() >= 1000000*1) break; // give 1.5 seconds to detect.
     motorA->setSpeed(100);
     motorB->setSpeed(100);
     motorC->setSpeed(100);
