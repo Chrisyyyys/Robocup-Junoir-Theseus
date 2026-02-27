@@ -85,8 +85,12 @@ void writeWallsToCurrentTile(bool wallF, bool wallR, bool wallB, bool wallL) {
 Direction pickNextDirection() {
   Tile &t = mapGrid[x_pos][y_pos];
 
+  Direction absL = rotateDir(currentDir, -1);
+  Direction absF = currentDir;
+  Direction absR = rotateDir(currentDir, +1);
+  Direction absB = rotateDir(currentDir, +2);
   // Plan directly in absolute map directions.
-  const Direction priority[4] = {NORTH, EAST, SOUTH, WEST};
+  const Direction priority[4] = {absF, absL, absR, absB};
 
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
