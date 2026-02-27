@@ -58,6 +58,32 @@ void fwd(double dist){ // in mm
   PID myPID(0.4,0,0.2);
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   while((encoderCountA<= pulses && encoderCountB <= pulses)&&black!=true){
+    // color
+    int color = read_color(); // read color
+    if(color == 1&&use_color%2==0){
+      bluetoggle = true;
+    }
+    if(color == -1&&use_color%2==0){
+      fullstop();
+      delay(100);
+      
+      //Do you mean  t.setWall(plannedMoveDir, true)
+      t.setWall(plannedMoveDir, true);
+      blacktoggle = true;
+      
+      while(encoderCountA >= 0 && encoderCountB >= 0){
+        motorA->run(BACKWARD);
+        motorB->run(BACKWARD);
+        motorC->run(BACKWARD);
+        motorD->run(BACKWARD);
+       
+        motorA->setSpeed(225);
+        motorB->setSpeed(225);
+        motorC->setSpeed(225);
+        motorD->setSpeed(225);
+      }
+      black = true;
+    }
     // PID centering
     difference = center();
     //Serial.println(center());
@@ -92,35 +118,11 @@ void fwd(double dist){ // in mm
     }
     
     
-    motorA->setSpeed(200+adjustment);
-    motorC->setSpeed(200+adjustment);
-    motorB->setSpeed(200-adjustment);
-    motorD->setSpeed(200-adjustment);
-    int color = read_color(); // read color
-    if(color == 1&&use_color%2==0){
-      bluetoggle = true;
-    }
-    if(color == -1&&use_color%2==0){
-      fullstop();
-      delay(100);
-      
-      //Do you mean  t.setWall(plannedMoveDir, true)
-      t.setWall(plannedMoveDir, true);
-      blacktoggle = true;
-      
-      while(encoderCountA >= 0 && encoderCountB >= 0){
-        motorA->run(BACKWARD);
-        motorB->run(BACKWARD);
-        motorC->run(BACKWARD);
-        motorD->run(BACKWARD);
-       
-        motorA->setSpeed(150);
-        motorB->setSpeed(150);
-        motorC->setSpeed(150);
-        motorD->setSpeed(150);
-      }
-      black = true;
-    }
+    motorA->setSpeed(150+adjustment);
+    motorC->setSpeed(150+adjustment);
+    motorB->setSpeed(150-adjustment);
+    motorD->setSpeed(150-adjustment);
+    
     
   }
   // sometimes it barely makes it over the slope

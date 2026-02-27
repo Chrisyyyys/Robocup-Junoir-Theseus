@@ -17,29 +17,19 @@ void init_color(){
 }
 int read_color(){
   myMux.setPort(TCS_PORT);          
-  
+  tcs.setInterrupt(true);  // turn on LED
   float red, green, blue;
   uint16_t r, g, b, c, colorTemp, lux;
 
   tcs.getRawData(&r, &g, &b, &c);
-  
-  tcs.setInterrupt(true);  // turn on LED
-
-  delay(50);  // takes 50ms to read
-
-  tcs.getRGB(&red, &green, &blue);
-  
-  
-  
- 
   if(c<BLACK_THRESHOLD){
     
     return -1; // black
   }
-  if(blue>green&&blue>red){
+  if(b>g&&b>r){
     return 1; // blue
   }
-  if(red>green&&red>blue){
+  if(r>g&&r>b){
     return 2;
   }
   else{
