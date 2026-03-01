@@ -88,7 +88,7 @@ void fwd(double dist){ // in mm
     difference = center();
     //Serial.println(center());
     double adjustment = myPID.getPID(difference);
-    // emergency
+    // emergency stop
     
     if((measure(1)<=50&&measure(1)!=-1)||(measure(7)<=50&&measure(7)!=-1)){
       Serial.println("stopping");
@@ -116,13 +116,32 @@ void fwd(double dist){ // in mm
       attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING);
       attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
     }
-    
+    // check cameras
+
+    if(Serial2.available()&&victimtoggle == false){
+      Serial.println("victim at left");
+      pausePID(1);
+      fullstop();
+      clearSerialBuffer1();
+      detectCam1();
+      pausePID2(2);
+      victimtoggle = true;
+    }
+    else if(Serial3.available()&&victimtoggle == false){
+      Serial.println("victim at right");
+      pausePID(1);
+      fullstop();
+      clearSerialBuffer2();
+      detectCam2();
+      pausePID(2);
+      victimtoggle = true;
+    }
     
     motorA->setSpeed(150+adjustment);
     motorC->setSpeed(150+adjustment);
     motorB->setSpeed(150-adjustment);
     motorD->setSpeed(150-adjustment);
-    
+    Serial.println("cycle");
     
   }
   // sometimes it barely makes it over the slope
@@ -140,47 +159,54 @@ void fwd(double dist){ // in mm
     motorD->setSpeed(255);
     delay(200);
   }
+  if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
   fullstop();
   encoderCountA = 0; encoderCountB = 0;
 
 }
-
-
-// relative turn helper: converts relative command to absolute heading target.
-/*
-void turnRelative(double deltaAngle){
-  double target = myGyro.heading() + deltaAngle;
-  while(target >= 360) target -= 360;
-  while(target < 0) target += 360;
-  absoluteturn(target);
-}
-*/
-
 // absolute turning
 void absoluteturn(double angle){ 
   // create PID instance.
   PID myPID(10,0,0.3); 
   double MOTORSPEED = 0;
- 
-  
   double current_angle=myGyro.heading();
-  
   double init_angle = current_angle;
   Serial.println(current_angle);
    // create timer to cut of turning
   timer myTimer;
-
   if(angle - current_angle > 0){
-    motorB->run(BACKWARD);
-    motorD->run(BACKWARD);
     while(true){
+      motorB->run(BACKWARD);
+      motorD->run(BACKWARD);
       if(angle-current_angle<=0 && current_angle < 190) break;
       
       if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break; // turning limit
       current_angle = myGyro.heading();
       
       MOTORSPEED = myPID.getPID(angle-current_angle);
-      
+      if(Serial2.available()&&victimtoggle == false){
+        Serial.println("victim at left");
+        myPID.pausePID(1);
+        myTimer.pause(1);
+        fullstop();
+        clearSerialBuffer1();
+        detectCam1();
+        myTimer.pause(2);
+        myPID.pausePID(2);
+        victimtoggle = true;
+        
+      }
+      else if(Serial3.available()&&victimtoggle == false){
+        Serial.println("victim at right");
+        myPID.pausePID(1);
+        myTimer.pause(1);
+        fullstop();
+        clearSerialBuffer2();
+        detectCam2();
+        myTimer.pause(2);
+        myPID.pausePID(2);
+        victimtoggle = true;
+      }
       motorA->setSpeed(constrain(MOTORSPEED,20,255));
       motorB->setSpeed(constrain(MOTORSPEED,20,255));
       motorC->setSpeed(constrain(MOTORSPEED,20,255));
@@ -188,21 +214,42 @@ void absoluteturn(double angle){
     }
   } 
   else if(angle-current_angle<0) {
-    motorA->run(BACKWARD);
-    motorC->run(BACKWARD);
     while(true){
+      motorA->run(BACKWARD);
+      motorC->run(BACKWARD);
       if(angle-current_angle>=0 && current_angle > 170) break;
       if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break;
       current_angle = myGyro.heading();
-      
       MOTORSPEED = myPID.getPID(current_angle-angle);
+      if(Serial2.available()&&victimtoggle == false){
+        Serial.println("victim at left");
+        myPID.pausePID(1);
+        myTimer.pause(1);
+        fullstop();
+        clearSerialBuffer1();
+        detectCam1();
+        myTimer.pause(2);
+        myPID.pausePID(2);
+        victimtoggle = true;
+      }
+      else if(Serial3.available()&&victimtoggle == false){
+        Serial.println("victim at right");
+        myPID.pausePID(1);
+        myTimer.pause(1);
+        fullstop();
+        clearSerialBuffer2();
+        detectCam2();
+        myTimer.pause(2);
+        myPID.pausePID(2);
+        victimtoggle = true;
+      }
       motorA->setSpeed(constrain(MOTORSPEED,20,255));
       motorB->setSpeed(constrain(MOTORSPEED,20,255));
       motorC->setSpeed(constrain(MOTORSPEED,20,255));
       motorD->setSpeed(constrain(MOTORSPEED,20,255));
     }
   }
-  
+  if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
   Serial.println("finished turning");
   fullstop();
   encoderCountA = 0; encoderCountB = 0; // reset encoder counters.

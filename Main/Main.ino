@@ -94,19 +94,23 @@ bool victimtoggle = false;
 const int pinHarmed = 41;
 const int pinStable = 37;
 const int pinUnharmed = 29;
+// camera GPIOs
+const int gpio1 = 13;
+const int gpio2 = 12;
 // de-activate color sensor while climbing
 int use_color = 0;
-// if tile has been fully checked:
-bool tilecheck = false;
+
 
 
 
 void setup(){
   // initialize LED puns
-  
   pinMode(pinHarmed,OUTPUT);
   pinMode(pinStable,OUTPUT);
   pinMode(pinUnharmed,OUTPUT);
+  // initialize camera gpio pins
+  pinMode(gpio1, INPUT);
+  pinMode(gpio2, INPUT);
   // begin UART communication.
   Serial.begin(115200);
   Serial2.begin(115200);
@@ -134,8 +138,8 @@ void setup(){
   mapGrid[x_pos][y_pos].setDiscovered(true); 
   currentDir = NORTH;
   state = SENSE_TILE;
-  delay(2000);
-  
+  delay(2000); // wait for camera to start.
+
 }
 
 void loop(){
@@ -153,24 +157,7 @@ void loop(){
     case UPDATE_MAP: {
       writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
       updateFullyExploredAt(x_pos, y_pos);
-      state = VICTIM_SIGNAL;
-      break;
-    }
-    case VICTIM_SIGNAL: {
-      
-      if(mapGrid[x_pos][y_pos].getVictim() == false){
-        if(measure(1)>MIN_DIST){
-          tilecheck = true;
-          detect();
-        }
-        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
-        victimtoggle = false;
-      }
-      delay(200);
-      parallel();
-      delay(100);
-      
-      state = PLAN_NEXT;  // continue
+      state = PLAN_NEXT;
       break;
     }
     case PLAN_NEXT: {
@@ -183,16 +170,6 @@ void loop(){
     }
     case EXECUTE_MOVE: {
       absoluteturn(plannedTurnDeg);
-      if(tilecheck == false){
-        if(mapGrid[x_pos][y_pos].getVictim() == false){
-        if(measure(1)>MIN_DIST){
-          tilecheck = true;
-          detect();
-        }
-        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
-          victimtoggle = false;
-        }
-      }
       delay(200);
       parallel();
       delay(100);
@@ -218,6 +195,7 @@ void loop(){
       parallel();
       delay(100);
       tilecheck = false;
+      victimtoggle = false;
       state = SENSE_TILE;
       break;
      
