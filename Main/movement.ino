@@ -120,20 +120,20 @@ void fwd(double dist){ // in mm
 
     if(Serial2.available()&&victimtoggle == false){
       Serial.println("victim at left");
-      pausePID(1);
+      myPID.pausePID(1);
       fullstop();
       clearSerialBuffer1();
       detectCam1();
-      pausePID2(2);
+      myPID.pausePID(2);
       victimtoggle = true;
     }
     else if(Serial3.available()&&victimtoggle == false){
       Serial.println("victim at right");
-      pausePID(1);
+      myPID.pausePID(1);
       fullstop();
       clearSerialBuffer2();
       detectCam2();
-      pausePID(2);
+      myPID.pausePID(2);
       victimtoggle = true;
     }
     

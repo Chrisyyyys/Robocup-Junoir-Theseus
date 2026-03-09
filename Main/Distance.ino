@@ -39,14 +39,18 @@ void init_dist() {
     myMux.setPort(i);
     sensors[i].setAddress(0x30); // conflict with TCS34725 for some reason.
     delay(10);
+    
+    
     if(!sensors[i].init()){
-      Serial.println("Sensor "+String(i)+" failed to initialize");
+    Serial.println("Sensor "+String(i)+" failed to initialize");
     }
     else{
       Serial.println("Sensor "+String(i)+" is able to initialize");
     }
     sensors[i].startContinuous(); // start continuous ranging.
   }
+    
+  
   
 
 }

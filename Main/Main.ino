@@ -7,9 +7,11 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <Stepper.h>
 #include "PID.h"
 #include "timer.h"
 #include "gyro.h"
+#include "dispenser.h"
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 60 // color clear-channel threshold (tune)
@@ -54,7 +56,9 @@ const double wheel_diameter = 68.7; // millimeters.
 
 char classes[6] = {'H','S','U','R','Y','G'};
 
-
+// create stepper object
+const int steps_per_revolution = 2048;
+Stepper myStepper = Stepper(steps_per_revolution, 8, 9,10,11); 
 // map size variables
 const int MAP_SIZE=20;
 Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
@@ -99,7 +103,10 @@ const int gpio1 = 13;
 const int gpio2 = 12;
 // de-activate color sensor while climbing
 int use_color = 0;
-
+// stepper variables
+const int angle_offset = 44;
+const int angle_increment = 22;
+dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 
 
 
@@ -117,19 +124,14 @@ void setup(){
   Serial3.begin(115200);
   uint8_t cause = MCUSR;
   MCUSR = 0;
-
-  
- 
   Wire.begin();
   disableAllCall();
   myMux.begin();
-  
-  
   init_dist(); // initialize mux before distance sensors.
   scanAllPorts();
-  
   init_color();
   init_drive();
+  //
   //detect();
   //initialize map
   initializeMap();
@@ -139,12 +141,16 @@ void setup(){
   currentDir = NORTH;
   state = SENSE_TILE;
   delay(2000); // wait for camera to start.
-
+  disp.dispenseLeft('H');
+  delay(1000);
+  disp.dispenseRight('S');
+  delay(1000);
+  disp.dispenseRight('H');
 }
 
 void loop(){
   
-  
+  /*
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -210,7 +216,7 @@ void loop(){
       break;
     }
  }
- 
+ */
  
 
 
