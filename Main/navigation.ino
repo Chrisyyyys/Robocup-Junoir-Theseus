@@ -1,3 +1,4 @@
+
 // I assume is global?
 Direction rotateDir(Direction base, int offset) {
   return (Direction)((base + offset + 4) % 4);
@@ -138,19 +139,83 @@ int dir[4][2] = {
     {0, -1},
     {-1, 0}
 };
-/*
-deque<pair<int,int>> BFS(pair<int,int> currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], pair<int, int> endpos) {
-    deque<pair<int, int>> queue = {};
+void initTile(int x, int y) {
+    mapGrid[x][y].setDiscovered(false);
+    mapGrid[x][y].setFully(false);
+    for (int d = 0; d < 4; d++) {
+        mapGrid[x][y].setWall(d, false);
+        mapGrid[x][y].setEdge(d, false);
+    }
+    mapGrid[x][y].setType(BLANK);
+}
+
+void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) { //input mapgrid, and next tile location
+    //cout << "start reallocate" << endl;
+
+    //expand to bottom (remove top)
+    if (pos_y >= MAP_SIZE) {
+        for (int i = 0; i < MAP_SIZE - 1; i++) {
+            for (int j = 0; j < MAP_SIZE; j++) {
+                mapgrid[i][j] = mapgrid[i + 1][j];
+            }
+            //printmap(mapgrid);
+        }
+        for (int i = 0; i < MAP_SIZE; i++) {
+            initTile(MAP_SIZE - 1, i);
+        }
+    }
+    //expand to top (remove bottom)
+    else if (pos_y < 0) {
+        for (int i = MAP_SIZE-1; i > 0; i--) {
+            for (int j = 0; j < MAP_SIZE; j++) {
+                mapgrid[i][j] = mapgrid[i - 1][j];
+            }
+            //printmap(mapgrid);
+        }
+        for (int i = 0; i < MAP_SIZE; i++) {
+            initTile(0, i);
+        }
+    }
+
+    //expand to right (remove left)
+    else if (pos_x >= MAP_SIZE) {
+        for (int j = 0; j < MAP_SIZE - 1; j++) {
+            for (int i = 0; i < MAP_SIZE; i++) {
+                mapgrid[i][j] = mapgrid[i][j+1];
+            }
+            //printmap(mapgrid);
+        }
+        for (int i = 0; i < MAP_SIZE; i++) {
+            initTile(i, MAP_SIZE-1);
+        }
+    }
+
+    //expand to left (remove right)
+    else if (pos_x < 0) {
+        for (int j = MAP_SIZE - 1; j > 0; j--) {
+            for (int i = 0; i < MAP_SIZE; i++) {
+                mapgrid[i][j] =  mapgrid[i][j - 1];
+            }
+            //printmap(mapgrid);
+        }
+        for (int i = 0; i < MAP_SIZE; i++) {
+            initTile(i, 0);
+        }
+    }
+}
+
+// pair structure
+void BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord path[MAP_SIZE * MAP_SIZE]) { // auto updates path
+    ArduinoQueue<coord> queue = {};
     size_t rows = MAP_SIZE;
     size_t columns = MAP_SIZE;
-    vector<vector<bool>> visited(rows, vector<bool>(columns, false));
-    deque<pair<int, int>> path = {};
-    vector<vector<pair<int, int>>> prev(MAP_SIZE, vector<pair<int,int>>(MAP_SIZE));
-    queue.push_back(currentpos);
-
+    bool visited[MAP_SIZE][MAP_SIZE] = {false};
+    coord prev[MAP_SIZE][MAP_SIZE];
+    queue.enqueue(currentpos); // current tile
+    visited[currentpos.x][currentpos.y] = true;
     //search
-    while (queue.size() > 0) {
-        int x = queue[0].first; int y = queue[0].second;
+    while (queue.itemCount() > 0) {
+        int x = queue.getHead().x; int y = queue.getHead().y;
         //cout << "visting: " << x << "," << y << endl;
 
         for (int i = 0; i < 4; i++) {
@@ -158,35 +223,32 @@ deque<pair<int,int>> BFS(pair<int,int> currentpos, Tile mapGrid[MAP_SIZE][MAP_SI
             int ny = y + dir[i][1];
             if (nx < rows && ny < columns && nx >= 0 && ny >= 0) {
                 if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(i)) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
-                    queue.push_back(pair<int, int>(nx, ny));
+                    queue.enqueue(coord{nx, ny}); // add tile
                     visited[nx][ny] = true;
-                    //cout << "queue added: " << nx << "," << ny << endl;
-                    prev[nx][ny] = pair<int, int>(x, y);
-                    //cout << "at: " << nx << "," << ny << " added: " << x << "," << y << endl;
+                    
+                    prev[nx][ny] = coord{x, y};
+                    
                 }
             }
         }
-        queue.pop_front();
-    }
-    for (int i = 0; i < visited.size(); i++) {
-        for (int j = 0; j < visited[0].size(); j++) {
-            cout << visited[i][j] << " ";
-        }
-        cout << endl;
+        queue.dequeue();
     }
     //reconstruct path
-    path.push_front(endpos);
-    pair<int, int> curr = prev[endpos.first][endpos.second];
+    // path[0] is (0,0), path[n] is current tile.
+    int i = 0;
+    coord curr = endpos;
+
     while (true) {
-        //cout << curr.first << "," << curr.second << endl;
-        path.push_front(curr);
-        curr = prev[curr.first][curr.second];
-        if (path[0] == currentpos) {
-            break;
-        }
-        
+      path[i] = curr;
+      i++;
+
+      if (curr.x == currentpos.x&&curr.y==currentpos.y) {
+        break;
+      }
+
+      curr = prev[curr.x][curr.y];
     }
-    //cout << endl << "done search" << endl << endl;
-    return path;
+    
 }
-*/
+
+

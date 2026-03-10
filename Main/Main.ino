@@ -7,7 +7,10 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+
 #include <Stepper.h>
+#include <ArduinoQueue.h> // queue
+#include <Vector.h> // vector
 #include "PID.h"
 #include "timer.h"
 #include "gyro.h"
@@ -62,22 +65,28 @@ Stepper myStepper = Stepper(steps_per_revolution, 8, 9,10,11);
 // map size variables
 const int MAP_SIZE=20;
 Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
+// queue
 
 
 //states that the robot will be in
 enum RobotState {
   SENSE_TILE,
   UPDATE_MAP,
-  VICTIM_SIGNAL,
   PLAN_NEXT,
   EXECUTE_MOVE,
-  BACKPEDAL
+  BACKPEDAL,
+  RETURN
 };
 enum Steps {
   TURN,
   PARALLEL,
   BACKTRACK,
   FWD,
+};
+// coord struct
+struct coord {
+  int x;
+  int y;
 };
 Steps steps = TURN;
 const int POWERPIN = 41;
@@ -105,7 +114,7 @@ const int gpio2 = 12;
 int use_color = 0;
 // stepper variables
 const int angle_offset = 44;
-const int angle_increment = 22;
+const int angle_increment = 24;
 dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 
 
@@ -141,15 +150,11 @@ void setup(){
   currentDir = NORTH;
   state = SENSE_TILE;
   delay(2000); // wait for camera to start.
-  disp.dispenseLeft('H');
-  delay(1000);
-  disp.dispenseRight('S');
-  delay(1000);
-  disp.dispenseRight('H');
+  
 }
 
 void loop(){
-  
+  Serial.println(measure(7));
   /*
   static bool wallF, wallR, wallB, wallL;
   switch (state) {

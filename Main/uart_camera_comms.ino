@@ -14,15 +14,15 @@ void clearSerialBuffer2() {
 void flashLED(char victimState){
   if(victimState == 'H'){
     digitalWrite(pinHarmed,HIGH);
-    delay(5000);
+    delay(1000);
   }
   else if(victimState == 'S'){
     digitalWrite(pinStable,HIGH);
-    delay(5000);
+    delay(1000);
   }
   else{
     digitalWrite(pinUnharmed,HIGH);
-    delay(5000);
+    delay(1000);
   }
   digitalWrite(pinHarmed,LOW);
   digitalWrite(pinStable,LOW);
@@ -129,7 +129,7 @@ void detectCam1(){ // doesn't return anything.
     }
   }
   flashLED(res);
-  
+  disp.dispenseLeft(res);
   return;
 }
 void detectCam2(){
@@ -162,6 +162,7 @@ void detectCam2(){
     }
   }
   flashLED(res);
+  disp.dispenseRight(res);
   return;
 }
 void detect(){ // the robot goes forward until it detects something( does not return)

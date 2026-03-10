@@ -8,5 +8,9 @@ class dispenser{
     void rotate(int);
     void dispenseLeft(char);
     void dispenseRight(char);
+    
 };
+
+using sdispenser = dispenser; // Warning! this might not work on somebody else's computer!!!
+
 #endif 
