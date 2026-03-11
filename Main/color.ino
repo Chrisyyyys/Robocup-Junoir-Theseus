@@ -26,6 +26,12 @@ int read_color(){
     
     return -1; // black
   }
+  if(c>SILVER_THRESHOLD){
+    int nx = x_pos; int ny = y_pos;
+    stepForward(currentDir,nx,ny);
+    mapGrid[nx][ny].setType(2);
+    x_checkpoint = nx, y_checkpoint = ny;
+  }
   if(b>g&&b>r){
     return 1; // blue
   }

@@ -58,11 +58,14 @@ void fwd(double dist){ // in mm
   PID myPID(0.4,0,0.2);
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   while((encoderCountA<= pulses && encoderCountB <= pulses)&&black!=true){
+    if(digitalRead(logicswitch)==true) Pausemaze = true;
     // color
     int color = read_color(); // read color
     if(color == 1&&use_color%2==0){
       bluetoggle = true;
-      t.setType(1);
+      int nx = x_pos; int ny = y_pos;
+      stepForward(currentDir,nx,ny);
+      mapGrid[nx][ny].setType(1);
     }
     if(color == -1&&use_color%2==0){
       fullstop();
@@ -72,7 +75,7 @@ void fwd(double dist){ // in mm
       // find next tile, set it to black
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
-      mapGrid[nx][ny].setType(3)
+      mapGrid[nx][ny].setType(3);
       blacktoggle = true;
       
       while(encoderCountA >= 0 && encoderCountB >= 0){

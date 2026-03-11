@@ -11,7 +11,7 @@ void stepForward(Direction d, int &x, int &y) {
   else if (d == EAST) x++;
   else if (d == SOUTH) y--;
   else if (d == WEST) x--;
-  if(victimAtCurrent == false) mapGrid[x_pos][y_pos].setVictim(true);
+  if(victimAtCurrent == false&&victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
 }
 
 bool inBounds(int x, int y) {
@@ -110,6 +110,7 @@ Direction pickNextDirection() {
 
   // 2) else any open using the same absolute priority.
   for (int i = 0; i < 4; i++) {
+    int nx = x_pos, ny = y_pos;
     Direction d = priority[i];
     stepForward(d,nx,ny);
     if (open(d)&&mapGrid[nx][ny].getType()!=3) return d;
@@ -224,7 +225,7 @@ void BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord 
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             if (nx < rows && ny < columns && nx >= 0 && ny >= 0) {
-                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(i)&&mapGrid[nx][ny].getDiscovered()) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
+                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(i)&&mapGrid[nx][ny].getDiscovered()&&mapGrid[nx][ny].getType()!=3) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
                     queue.enqueue(coord{nx, ny}); // add tile
                     visited[nx][ny] = true;
                     
