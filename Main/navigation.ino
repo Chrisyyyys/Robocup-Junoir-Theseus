@@ -11,6 +11,7 @@ void stepForward(Direction d, int &x, int &y) {
   else if (d == EAST) x++;
   else if (d == SOUTH) y--;
   else if (d == WEST) x--;
+  if(victimAtCurrent == false) mapGrid[x_pos][y_pos].setVictim(true);
 }
 
 bool inBounds(int x, int y) {
@@ -222,7 +223,7 @@ void BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord 
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             if (nx < rows && ny < columns && nx >= 0 && ny >= 0) {
-                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(i)) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
+                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(i)&&mapGrid[nx][ny].getDiscovered()) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
                     queue.enqueue(coord{nx, ny}); // add tile
                     visited[nx][ny] = true;
                     

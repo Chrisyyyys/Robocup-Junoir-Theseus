@@ -136,12 +136,18 @@ void fwd(double dist){ // in mm
       myPID.pausePID(2);
       victimtoggle = true;
     }
-    
+    if(victimtoggle == true){
+      if(encoderCountA<pulses/2){
+        victimAtCurrent = true;
+        mapGrid[x_pos][y_pos].setVictim(true);
+      }
+      else victimAtCurrent = false;
+    }
     motorA->setSpeed(150+adjustment);
     motorC->setSpeed(150+adjustment);
     motorB->setSpeed(150-adjustment);
     motorD->setSpeed(150-adjustment);
-    Serial.println("cycle");
+   
     
   }
   // sometimes it barely makes it over the slope
@@ -159,7 +165,7 @@ void fwd(double dist){ // in mm
     motorD->setSpeed(255);
     delay(200);
   }
-  if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+  
   fullstop();
   encoderCountA = 0; encoderCountB = 0;
 

@@ -37,8 +37,8 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 gyro myGyro;
 // set up motorshield and motors.
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
-Adafruit_DCMotor *motorA = AFMS.getMotor(1);
-Adafruit_DCMotor *motorB = AFMS.getMotor(2);
+Adafruit_DCMotor *motorA = AFMS.getMotor(2);
+Adafruit_DCMotor *motorB = AFMS.getMotor(1);
 Adafruit_DCMotor *motorC = AFMS.getMotor(3);
 Adafruit_DCMotor *motorD = AFMS.getMotor(4);
 // set up encoder pins
@@ -103,6 +103,7 @@ bool blacktoggle = false;
 bool bluetoggle = false;
 // victim toggles
 bool victimtoggle = false;
+bool victimAtCurrent = false;
 // LED pins
 const int pinHarmed = 41;
 const int pinStable = 37;
@@ -154,8 +155,8 @@ void setup(){
 }
 
 void loop(){
-  Serial.println(measure(7));
-  /*
+  
+  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -205,7 +206,6 @@ void loop(){
       delay(200);
       parallel();
       delay(100);
-      tilecheck = false;
       victimtoggle = false;
       state = SENSE_TILE;
       break;
@@ -221,7 +221,7 @@ void loop(){
       break;
     }
  }
- */
+ 
  
 
 
