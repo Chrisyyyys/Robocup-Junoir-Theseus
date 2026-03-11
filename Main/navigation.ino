@@ -208,7 +208,7 @@ void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) 
 }
 
 // pair structure
-void BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord path[MAP_SIZE * MAP_SIZE]) { // auto updates path
+int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord path[MAP_SIZE * MAP_SIZE]) { // auto updates path
     ArduinoQueue<coord> queue = {};
     size_t rows = MAP_SIZE;
     size_t columns = MAP_SIZE;
@@ -251,6 +251,7 @@ void BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord 
 
       curr = prev[curr.x][curr.y];
     }
+    return i;
     
 }
 

@@ -58,7 +58,7 @@ void fwd(double dist){ // in mm
   PID myPID(0.4,0,0.2);
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   while((encoderCountA<= pulses && encoderCountB <= pulses)&&black!=true){
-    if(digitalRead(logicswitch)==true) Pausemaze = true;
+    //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // color
     int color = read_color(); // read color
     if(color == 1&&use_color%2==0){

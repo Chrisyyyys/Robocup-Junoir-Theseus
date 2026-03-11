@@ -9,7 +9,7 @@ class gyro{
     double heading();
     double yaw_heading();
     int modulus(int);
-    
+    int headingToCardinal(double);
 
 };
 #endif

@@ -33,3 +33,17 @@ double gyro::yaw_heading(){
   if (abs(360-yaw_heading)< 5) yaw_heading = 0;
   return yaw_heading;
 }
+int gyro::headingToCardinal(double heading){
+    // normalize angle
+    if (heading < 0) heading += 360;
+    if (heading >= 360) heading -= 360;
+
+    if (heading >= 315 || heading < 45)
+        return 0; // North
+    else if (heading >= 45 && heading < 135)
+        return 1; // East
+    else if (heading >= 135 && heading < 225)
+        return 2; // South
+    else
+        return 3; // West
+}

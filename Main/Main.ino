@@ -18,6 +18,7 @@
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 60 // color clear-channel threshold (tune)
+#define SILVER_THRESHOLD 1000 // tun3
 
 #include "MazeTile.h"
 
@@ -157,7 +158,7 @@ void setup(){
   delay(2000); // wait for camera to start.
   
 }
-
+int iterator = 0;
 void loop(){
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
@@ -210,9 +211,12 @@ void loop(){
       delay(200);
       parallel();
       delay(100);
+      iterator += 1;
+      
       victimtoggle = false;
       state = SENSE_TILE;
       if(Pausemaze == true) state = PAUSE;
+      if(iterator >= 15) state = RETURN;
       break;
      
     }
@@ -225,11 +229,76 @@ void loop(){
       if(Pausemaze == true) state = PAUSE;
       break;
     }
+    case RETURN: {
+      coord currentpos = {x_pos,y_pos};
+      coord endpos = {0,0};
+      coord path[MAP_SIZE*MAP_SIZE];
+      flashLED('H');
+      flashLED('U');
+      int length = BFS(currentpos,mapGrid,endpos,path);
+      for(int i = length;i>0;i--){
+        // coorinates to direction
+        if(path[i-1].x-path[i].x == 0){
+          if(path[i-1].x-path[i].x == 1){
+            plannedTurnDeg = turnNeededDeg(1);
+            absoluteturn(plannedTurnDeg);
+            delay(200);
+            parallel();
+            delay(100);
+            //update currentDir
+            currentDir = 1;
+            // 2) drive one tile
+            fwd(TILE_MM);
+          }
+          else if(path[i-1].x-path[i].x == -1){
+            plannedTurnDeg = turnNeededDeg(3);
+            absoluteturn(plannedTurnDeg);
+            delay(200);
+            parallel();
+            delay(100);
+            //update currentDir
+            currentDir = 3;
+            // 2) drive one tile
+            fwd(TILE_MM);
+          }
+        }
+        else{
+          if(path[i-1].y-path[i].y == 1){
+            plannedTurnDeg = turnNeededDeg(0);
+            absoluteturn(plannedTurnDeg);
+            delay(200);
+            parallel();
+            delay(100);
+            //update currentDir
+            currentDir = 3;
+            // 2) drive one tile
+            fwd(TILE_MM);
+          }
+          else if(path[i-1].y-path[i].y == -1){
+            plannedTurnDeg = turnNeededDeg(2);
+            absoluteturn(plannedTurnDeg);
+            delay(200);
+            parallel();
+            delay(100);
+            //update currentDir
+            currentDir = 3;
+            // 2) drive one tile
+            fwd(TILE_MM);
+          }
+        }
+        
+      }
+      flashLED('H');
+      while(true){
+        fullstop();
+      }
+    }
     case PAUSE: {
       while(digitalRead(logicswitch)==true){
         fullstop();
         x_pos = x_checkpoint; y_pos = y_checkpoint;
       }
+      myGyro.headingToCardinal(myGyro.heading());
       state = SENSE_TILE;
       break;
     }
