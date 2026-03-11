@@ -105,13 +105,14 @@ Direction pickNextDirection() {
     Direction d = priority[i];
     stepForward(d,nx,ny);
 
-    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()) return d;
+    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()&&mapGrid[nx][ny].getType()!=1) return d;
   }
 
   // 2) else any open using the same absolute priority.
   for (int i = 0; i < 4; i++) {
     Direction d = priority[i];
-    if (open(d)) return d;
+    stepForward(d,nx,ny);
+    if (open(d)&&mapGrid[nx][ny].getType()!=3) return d;
   }
 
   // figure out BFS later

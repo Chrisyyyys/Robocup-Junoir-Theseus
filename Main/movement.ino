@@ -1,7 +1,7 @@
 void encoder_update_B(){ // why the fuck is it high when going backwards???
   int encoderState = digitalRead(encoderPin_B_B);
   
-  if(encoderState == LOW){
+  if(encoderState == HIGH){
     encoderCountB--;
   }
   else{
@@ -62,13 +62,17 @@ void fwd(double dist){ // in mm
     int color = read_color(); // read color
     if(color == 1&&use_color%2==0){
       bluetoggle = true;
+      t.setType(1);
     }
     if(color == -1&&use_color%2==0){
       fullstop();
       delay(100);
       
       //Do you mean  t.setWall(plannedMoveDir, true)
-      t.setWall(plannedMoveDir, true);
+      // find next tile, set it to black
+      int nx = x_pos; int ny = y_pos;
+      stepForward(currentDir,nx,ny);
+      mapGrid[nx][ny].setType(3)
       blacktoggle = true;
       
       while(encoderCountA >= 0 && encoderCountB >= 0){
