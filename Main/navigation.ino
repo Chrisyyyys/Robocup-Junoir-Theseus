@@ -105,7 +105,7 @@ Direction pickNextDirection() {
     Direction d = priority[i];
     stepForward(d,nx,ny);
 
-    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()&&mapGrid[nx][ny].getType()!=1) return d;
+    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()&&mapGrid[nx][ny].getType()!=1&&mapGrid[nx][ny].getType()!=3) return d;
   }
 
   // 2) else any open using the same absolute priority.
@@ -225,7 +225,7 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             if (nx < rows && ny < columns && nx >= 0 && ny >= 0) {
-                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(i)&&mapGrid[nx][ny].getDiscovered()&&mapGrid[nx][ny].getType()!=3) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
+                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(opposite(i))&&mapGrid[nx][ny].getDiscovered()&&mapGrid[nx][ny].getType()!=3) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
                     queue.enqueue(coord{nx, ny}); // add tile
                     visited[nx][ny] = true;
                     

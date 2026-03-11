@@ -231,7 +231,7 @@ void loop(){
     }
     case RETURN: {
       coord currentpos = {x_pos,y_pos};
-      coord endpos = {0,0};
+      coord endpos = {MAP_SIZE/2,MAP_SIZE/2};
       coord path[MAP_SIZE*MAP_SIZE];
       flashLED('H');
       flashLED('U');
