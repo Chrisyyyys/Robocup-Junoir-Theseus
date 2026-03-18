@@ -9,11 +9,18 @@ void init_color(){
     
   } else {
     Serial.println("No TCS34725 found ... check your connections");
-    
+  
     
     
     //while (1); // halt!
   }
+  myMux.setPort(TCS_PORT);          
+  tcs.setInterrupt(true);  // turn on LED
+  float red, green, blue;
+  uint16_t r, g, b, c, colorTemp, lux;
+
+  tcs.getRawData(&r, &g, &b, &c);
+  clear = c;
 }
 int read_color(){
   myMux.setPort(TCS_PORT);          
@@ -22,11 +29,12 @@ int read_color(){
   uint16_t r, g, b, c, colorTemp, lux;
 
   tcs.getRawData(&r, &g, &b, &c);
-  if(c<BLACK_THRESHOLD){
+ 
+  if((float)c/clear<BLACK_THRESHOLD){
     
     return -1; // black
   }
-  if(c>SILVER_THRESHOLD){
+  if((float)c/clear>SILVER_THRESHOLD){
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
     mapGrid[nx][ny].setType(2);

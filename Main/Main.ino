@@ -17,8 +17,9 @@
 #include "dispenser.h"
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define BLACK_THRESHOLD 60 // color clear-channel threshold (tune)
-#define SILVER_THRESHOLD 1000 // tun3
+#define BLACK_THRESHOLD 0.2 // color clear-channel threshold ratio for black
+#define SILVER_THRESHOLD 800 // tun3
+float clear; 
 
 #include "MazeTile.h"
 
@@ -38,15 +39,15 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 gyro myGyro;
 // set up motorshield and motors.
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
-Adafruit_DCMotor *motorA = AFMS.getMotor(2);
-Adafruit_DCMotor *motorB = AFMS.getMotor(1);
+Adafruit_DCMotor *motorA = AFMS.getMotor(1);
+Adafruit_DCMotor *motorB = AFMS.getMotor(2);
 Adafruit_DCMotor *motorC = AFMS.getMotor(3);
 Adafruit_DCMotor *motorD = AFMS.getMotor(4);
 // set up encoder pins
-const int encoderPin_A_A = 3;
-const int encoderPin_A_B = 5; 
-const int encoderPin_B_A = 2;
-const int encoderPin_B_B = 4; 
+const int encoderPin_A_A = 2;
+const int encoderPin_A_B = 4; 
+const int encoderPin_B_A = 3;
+const int encoderPin_B_B = 5; 
 // encoder counters
 volatile int encoderCountB;
 volatile int encoderCountA;
@@ -157,9 +158,12 @@ void setup(){
   state = SENSE_TILE;
   delay(2000); // wait for camera to start.
   
+  
 }
 int iterator = 0;
 void loop(){
+  
+  /*
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -216,7 +220,7 @@ void loop(){
       victimtoggle = false;
       state = SENSE_TILE;
       if(Pausemaze == true) state = PAUSE;
-      if(iterator >= 15) state = RETURN;
+      if(iterator >= 50) state = RETURN;
       break;
      
     }
@@ -235,10 +239,12 @@ void loop(){
       coord path[MAP_SIZE*MAP_SIZE];
       flashLED('H');
       flashLED('U');
+      Serial.println("starting bfs");
       int length = BFS(currentpos,mapGrid,endpos,path);
+      Serial.println("path calculated");
       for(int i = length;i>0;i--){
         // coorinates to direction
-        if(path[i-1].x-path[i].x == 0){
+        if(path[i-1].y-path[i].y == 0){
           if(path[i-1].x-path[i].x == 1){
             plannedTurnDeg = turnNeededDeg(1);
             absoluteturn(plannedTurnDeg);
@@ -303,8 +309,7 @@ void loop(){
       break;
     }
  }
- 
- 
+ */
 
 
 
