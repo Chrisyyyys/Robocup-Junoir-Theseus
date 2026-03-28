@@ -201,7 +201,7 @@ void parallel(){
   int sensorA = -1;
   int sensorB = -1;
   int wallDir;
-
+  Serial.println("paralleling");
   // Prefer aligning to the right wall; otherwise use left wall.
   if (detectWall(1) == 0) {
     sensorA = 2;

@@ -21,6 +21,9 @@ void init_color(){
 
   tcs.getRawData(&r, &g, &b, &c);
   clear = c;
+  Serial.println("clear value");
+  Serial.println(clear);
+  
 }
 int read_color(){
   myMux.setPort(TCS_PORT);          
@@ -31,6 +34,7 @@ int read_color(){
   tcs.getRawData(&r, &g, &b, &c);
  
   if((float)c/clear<BLACK_THRESHOLD){
+    
     
     return -1; // black
   }

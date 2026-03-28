@@ -56,9 +56,10 @@ void fwd(double dist){ // in mm
   int cnt = 0; // tiles traversed while climbing.
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
-  PID myPID(0.25,0,0.2);
+  PID myPID(0.28,0,0.2);
+  Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
-  while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true)&&black!=true){
+  while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // color
     int color = read_color(); // read color
@@ -85,10 +86,10 @@ void fwd(double dist){ // in mm
         motorC->run(BACKWARD);
         motorD->run(BACKWARD);
        
-        motorA->setSpeed(225);
-        motorB->setSpeed(225);
-        motorC->setSpeed(225);
-        motorD->setSpeed(225);
+        motorA->setSpeed(200);
+        motorB->setSpeed(200);
+        motorC->setSpeed(200);
+        motorD->setSpeed(200);
       }
       black = true;
     }
@@ -97,28 +98,40 @@ void fwd(double dist){ // in mm
     //Serial.println(center());
     double adjustment = myPID.getPID(difference);
     // emergency stop
-    if((measure(1)<=50&&measure(1)!=-1)||(measure(7)<=50&&measure(7)!=-1)){
+    int a = measure(1);
+    int b = measure(7);
+    if((a<=50&&a!=-1)||(b<=50&&b!=-1)){
       Serial.println("stopping");
-      Serial.println(measure(1));
-      Serial.println(measure(7));
+      Serial.println(a);
+      Serial.println(b);
       fullstop();
       delay(50);
       break;
     }
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
-    if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){
+     if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){
       int _encoderCountB = encoderCountB;
+      climbtoggle = true;
       encoderCountB = 0;
+      Serial.println(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw));
+      Serial.println("climbing");
+      
       while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){
-        climbtoggle = true;
-        Serial.println("climbing");
+        Serial.println(encoderCountB);
         detachInterrupt(digitalPinToInterrupt(encoderPin_A_A)); // stop encoders
-        motorA->setSpeed(255);
-        motorB->setSpeed(255);
-        motorC->setSpeed(255);
-        motorD->setSpeed(255);
-        if(encoderCountB == (300/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio)/cos(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw))){
+         // PID centering
+        difference = center();
+        //Serial.println(center());
+        double adjustment = myPID.getPID(difference);
+        motorA->setSpeed(200+adjustment); // center during climbing
+        motorC->setSpeed(200+adjustment);
+        motorB->setSpeed(200-adjustment);
+        motorD->setSpeed(200-adjustment);
+        if(encoderCountB >= pulses/cos(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)*(M_PI/180))){
+          //Serial.println(pulses/cos(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)));
+          Serial.println(encoderCountB);
+          Serial.println("1 section of the ramp climbed");
           cnt++;
           encoderCountB=0;
         } // track tiles
@@ -130,49 +143,63 @@ void fwd(double dist){ // in mm
     }
     // check cameras
 
-    if(Serial2.available()&&victimtoggle == false){
-      Serial.println("victim at left");
-      myPID.pausePID(1);
+    if(readSerial1()!=-1&&victimtoggle == false){ // check serial
       fullstop();
-      clearSerialBuffer1();
-      detectCam1();
-      myPID.pausePID(2);
-      victimtoggle = true;
+      
+      if(detectWall(3)==0){
+        Serial.println(measure(6));
+        Serial.println("victim at left");
+        Serial.println((char)Serial2.read());
+        myPID.pausePID(1);
+        
+        clearSerialBuffer1();
+        detectCam1();
+        myPID.pausePID(2);
+        victimtoggle = true;
+      }
     }
-    else if(Serial3.available()&&victimtoggle == false){
-      Serial.println("victim at right");
-      myPID.pausePID(1);
+    else if(readSerial2()!=-1&&victimtoggle == false){
       fullstop();
-      clearSerialBuffer2();
-      detectCam2();
-      myPID.pausePID(2);
-      victimtoggle = true;
+      
+      
+      if(detectWall(1)==0){
+        Serial.println(measure(2));
+        Serial.println("victim at right");
+        Serial.println((char)Serial3.read());
+        myPID.pausePID(1);
+        
+        clearSerialBuffer2();
+        detectCam2();
+        myPID.pausePID(2);
+        victimtoggle = true;
+      }
     }
     if(victimtoggle == true){
-      if(encoderCountA<pulses/2){
+      if(encoderCountA<2*pulses/3){
         victimAtCurrent = true;
         mapGrid[x_pos][y_pos].setVictim(true);
       }
       else victimAtCurrent = false;
     }
-    motorA->setSpeed(150+adjustment);
-    motorC->setSpeed(150+adjustment);
-    motorB->setSpeed(150-adjustment);
-    motorD->setSpeed(150-adjustment);
+    motorA->setSpeed(125+adjustment);
+    motorC->setSpeed(125+adjustment);
+    motorB->setSpeed(125-adjustment);
+    motorD->setSpeed(125-adjustment);
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){
     for(int i = 0; i<cnt;i++){
+      Serial.println("adding ramp to map");
       writeWallsToCurrentTile(0, 1, 0, 1);
       updateFullyExploredAt(x_pos, y_pos);
       markEdgeBothWays(x_pos, y_pos, currentDir);
       stepForward(currentDir, x_pos, y_pos);
     }
     Serial.println("compensating");
-    motorA->setSpeed(255);
-    motorB->setSpeed(255);
-    motorC->setSpeed(255);
-    motorD->setSpeed(255);
+    motorA->setSpeed(200);
+    motorB->setSpeed(200);
+    motorC->setSpeed(200);
+    motorD->setSpeed(200);
     delay(200);
   }
   
@@ -186,78 +213,52 @@ void absoluteturn(double angle){
   PID myPID(10,0,0.3); 
   double MOTORSPEED = 0;
   double current_angle=myGyro.heading();
+  bool fasterway = false;
+  if(abs(angle-current_angle)> abs(angle-(360-current_angle))){
+    current_angle = myGyro.inverse(current_angle,true); // make sure the robot turns the least amount
+    fasterway = true;
+  } 
   double init_angle = current_angle;
+  Serial.println("current angle");
   Serial.println(current_angle);
    // create timer to cut of turning
   timer myTimer;
-  if(current_angle == 0 && angle == 270){
-    while(true){
-      motorA->run(BACKWARD);
-      motorC->run(BACKWARD);
-      if(myGyro.modulus(angle)-myGyro.modulus(current_angle)>=0 && current_angle > 170) break;
-      if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break;
-      current_angle = myGyro.modulus(myGyro.heading());
-      MOTORSPEED = myPID.getPID(current_angle-myGyro.modulus(angle));
-      if(Serial2.available()&&victimtoggle == false){
-        Serial.println("victim at left");
-        myPID.pausePID(1);
-        myTimer.pause(1);
-        fullstop();
-        clearSerialBuffer1();
-        detectCam1();
-        myTimer.pause(2);
-        myPID.pausePID(2);
-        victimtoggle = true;
-      }
-      else if(Serial3.available()&&victimtoggle == false){
-        Serial.println("victim at right");
-        myPID.pausePID(1);
-        myTimer.pause(1);
-        fullstop();
-        clearSerialBuffer2();
-        detectCam2();
-        myTimer.pause(2);
-        myPID.pausePID(2);
-        victimtoggle = true;
-      }
-      motorA->setSpeed(constrain(MOTORSPEED,20,255));
-      motorB->setSpeed(constrain(MOTORSPEED,20,255));
-      motorC->setSpeed(constrain(MOTORSPEED,20,255));
-      motorD->setSpeed(constrain(MOTORSPEED,20,255));
-  }
-  }
-  else if(angle - current_angle > 0){
+
+  if(myGyro.inverse(angle,fasterway) - current_angle > 0){
     while(true){
       motorB->run(BACKWARD);
       motorD->run(BACKWARD);
-      if(angle-current_angle<=0 && current_angle < 190) break;
+      if(myGyro.inverse(angle,fasterway)-current_angle<=0 && current_angle < 190) break;
       
-      if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break; // turning limit
-      current_angle = myGyro.heading();
+      if(myTimer.getTime() > 2*abs(myGyro.inverse(angle,fasterway)-init_angle)/90*1000000) break; // turning limit
+      current_angle = myGyro.inverse(myGyro.heading(),fasterway);
       
-      MOTORSPEED = myPID.getPID(angle-current_angle);
+      MOTORSPEED = myPID.getPID(myGyro.inverse(angle,fasterway)-current_angle);
       if(Serial2.available()&&victimtoggle == false){
-        Serial.println("victim at left");
-        myPID.pausePID(1);
-        myTimer.pause(1);
-        fullstop();
-        clearSerialBuffer1();
-        detectCam1();
-        myTimer.pause(2);
-        myPID.pausePID(2);
-        victimtoggle = true;
-        
+        if(detectWall(3)==0){
+          Serial.println("victim at left");
+          myPID.pausePID(1);
+          myTimer.pause(1);
+          fullstop();
+          clearSerialBuffer1();
+          detectCam1();
+          myTimer.pause(2);
+          myPID.pausePID(2);
+          victimtoggle = true;
+        }
       }
       else if(Serial3.available()&&victimtoggle == false){
-        Serial.println("victim at right");
-        myPID.pausePID(1);
-        myTimer.pause(1);
-        fullstop();
-        clearSerialBuffer2();
-        detectCam2();
-        myTimer.pause(2);
-        myPID.pausePID(2);
-        victimtoggle = true;
+        if(detectWall(1)==0){
+          Serial.println("victim at right");
+          myPID.pausePID(1);
+          myTimer.pause(1);
+          fullstop();
+          clearSerialBuffer2();
+          detectCam2();
+          myTimer.pause(2);
+          myPID.pausePID(2);
+          victimtoggle = true;
+        }
       }
       motorA->setSpeed(constrain(MOTORSPEED,20,255));
       motorB->setSpeed(constrain(MOTORSPEED,20,255));
@@ -266,14 +267,14 @@ void absoluteturn(double angle){
     }
   }
 
-  else if(angle-current_angle<0) {
+  else if(myGyro.inverse(angle,fasterway)-current_angle<0) {
     while(true){
       motorA->run(BACKWARD);
       motorC->run(BACKWARD);
-      if(angle-current_angle>=0 && current_angle > 170) break;
-      if(myTimer.getTime() > 2*abs(angle-init_angle)/90*1000000) break;
-      current_angle = myGyro.heading();
-      MOTORSPEED = myPID.getPID(current_angle-angle);
+      if(myGyro.inverse(angle,fasterway)-current_angle>=0 && current_angle > 170) break;
+      if(myTimer.getTime() > 2*abs(myGyro.inverse(angle,fasterway)-init_angle)/90*1000000) break;
+      current_angle = myGyro.inverse(myGyro.heading(),fasterway);
+      MOTORSPEED = myPID.getPID(current_angle-myGyro.inverse(angle,fasterway));
       if(Serial2.available()&&victimtoggle == false){
         Serial.println("victim at left");
         myPID.pausePID(1);

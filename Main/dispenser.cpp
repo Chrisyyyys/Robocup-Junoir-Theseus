@@ -2,6 +2,7 @@
 #include "dispenser.h"
 #include <Stepper.h>
 extern Stepper myStepper;
+extern int medkits;
 dispenser::dispenser(int _incr, int _offset,int _steps_per_rev){
   incr = _incr;
   offset = _offset;
@@ -10,7 +11,7 @@ dispenser::dispenser(int _incr, int _offset,int _steps_per_rev){
   
 }
 void dispenser::rotate(int degrees){
-  myStepper.setSpeed(10);
+  myStepper.setSpeed(7);
   long steps = ((long)degrees*steps_per_rev)/360;
   myStepper.step(steps);
 }
@@ -19,11 +20,13 @@ void dispenser::dispenseLeft(char victim){ // clockwise
     case 'H':
       rotate(-(incr*2+offset+leftDispensed*incr));
       leftDispensed += 2;
+      medkits -= 2;
       rotate(offset+leftDispensed*incr);
       break;
     case 'S':
       rotate(-(incr*1+offset+leftDispensed*incr));
       leftDispensed += 1;
+      medkits -= 1;
       rotate(offset+leftDispensed*incr);
       break;
     case 'U':
@@ -33,14 +36,16 @@ void dispenser::dispenseLeft(char victim){ // clockwise
 void dispenser::dispenseRight(char victim){ // clockwise
   switch(victim){
     case 'H':
-      rotate(incr*2+offset+rightDispensed*incr);
+      rotate(incr*2+offset+rightDispensed*incr-11);
       rightDispensed += 2;
-      rotate(-(offset+rightDispensed*incr));
+      medkits -= 2;
+      rotate(-(offset+rightDispensed*incr-11));
       break;
     case 'S':
-      rotate(incr*1+offset+rightDispensed*incr);
+      rotate(incr*1+offset+rightDispensed*incr-11);
       rightDispensed += 1;
-      rotate(-(offset+rightDispensed*incr));
+      medkits -= 1;
+      rotate(-(offset+rightDispensed*incr+11));
       break;
     case 'U':
       break;
