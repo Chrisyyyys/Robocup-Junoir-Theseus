@@ -16,7 +16,16 @@ void gyro::init_Gyro(){
     Serial.println("gyro found");
   }
 }
+int gyro::inverse(int val, bool inv){
+  if(inv == true) {
+    if(val == 0) return val; 
+    val = val - 360;
+  }
+  else{val = val%360;}
+  return val;
+}
 int gyro::modulus(int val){
+  
   if(val> 180) {val = val - 360;}
   else{val = val%360;}
   return val;
@@ -24,12 +33,31 @@ int gyro::modulus(int val){
 double gyro::heading(){
   sensors_event_t event; bno.getEvent(&event);
   float heading = (double)event.orientation.x;
-  if (abs(360-heading)< 5) heading = 0; // wraparound
+  if (abs(360-heading)< 5||abs(heading)<5) heading = 0; // wraparound
   return heading;
 }
 double gyro::yaw_heading(){
   sensors_event_t event; bno.getEvent(&event);
   float yaw_heading = (double)event.orientation.y;
-  if (abs(360-yaw_heading)< 5) yaw_heading = 0;
+  if (abs(360-yaw_heading)< 5||abs(yaw_heading)<5) yaw_heading = 0;
   return yaw_heading;
+}
+int double::get_acceleration(){
+  sensors_event_t event; bno.getEvent(&event,  Adafruit_BNO055::VECTOR_LINEARACCEL);
+  double accel = (double) event.acceleration.x;
+  return accel;
+}
+int gyro::headingToCardinal(double heading){
+    // normalize angle
+    if (heading < 0) heading += 360;
+    if (heading >= 360) heading -= 360;
+
+    if (heading >= 315 || heading < 45)
+        return 0; // North
+    else if (heading >= 45 && heading < 135)
+        return 1; // East
+    else if (heading >= 135 && heading < 225)
+        return 2; // South
+    else
+        return 3; // West
 }

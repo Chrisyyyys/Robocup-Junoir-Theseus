@@ -13,7 +13,8 @@ enum Direction {
 enum TileTypes {
   BLANK = 0,
   BLUE  = 1,
-  CHECKPOINT =2
+  CHECKPOINT =2,
+  BLACK = 3
 
 };
 

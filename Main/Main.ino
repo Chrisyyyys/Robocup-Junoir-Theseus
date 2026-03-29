@@ -7,12 +7,19 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+
+#include <Stepper.h>
+#include <ArduinoQueue.h> // queue
+#include <Vector.h> // vector
 #include "PID.h"
 #include "timer.h"
 #include "gyro.h"
+#include "dispenser.h"
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define BLACK_THRESHOLD 60 // color clear-channel threshold (tune)
+#define BLACK_THRESHOLD 0.10 // color clear-channel threshold ratio for black
+#define SILVER_THRESHOLD 800 // tun3
+float clear; 
 
 #include "MazeTile.h"
 
@@ -37,10 +44,10 @@ Adafruit_DCMotor *motorB = AFMS.getMotor(2);
 Adafruit_DCMotor *motorC = AFMS.getMotor(3);
 Adafruit_DCMotor *motorD = AFMS.getMotor(4);
 // set up encoder pins
-const int encoderPin_A_A = 3;
-const int encoderPin_A_B = 5; 
-const int encoderPin_B_A = 2;
-const int encoderPin_B_B = 4; 
+const int encoderPin_A_A = 2;
+const int encoderPin_A_B = 4; 
+const int encoderPin_B_A = 3;
+const int encoderPin_B_B = 5; 
 // encoder counters
 volatile int encoderCountB;
 volatile int encoderCountA;
@@ -54,20 +61,24 @@ const double wheel_diameter = 68.7; // millimeters.
 
 char classes[6] = {'H','S','U','R','Y','G'};
 
-
+// create stepper object
+const int steps_per_revolution = 2048;
+Stepper myStepper = Stepper(steps_per_revolution, 8, 9,10,11); 
 // map size variables
 const int MAP_SIZE=20;
 Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
+// queue
 
 
 //states that the robot will be in
 enum RobotState {
   SENSE_TILE,
   UPDATE_MAP,
-  VICTIM_SIGNAL,
   PLAN_NEXT,
   EXECUTE_MOVE,
-  BACKPEDAL
+  BACKPEDAL,
+  PAUSE,
+  RETURN
 };
 enum Steps {
   TURN,
@@ -75,8 +86,13 @@ enum Steps {
   BACKTRACK,
   FWD,
 };
+// coord struct
+struct coord {
+  int x;
+  int y;
+};
 Steps steps = TURN;
-const int POWERPIN = 41;
+
 // initialize 
 
 Direction currentDir = NORTH;     // robot heading in map coords (0..3)
@@ -85,47 +101,57 @@ Direction plannedMoveDir = NORTH; // absolute direction robot will move next
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
+// maze return to start condition variables
+int medkits = 8;
+timer mazeTime;
 // black blue toggles
 bool blacktoggle = false;
 bool bluetoggle = false;
 // victim toggles
 bool victimtoggle = false;
+bool victimAtCurrent = false;
 // LED pins
 const int pinHarmed = 41;
 const int pinStable = 37;
 const int pinUnharmed = 29;
+// camera GPIOs
+const int gpio1 = 13;
+const int gpio2 = 12;
 // de-activate color sensor while climbing
 int use_color = 0;
-// if tile has been fully checked:
-bool tilecheck = false;
-
-
-
+// stepper variables
+const int angle_offset = 44;
+const int angle_increment = 22;
+dispenser disp(angle_increment,angle_offset,steps_per_revolution);
+// logic switch pin
+const int logicswitch = 31;
+bool Pausemaze = false;
+int x_checkpoint, y_checkpoint;
 void setup(){
   // initialize LED puns
-  
   pinMode(pinHarmed,OUTPUT);
   pinMode(pinStable,OUTPUT);
   pinMode(pinUnharmed,OUTPUT);
+  // initialize camera gpio pins
+  pinMode(gpio1, INPUT);
+  pinMode(gpio2, INPUT);
+  // initialize logic switch pin
+
   // begin UART communication.
   Serial.begin(115200);
-  Serial2.begin(115200);
-  Serial3.begin(115200);
+  Serial2.begin(9600); // switch to 9600 for reliability
+  Serial3.begin(9600);
+  flashLED('S');
   uint8_t cause = MCUSR;
   MCUSR = 0;
-
-  
- 
   Wire.begin();
   disableAllCall();
   myMux.begin();
-  
-  
   init_dist(); // initialize mux before distance sensors.
   scanAllPorts();
-  
   init_color();
   init_drive();
+  //
   //detect();
   //initialize map
   initializeMap();
@@ -134,11 +160,24 @@ void setup(){
   mapGrid[x_pos][y_pos].setDiscovered(true); 
   currentDir = NORTH;
   state = SENSE_TILE;
-  delay(2000);
+  
+  delay(2000); // wait for camera to start.
+  
   
 }
-
+int iterator = 0;
 void loop(){
+  
+  /*
+  if(Serial2.available()>0){
+    Serial.println((char)Serial2.read());
+    Serial.println("letters coming");
+    delay(1000);
+    detectCam1();
+    clearSerialBuffer1();
+  }
+  Serial.println("nothing");
+  */
   
   
   static bool wallF, wallR, wallB, wallL;
@@ -148,51 +187,28 @@ void loop(){
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
       state = UPDATE_MAP; // next state.
+      if(Pausemaze == true) state = PAUSE;
       break;
     }
     case UPDATE_MAP: {
       writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
       updateFullyExploredAt(x_pos, y_pos);
-      state = VICTIM_SIGNAL;
-      break;
-    }
-    case VICTIM_SIGNAL: {
-      
-      if(mapGrid[x_pos][y_pos].getVictim() == false){
-        if(measure(1)>MIN_DIST){
-          tilecheck = true;
-          detect();
-        }
-        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
-        victimtoggle = false;
-      }
-      delay(200);
-      parallel();
-      delay(100);
-      
-      state = PLAN_NEXT;  // continue
+      state = PLAN_NEXT;
+      if(Pausemaze == true) state = PAUSE;
       break;
     }
     case PLAN_NEXT: {
       plannedMoveDir = pickNextDirection();
-     
+
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-     
+      Serial.println(plannedTurnDeg);
+      if(Pausemaze == true) state = PAUSE;
       state = EXECUTE_MOVE;
       break;
     }
     case EXECUTE_MOVE: {
       absoluteturn(plannedTurnDeg);
-      if(tilecheck == false){
-        if(mapGrid[x_pos][y_pos].getVictim() == false){
-        if(measure(1)>MIN_DIST){
-          tilecheck = true;
-          detect();
-        }
-        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
-          victimtoggle = false;
-        }
-      }
+
       delay(200);
       parallel();
       delay(100);
@@ -219,8 +235,14 @@ void loop(){
       delay(200);
       parallel();
       delay(100);
-      tilecheck = false;
+      iterator += 1;
+      
+      victimtoggle = false;
       state = SENSE_TILE;
+      if(Pausemaze == true) state = PAUSE;
+      //if(mazeTime.getTime() >= 1000000*60*6) state = RETURN;
+      //if(medkits <= 0) state = RETURN;
+      if(iterator >= 20) state = RETURN;
       break;
      
     }
@@ -228,13 +250,88 @@ void loop(){
       plannedMoveDir = pickNextDirection();
      
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-     
       state = EXECUTE_MOVE;
       blacktoggle = false;
+      if(Pausemaze == true) state = PAUSE;
+      delay(500);
+      break;
+    }
+    case RETURN: {
+      coord currentpos = {x_pos,y_pos};
+      coord endpos = {MAP_SIZE/2,MAP_SIZE/2};
+      coord path[MAP_SIZE*MAP_SIZE];
+      flashLED('H');
+      flashLED('U');
+      Serial.println("starting bfs");
+      int length = BFS(currentpos,mapGrid,endpos,path);
+      Serial.println("path calculated");
+      for(int i = length;i>0;i--){
+        // coorinates to direction
+        if(path[i-1].y-path[i].y == 0){
+          if(path[i-1].x-path[i].x == 1){
+            plannedTurnDeg = turnNeededDeg(1);
+            absoluteturn(plannedTurnDeg);
+            delay(200);
+            parallel();
+            delay(100);
+            //update currentDir
+            currentDir = 1;
+            // 2) drive one tile
+            fwd(TILE_MM);
+          }
+          else if(path[i-1].x-path[i].x == -1){
+            plannedTurnDeg = turnNeededDeg(3);
+            absoluteturn(plannedTurnDeg);
+            delay(200);
+            parallel();
+            delay(100);
+            //update currentDir
+            currentDir = 3;
+            // 2) drive one tile
+            fwd(TILE_MM);
+          }
+        }
+        else{
+          if(path[i-1].y-path[i].y == 1){
+            plannedTurnDeg = turnNeededDeg(0);
+            absoluteturn(plannedTurnDeg);
+            delay(200);
+            parallel();
+            delay(100);
+            //update currentDir
+            currentDir = 3;
+            // 2) drive one tile
+            fwd(TILE_MM);
+          }
+          else if(path[i-1].y-path[i].y == -1){
+            plannedTurnDeg = turnNeededDeg(2);
+            absoluteturn(plannedTurnDeg);
+            delay(200);
+            parallel();
+            delay(100);
+            //update currentDir
+            currentDir = 3;
+            // 2) drive one tile
+            fwd(TILE_MM);
+          }
+        }
+        
+      }
+      flashLED('H');
+      while(true){
+        fullstop();
+      }
+    }
+    case PAUSE: {
+      while(digitalRead(logicswitch)==true){
+        fullstop();
+        x_pos = x_checkpoint; y_pos = y_checkpoint;
+      }
+      myGyro.headingToCardinal(myGyro.heading());
+      state = SENSE_TILE;
       break;
     }
  }
- 
  
 
 
