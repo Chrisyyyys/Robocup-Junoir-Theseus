@@ -3,7 +3,6 @@
 #include "PID.h"
 
 PID::PID(double _kp, double _ki, double _kd){
-  
   kp = _kp; // public kp = inputted _kp
   ki = _ki;
   kd = _kd;
@@ -12,7 +11,7 @@ PID::PID(double _kp, double _ki, double _kd){
 }
 double PID::getPID(double _error){
   error = _error;
-  currentTime = micros()-(end-start); // functions are slower! you need to use micros
+  currentTime = micros(); // functions are slower! you need to use micros
   delta = (error-prevError)/(currentTime - previousTime);
   cumError += error;
   double output = kp*error + ki*cumError + kd*delta;
@@ -20,9 +19,5 @@ double PID::getPID(double _error){
   prevError = error; // update previousTime and prevError
   return output;
   
-}
-void PID::pausePID(int on){
-  if(on == 1) start = micros();
-  if(on == 2) end = micros();
 }
 

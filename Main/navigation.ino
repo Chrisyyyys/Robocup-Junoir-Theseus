@@ -1,4 +1,3 @@
-
 // I assume is global?
 Direction rotateDir(Direction base, int offset) {
   return (Direction)((base + offset + 4) % 4);
@@ -11,7 +10,6 @@ void stepForward(Direction d, int &x, int &y) {
   else if (d == EAST) x++;
   else if (d == SOUTH) y--;
   else if (d == WEST) x--;
-  if(victimAtCurrent == false&&victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
 }
 
 bool inBounds(int x, int y) {
@@ -24,6 +22,7 @@ void initializeMap() {
       mapGrid[x][y].setDiscovered(false);
       mapGrid[x][y].setFully(false);
       mapGrid[x][y].setVisited(false);
+      mapGrid[x][y].setBlue(false);
       for (int d = 0; d < 4; d++) {
         mapGrid[x][y].setWall(d, false);
         mapGrid[x][y].setEdge(d, false);
@@ -93,11 +92,11 @@ Direction pickNextDirection() {
   Direction absR = rotateDir(currentDir, +1);
   Direction absB = rotateDir(currentDir, +2);
   // Plan directly in absolute map directions.
-  const Direction priority[4] = {absR,absL, absF, absB};
+  const Direction priority[4] = {absF, absR, absL, absB};
 
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
-  
+
   // 1) try open + untraveled first
   for (int i = 0; i < 4; i++) {
     int nx = x_pos, ny = y_pos;
@@ -105,15 +104,17 @@ Direction pickNextDirection() {
     Direction d = priority[i];
     stepForward(d,nx,ny);
 
-    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()&&mapGrid[nx][ny].getType()!=1&&mapGrid[nx][ny].getType()!=3) return d;
+    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()&&!mapGrid[nx][ny].getBlue()) return d;
   }
 
+  for (int i = 0; i < 4; i++) {
+    Direction d = priority[i];
+    if (open(d)) return d;
+  }
   // 2) else any open using the same absolute priority.
   for (int i = 0; i < 4; i++) {
-    int nx = x_pos, ny = y_pos;
     Direction d = priority[i];
-    stepForward(d,nx,ny);
-    if (open(d)&&mapGrid[nx][ny].getType()!=3) return d;
+    if (open(d)) return d;
   }
 
   // figure out BFS later
@@ -136,121 +137,25 @@ int turnNeededDeg(Direction direction) {
   return 270; // diff==3
 
 }
-int dir[4][2] = {
-    {0, 1},
-    {1, 0},
-    {0, -1},
-    {-1, 0}
-};
-void initTile(int x, int y) {
-    mapGrid[x][y].setDiscovered(false);
-    mapGrid[x][y].setFully(false);
-    for (int d = 0; d < 4; d++) {
-        mapGrid[x][y].setWall(d, false);
-        mapGrid[x][y].setEdge(d, false);
+/*
+void returnToStart(x,y){
+  Tile &t = mapGrid[x_pos][y_pos];
+  // when it reaches beginning, stop.
+  if(x == 0 && y == 0){
+    return;
+  }
+  // loop through all edges
+  for(int i = 0; i< 4;i++){
+    if(t.getEdge(i) == true){
+      stepForward(i,x,y); // fwd in direction i 
+      plannedTurnDeg = turnNeededDeg(currentDir, i);
+      turn(plannedTurnDeg);
+      fwd(TILE_MM);
+      returnToStart(x,y);
     }
-    mapGrid[x][y].setType(BLANK);
+  }
+  // check for each.
+  
+  stepForward();
 }
-
-void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) { //input mapgrid, and next tile location
-    //cout << "start reallocate" << endl;
-
-    //expand to bottom (remove top)
-    if (pos_y >= MAP_SIZE) {
-        for (int i = 0; i < MAP_SIZE - 1; i++) {
-            for (int j = 0; j < MAP_SIZE; j++) {
-                mapgrid[i][j] = mapgrid[i + 1][j];
-            }
-            //printmap(mapgrid);
-        }
-        for (int i = 0; i < MAP_SIZE; i++) {
-            initTile(MAP_SIZE - 1, i);
-        }
-    }
-    //expand to top (remove bottom)
-    else if (pos_y < 0) {
-        for (int i = MAP_SIZE-1; i > 0; i--) {
-            for (int j = 0; j < MAP_SIZE; j++) {
-                mapgrid[i][j] = mapgrid[i - 1][j];
-            }
-            //printmap(mapgrid);
-        }
-        for (int i = 0; i < MAP_SIZE; i++) {
-            initTile(0, i);
-        }
-    }
-
-    //expand to right (remove left)
-    else if (pos_x >= MAP_SIZE) {
-        for (int j = 0; j < MAP_SIZE - 1; j++) {
-            for (int i = 0; i < MAP_SIZE; i++) {
-                mapgrid[i][j] = mapgrid[i][j+1];
-            }
-            //printmap(mapgrid);
-        }
-        for (int i = 0; i < MAP_SIZE; i++) {
-            initTile(i, MAP_SIZE-1);
-        }
-    }
-
-    //expand to left (remove right)
-    else if (pos_x < 0) {
-        for (int j = MAP_SIZE - 1; j > 0; j--) {
-            for (int i = 0; i < MAP_SIZE; i++) {
-                mapgrid[i][j] =  mapgrid[i][j - 1];
-            }
-            //printmap(mapgrid);
-        }
-        for (int i = 0; i < MAP_SIZE; i++) {
-            initTile(i, 0);
-        }
-    }
-}
-
-// pair structure
-int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord path[MAP_SIZE * MAP_SIZE]) { // auto updates path
-    ArduinoQueue<coord> queue = {};
-    size_t rows = MAP_SIZE;
-    size_t columns = MAP_SIZE;
-    bool visited[MAP_SIZE][MAP_SIZE] = {false};
-    coord prev[MAP_SIZE][MAP_SIZE];
-    queue.enqueue(currentpos); // current tile
-    visited[currentpos.x][currentpos.y] = true;
-    //search
-    while (queue.itemCount() > 0) {
-        int x = queue.getHead().x; int y = queue.getHead().y;
-        //cout << "visting: " << x << "," << y << endl;
-
-        for (int i = 0; i < 4; i++) {
-            int nx = x + dir[i][0];
-            int ny = y + dir[i][1];
-            if (nx < rows && ny < columns && nx >= 0 && ny >= 0) {
-                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(opposite(i))&&mapGrid[nx][ny].getDiscovered()&&mapGrid[nx][ny].getType()!=3) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
-                    queue.enqueue(coord{nx, ny}); // add tile
-                    visited[nx][ny] = true;
-                    
-                    prev[nx][ny] = coord{x, y};
-                    
-                }
-            }
-        }
-        queue.dequeue();
-    }
-    //reconstruct path
-    // path[0] is (0,0), path[n] is current tile.
-    int i = 0;
-    coord curr = endpos;
-    while (true) {
-      path[i] = curr;
-      i++;
-
-      if (curr.x == currentpos.x&&curr.y==currentpos.y) {
-        break;
-      }
-      curr = prev[curr.x][curr.y];
-    }
-    return i;
-    
-}
-
-
+*/

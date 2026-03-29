@@ -8,10 +8,8 @@ class gyro{
     void init_Gyro();
     double heading();
     double yaw_heading();
-    int inverse(int,bool);
     int modulus(int);
-    int headingToCardinal(double);
-    double get_acceleration();
+    
 
 };
 #endif

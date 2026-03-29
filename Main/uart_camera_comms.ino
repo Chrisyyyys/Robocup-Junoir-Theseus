@@ -14,15 +14,15 @@ void clearSerialBuffer2() {
 void flashLED(char victimState){
   if(victimState == 'H'){
     digitalWrite(pinHarmed,HIGH);
-    delay(1000);
+    delay(5000);
   }
   else if(victimState == 'S'){
     digitalWrite(pinStable,HIGH);
-    delay(1000);
+    delay(5000);
   }
   else{
     digitalWrite(pinUnharmed,HIGH);
-    delay(1000);
+    delay(5000);
   }
   digitalWrite(pinHarmed,LOW);
   digitalWrite(pinStable,LOW);
@@ -44,8 +44,14 @@ int readSerial1(){ //
     else if(sample == 'U'){
       output = 2;
     }
-    else if(sample == 'L'||sample == 'c'||sample == 'I'){
-      output = -2;
+    else if(sample == 'R'){
+      output = 3;
+    }
+    else if(sample == 'Y'){
+      output = 4;
+    }
+    else{
+      output = 5; // green
     }
     return output; // output inside or it keeps outputting
   }
@@ -71,10 +77,15 @@ int readSerial2(){
     else if(sample == 'U'){
       output = 2;
     }
-    else if(sample == 'L'||sample == 'c'|| sample == 'I'){
-      output = -2;
+    else if(sample == 'R'){
+      output = 3;
     }
-    
+    else if(sample == 'Y'){
+      output = 4;
+    }
+    else{
+      output = 5; // green
+    }
     return output; // output inside or it keeps outputting
     
   }
@@ -84,27 +95,27 @@ int readSerial2(){
   }
 }
 void detectCam1(){ // doesn't return anything.
-   // read buffer
-  // if there is content, take 5 samples and take the most common letter.
+  // read buffer
+  // if there is content, take 5 samples and take the most common letter( the model sometime misidentifies)
   int samples[5];
-  int n = 0;
   int maxCount = 0;
   char res = 0;
   char output;
   timer myTimer;
-  while(n<5){
-    if(myTimer.getTime() > 5*1000000) return;
-    
-    int value = readSerial1();
-    
-    if(value >= 0){   // only H/S/U
-        samples[n] = value;
-        Serial.println(value);
-        n++;
+  while(Serial2.available()<5){
+    Serial.println(myTimer.getTime());
+    if(myTimer.getTime() > 5*1000000){
+      Serial.println("out of time");
+      return;
     }
   }
+  Serial.println("letters incoming");
+  
   for(int i =0; i<5;i++){
-    Serial.println(samples[i]);
+    int value = readSerial1();
+    samples[i] = value;
+    Serial.println(value);
+    
   }
   
   for(int i=0;i<6;i++){
@@ -118,31 +129,26 @@ void detectCam1(){ // doesn't return anything.
     }
   }
   flashLED(res);
-  //disp.dispenseRight(res);
+  
   return;
 }
 void detectCam2(){
   // read buffer
   // if there is content, take 5 samples and take the most common letter.
   int samples[5];
-  int n = 0;
   int maxCount = 0;
   char res = 0;
   char output;
   timer myTimer;
-  while(n<5){
+  while(Serial3.available()<5){
     if(myTimer.getTime() > 5*1000000) return;
-    
-    int value = readSerial2();
-
-    if(value >= 0){   // only H/S/U
-        samples[n] = value;
-        Serial.println(value);
-        n++;
-    }
+    Serial.println(myTimer.getTime());
   }
   for(int i =0; i<5;i++){
-    Serial.println(samples[i]);
+    int value = readSerial2();
+    samples[i] = value;
+    Serial.println(value);
+    
   }
   
   for(int i=0;i<6;i++){
@@ -156,7 +162,6 @@ void detectCam2(){
     }
   }
   flashLED(res);
-  //disp.dispenseRight(res);
   return;
 }
 void detect(){ // the robot goes forward until it detects something( does not return)
