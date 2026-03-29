@@ -93,11 +93,11 @@ Direction pickNextDirection() {
   Direction absR = rotateDir(currentDir, +1);
   Direction absB = rotateDir(currentDir, +2);
   // Plan directly in absolute map directions.
-  const Direction priority[4] = {absF, absR, absL, absB};
+  const Direction priority[4] = {absR,absL, absF, absB};
 
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
-
+  
   // 1) try open + untraveled first
   for (int i = 0; i < 4; i++) {
     int nx = x_pos, ny = y_pos;

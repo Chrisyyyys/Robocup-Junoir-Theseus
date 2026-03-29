@@ -42,6 +42,11 @@ double gyro::yaw_heading(){
   if (abs(360-yaw_heading)< 5||abs(yaw_heading)<5) yaw_heading = 0;
   return yaw_heading;
 }
+int double::get_acceleration(){
+  sensors_event_t event; bno.getEvent(&event,  Adafruit_BNO055::VECTOR_LINEARACCEL);
+  double accel = (double) event.acceleration.x;
+  return accel;
+}
 int gyro::headingToCardinal(double heading){
     // normalize angle
     if (heading < 0) heading += 360;

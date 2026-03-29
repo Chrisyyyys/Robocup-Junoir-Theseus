@@ -11,6 +11,7 @@ class gyro{
     int inverse(int,bool);
     int modulus(int);
     int headingToCardinal(double);
+    double get_acceleration();
 
 };
 #endif
