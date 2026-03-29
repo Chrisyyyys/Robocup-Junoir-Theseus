@@ -39,14 +39,18 @@ void init_dist() {
     myMux.setPort(i);
     sensors[i].setAddress(0x30); // conflict with TCS34725 for some reason.
     delay(10);
+    
+    
     if(!sensors[i].init()){
-      Serial.println("Sensor "+String(i)+" failed to initialize");
+    Serial.println("Sensor "+String(i)+" failed to initialize");
     }
     else{
       Serial.println("Sensor "+String(i)+" is able to initialize");
     }
     sensors[i].startContinuous(); // start continuous ranging.
   }
+    
+  
   
 
 }
@@ -197,7 +201,7 @@ void parallel(){
   int sensorA = -1;
   int sensorB = -1;
   int wallDir;
-
+  Serial.println("paralleling");
   // Prefer aligning to the right wall; otherwise use left wall.
   if (detectWall(1) == 0) {
     sensorA = 2;
