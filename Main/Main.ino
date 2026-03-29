@@ -204,11 +204,13 @@ void loop(){
       if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
         fullstop();
         delay(5000);
+        mapGrid[x_pos][y_pos].setBlue(true);
       }
       bluetoggle = false;
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos);
+        
       }
       else{
         state = BACKPEDAL;

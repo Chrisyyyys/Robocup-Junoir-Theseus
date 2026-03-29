@@ -74,6 +74,12 @@ struct Tile {
   void setVisited(bool stat){
     bitset.set(11,stat);
   }
+  bool getBlue(){
+    return bitset.get(12);
+  }
+  void setBlue(bool stat){
+    bitset.set(12,stat);
+  }
 
   //bool wall[4];
   //bool edge[4];

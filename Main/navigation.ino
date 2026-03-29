@@ -22,6 +22,7 @@ void initializeMap() {
       mapGrid[x][y].setDiscovered(false);
       mapGrid[x][y].setFully(false);
       mapGrid[x][y].setVisited(false);
+      mapGrid[x][y].setBlue(false);
       for (int d = 0; d < 4; d++) {
         mapGrid[x][y].setWall(d, false);
         mapGrid[x][y].setEdge(d, false);
@@ -103,9 +104,13 @@ Direction pickNextDirection() {
     Direction d = priority[i];
     stepForward(d,nx,ny);
 
-    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()) return d;
+    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()&&!mapGrid[nx][ny].getBlue()) return d;
   }
 
+  for (int i = 0; i < 4; i++) {
+    Direction d = priority[i];
+    if (open(d)) return d;
+  }
   // 2) else any open using the same absolute priority.
   for (int i = 0; i < 4; i++) {
     Direction d = priority[i];
