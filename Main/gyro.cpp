@@ -42,10 +42,27 @@ double gyro::yaw_heading(){
   if (abs(360-yaw_heading)< 5||abs(yaw_heading)<5) yaw_heading = 0;
   return yaw_heading;
 }
-int double::get_acceleration(){
+double gyro::get_acceleration(){
   sensors_event_t event; bno.getEvent(&event,  Adafruit_BNO055::VECTOR_LINEARACCEL);
   double accel = (double) event.acceleration.x;
   return accel;
+}
+double gyro::get_filtered_acceleration(){
+  const double alpha = 0.15;  // 0..1, lower = smoother
+  double raw = get_acceleration();
+
+  if (!accelFilterInitialized) {
+    accelFiltered = raw;
+    accelFilterInitialized = true;
+  } else {
+    accelFiltered = alpha * raw + (1.0 - alpha) * accelFiltered;
+  }
+  return accelFiltered;
+}
+
+void gyro::reset_accel_filter(){
+  accelFilterInitialized = false;
+  accelFiltered = 0.0;
 }
 int gyro::headingToCardinal(double heading){
     // normalize angle

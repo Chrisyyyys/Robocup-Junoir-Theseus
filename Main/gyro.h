@@ -12,6 +12,11 @@ class gyro{
     int modulus(int);
     int headingToCardinal(double);
     double get_acceleration();
+    double get_filtered_acceleration();       // EMA filtered
+    void reset_accel_filter();
+    private:
+      bool accelFilterInitialized = false;
+      double accelFiltered = 0.0;
 
 };
 #endif

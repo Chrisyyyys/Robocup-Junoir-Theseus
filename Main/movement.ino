@@ -57,12 +57,51 @@ void fwd(double dist){ // in mm
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   double init_heading = myGyro.heading();
-  PID myPID(0.28,0,0.2);
+  PID myPID(0.20,0,0.2); // 0.28 for 125
   Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
+    // check cameras
+    
+    
+    if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){ // check serial
+      fullstop();
+      
+      if(detectWall(3)==0){
+        Serial.println(measure(6));
+        Serial.println("victim at left");
+        //Serial.println((char)Serial2.read());
+        myPID.pausePID(1);
+        clearSerialBuffer1();
+        detectCam1();
+        myPID.pausePID(2);
+        victimtoggle = true;
+      }
+    }
+    else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
+      fullstop();
+      if(detectWall(1)==0){
+        Serial.println(measure(2));
+        Serial.println("victim at right");
+        //Serial.println((char)Serial3.read());
+        myPID.pausePID(1);
+        clearSerialBuffer2();
+        detectCam2();
+        myPID.pausePID(2);
+        victimtoggle = true;
+      }
+    }
+    
+    if(victimtoggle == true){
+      if(encoderCountA<2*pulses/3){
+        victimAtCurrent = true;
+        mapGrid[x_pos][y_pos].setVictim(true);
+      }
+      else victimAtCurrent = false;
+    }
     // color
+    
     int color = read_color(); // read color
     if(color == 1&&use_color%2==0){
       bluetoggle = true;
@@ -94,6 +133,7 @@ void fwd(double dist){ // in mm
       }
       black = true;
     }
+    
     // PID centering
     difference = center();
     //Serial.println(center());
@@ -111,7 +151,12 @@ void fwd(double dist){ // in mm
     }
     // self correction
     // if acceleration is greater than a certain value and it is not just a stop then do something.
-    if(abs(myGyro.get_acceleration())>0.15&&abs(myGyro.modulus((int)myGyro.heading())-myGyro.modulus((int)init_heading))>25&&encoderCountA>pulses/10&&encoderCountB<pulses*9/10){
+    /*
+    double d = myGyro.get_filtered_acceleration();
+    Serial.println(d);
+    if(abs(d)>0.5&&encoderCountA>pulses/30&&encoderCountA<pulses*29/30&&victimtoggle==false){
+      Serial.println("botched fwd");
+      Serial.println(d);
       // step 1: go back
       motorA->run(BACKWARD);
       motorB->run(BACKWARD);
@@ -125,10 +170,11 @@ void fwd(double dist){ // in mm
       fullstop();
       delay(200);
       // step 2: turn( with slight offset)
-      absoluteturn(init_heading+(myGyro.modulus((int)myGyro.heading())-myGyro.modulus((int)init_heading)>0) ? -10: 10);
+      absoluteturn(init_heading+(myGyro.modulus((int)myGyro.heading())-myGyro.modulus((int)init_heading)>0 ? -10: 10)); // boundary condition kinda broken but we can fix it in the future.
       // step 3: reset encoders
-      encoderCountA = 0; encoderCount B = 0;
+      encoderCountA = 0; encoderCountB = 0;
     }
+    */
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
      if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){
@@ -162,46 +208,10 @@ void fwd(double dist){ // in mm
       attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
       encoderCountB = _encoderCountB;
     }
-    // check cameras
-
-    if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){ // check serial
-      fullstop();
-      
-      if(detectWall(3)==0){
-        Serial.println(measure(6));
-        Serial.println("victim at left");
-        Serial.println((char)Serial2.read());
-        myPID.pausePID(1);
-        clearSerialBuffer1();
-        detectCam1();
-        myPID.pausePID(2);
-        victimtoggle = true;
-      }
-    }
-    else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
-      fullstop();
-      if(detectWall(1)==0){
-        Serial.println(measure(2));
-        Serial.println("victim at right");
-        Serial.println((char)Serial3.read());
-        myPID.pausePID(1);
-        clearSerialBuffer2();
-        detectCam2();
-        myPID.pausePID(2);
-        victimtoggle = true;
-      }
-    }
-    if(victimtoggle == true){
-      if(encoderCountA<2*pulses/3){
-        victimAtCurrent = true;
-        mapGrid[x_pos][y_pos].setVictim(true);
-      }
-      else victimAtCurrent = false;
-    }
-    motorA->setSpeed(125+adjustment);
-    motorC->setSpeed(125+adjustment);
-    motorB->setSpeed(125-adjustment);
-    motorD->setSpeed(125-adjustment);
+    motorA->setSpeed(80+adjustment);
+    motorC->setSpeed(80+adjustment);
+    motorB->setSpeed(80-adjustment);
+    motorD->setSpeed(80-adjustment);
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){

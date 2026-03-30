@@ -75,6 +75,7 @@ enum RobotState {
   SENSE_TILE,
   UPDATE_MAP,
   PLAN_NEXT,
+  VICTIM_DETECT,
   EXECUTE_MOVE,
   BOTCHED_TURN_RECOVERY,
   BACKPEDAL,
@@ -129,6 +130,7 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 const int logicswitch = 31;
 bool Pausemaze = false;
 int x_checkpoint, y_checkpoint;
+bool tilecheck = false;
 
 double headingErrorDeg(double targetDeg, double actualDeg) {
   double err = targetDeg - actualDeg;
@@ -185,7 +187,7 @@ void setup(){
   state = SENSE_TILE;
   
   delay(2000); // wait for camera to start.
-  
+  detect();
   
 }
 int iterator = 0;
@@ -220,6 +222,19 @@ void loop(){
       if(Pausemaze == true) state = PAUSE;
       break;
     }
+    case VICTIM_DETECT: {
+       if(mapGrid[x_pos][y_pos].getVictim() == false){
+        if(measure(1)>MIN_DIST){
+          detect();
+        }
+        
+        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+        victimtoggle = false;
+      }
+      delay(200);
+      parallel();
+      delay(100);
+    }
     case PLAN_NEXT: {
       plannedMoveDir = pickNextDirection();
 
@@ -233,7 +248,6 @@ void loop(){
     case EXECUTE_MOVE: {
       if (turnCompletedForMove == false) {
         absoluteturn(plannedTurnDeg);
-
         delay(200);
         parallel();
         delay(100);
@@ -244,6 +258,16 @@ void loop(){
         }
         currentDir = plannedMoveDir;
         turnCompletedForMove = true;
+      }
+      if(tilecheck == false){
+        if(mapGrid[x_pos][y_pos].getVictim() == false){
+          if(measure(1)>MIN_DIST){
+            tilecheck = true;
+            detect();
+          }
+        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+          victimtoggle = false;
+        }
       }
       // 2) drive one tile
       fwd(TILE_MM);
@@ -271,6 +295,7 @@ void loop(){
       
       victimtoggle = false;
       turnCompletedForMove = false;
+      tilecheck = false;
       state = SENSE_TILE;
       if(Pausemaze == true) state = PAUSE;
       //if(mazeTime.getTime() >= 1000000*60*6) state = RETURN;
