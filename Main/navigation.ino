@@ -97,6 +97,12 @@ Direction pickNextDirection() {
 
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
+  auto isBlueTile = [&](int nx, int ny){
+    return mapGrid[nx][ny].getType() == BLUE || mapGrid[nx][ny].getBlue();
+  };
+  auto blockedForTravel = [&](int nx, int ny){
+    return mapGrid[nx][ny].getType() == BLACK || isBlueTile(nx, ny);
+  };
   
   // 1) try open + untraveled first
   for (int i = 0; i < 4; i++) {
@@ -105,15 +111,15 @@ Direction pickNextDirection() {
     Direction d = priority[i];
     stepForward(d,nx,ny);
 
-    if (open(d) && untr(d)&&!mapGrid[nx][ny].getVisited()&&mapGrid[nx][ny].getType()!=1&&mapGrid[nx][ny].getType()!=3) return d;
+    if (inBounds(nx, ny) && open(d) && untr(d) && !mapGrid[nx][ny].getVisited() && !blockedForTravel(nx, ny)) return d;
   }
 
-  // 2) else any open using the same absolute priority.
+  // 2) else any open (still avoid black/blue) using the same absolute priority.
   for (int i = 0; i < 4; i++) {
     int nx = x_pos, ny = y_pos;
     Direction d = priority[i];
     stepForward(d,nx,ny);
-    if (open(d)&&mapGrid[nx][ny].getType()!=3) return d;
+    if (inBounds(nx, ny) && open(d) && !blockedForTravel(nx, ny)) return d;
   }
 
   // figure out BFS later
@@ -122,14 +128,7 @@ Direction pickNextDirection() {
 }
 
 int turnNeededDeg(Direction direction) {
-  // Compute relative turn from current heading to target heading.
-  /*
-  int diff = (static_cast<int>(direction) - static_cast<int>(currentDir) + 4) % 4;
-  if (diff == 0) return 0;
-  if (diff == 1) return 90;
-  if (diff == 2) return 180;
-  return -90; // diff == 3, turn left
-  */
+  // Convert an absolute direction enum to an absolute heading angle.
   if (direction == 0) return 0;
   if (direction == 1) return 90;
   if (direction == 2) return 180;
@@ -252,5 +251,4 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
     return i;
     
 }
-
 
