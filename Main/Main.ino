@@ -76,6 +76,7 @@ enum RobotState {
   UPDATE_MAP,
   PLAN_NEXT,
   EXECUTE_MOVE,
+  BOTCHED_TURN_RECOVERY,
   BACKPEDAL,
   PAUSE,
   RETURN
@@ -98,6 +99,7 @@ Steps steps = TURN;
 Direction currentDir = NORTH;     // robot heading in map coords (0..3)
 int plannedTurnDeg = 0;           // -90,0,+90,180
 Direction plannedMoveDir = NORTH; // absolute direction robot will move next
+bool turnCompletedForMove = false;
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
@@ -127,6 +129,27 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 const int logicswitch = 31;
 bool Pausemaze = false;
 int x_checkpoint, y_checkpoint;
+
+double headingErrorDeg(double targetDeg, double actualDeg) {
+  double err = targetDeg - actualDeg;
+  while (err > 180.0) err -= 360.0;
+  while (err < -180.0) err += 360.0;
+  return abs(err);
+}
+
+bool turnCompletedSuccessfully(Direction intendedDir) {
+  const double TURN_SUCCESS_TOLERANCE_DEG = 20.0;
+  double targetHeading = turnNeededDeg(intendedDir);
+  double actualHeading = myGyro.heading();
+  double err = headingErrorDeg(targetHeading, actualHeading);
+  Serial.print("turn target=");
+  Serial.print(targetHeading);
+  Serial.print(", actual=");
+  Serial.print(actualHeading);
+  Serial.print(", err=");
+  Serial.println(err);
+  return err <= TURN_SUCCESS_TOLERANCE_DEG;
+}
 void setup(){
   // initialize LED puns
   pinMode(pinHarmed,OUTPUT);
@@ -201,19 +224,27 @@ void loop(){
       plannedMoveDir = pickNextDirection();
 
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
+      turnCompletedForMove = false;
       Serial.println(plannedTurnDeg);
       if(Pausemaze == true) state = PAUSE;
       state = EXECUTE_MOVE;
       break;
     }
     case EXECUTE_MOVE: {
-      absoluteturn(plannedTurnDeg);
+      if (turnCompletedForMove == false) {
+        absoluteturn(plannedTurnDeg);
 
-      delay(200);
-      parallel();
-      delay(100);
-      //update currentDir
-      currentDir = plannedMoveDir;
+        delay(200);
+        parallel();
+        delay(100);
+
+        if (turnCompletedSuccessfully(plannedMoveDir) == false) {
+          state = BOTCHED_TURN_RECOVERY;
+          break;
+        }
+        currentDir = plannedMoveDir;
+        turnCompletedForMove = true;
+      }
       // 2) drive one tile
       fwd(TILE_MM);
       // 3) update map + robot position only on successful move
@@ -230,6 +261,7 @@ void loop(){
       }
       else{
         state = BACKPEDAL;
+        turnCompletedForMove = false;
         break;
       }
       delay(200);
@@ -238,6 +270,7 @@ void loop(){
       iterator += 1;
       
       victimtoggle = false;
+      turnCompletedForMove = false;
       state = SENSE_TILE;
       if(Pausemaze == true) state = PAUSE;
       //if(mazeTime.getTime() >= 1000000*60*6) state = RETURN;
@@ -246,10 +279,26 @@ void loop(){
       break;
      
     }
+    case BOTCHED_TURN_RECOVERY: {
+      Direction snappedDir = (Direction)myGyro.headingToCardinal(myGyro.heading());
+      int snappedHeading = turnNeededDeg(snappedDir);
+      Serial.println("botched turn detected, snapping to cardinal");
+      absoluteturn(snappedHeading);
+      delay(150);
+      parallel();
+      delay(100);
+
+      currentDir = snappedDir;
+      plannedTurnDeg = turnNeededDeg(plannedMoveDir);
+      turnCompletedForMove = false;
+      state = EXECUTE_MOVE;
+      break;
+    }
     case BACKPEDAL: {
       plannedMoveDir = pickNextDirection();
      
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
+      turnCompletedForMove = false;
       state = EXECUTE_MOVE;
       blacktoggle = false;
       if(Pausemaze == true) state = PAUSE;
