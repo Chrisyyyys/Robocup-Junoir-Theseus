@@ -49,7 +49,31 @@ void fullstop(){
   motorC->setSpeed(0);
   motorD->setSpeed(0);
 }
-void fwd(double dist){ // in mm
+extern bool forwardStuckBeforeStairs;
+
+bool moveBackwardTile(double dist){ // rear-first travel for stair recovery
+  double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio;
+  encoderCountA = 0;
+  encoderCountB = 0;
+  unsigned long start = millis();
+  while(abs(encoderCountA) <= pulses && abs(encoderCountB) <= pulses){
+    motorA->run(BACKWARD);
+    motorB->run(BACKWARD);
+    motorC->run(BACKWARD);
+    motorD->run(BACKWARD);
+    motorA->setSpeed(180);
+    motorB->setSpeed(180);
+    motorC->setSpeed(180);
+    motorD->setSpeed(180);
+    if(millis() - start > 4500) break;
+  }
+  fullstop();
+  bool success = (abs(encoderCountA) >= pulses*0.8 || abs(encoderCountB) >= pulses*0.8);
+  encoderCountA = 0;
+  encoderCountB = 0;
+  return success;
+}
+bool fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
@@ -60,6 +84,11 @@ void fwd(double dist){ // in mm
   PID myPID(0.30,0,0.2); // 0.28 for 125
   Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
+  forwardStuckBeforeStairs = false;
+  myGyro.reset_accel_filter();
+  unsigned long noMotionStart = millis();
+  int lastEncoderA = encoderCountA;
+  int lastEncoderB = encoderCountB;
   while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // check cameras
@@ -137,6 +166,18 @@ void fwd(double dist){ // in mm
     
     // PID centering
     difference = center();
+    bool encoderAdvanced = abs(encoderCountA - lastEncoderA) > 1 || abs(encoderCountB - lastEncoderB) > 1;
+    bool imuMotion = myGyro.is_linear_motion_detected();
+    if(encoderAdvanced || imuMotion){
+      noMotionStart = millis();
+      lastEncoderA = encoderCountA;
+      lastEncoderB = encoderCountB;
+    }
+    else if(millis() - noMotionStart > 700 && climbtoggle == false){
+      Serial.println("forward stuck before stairs, triggering recovery");
+      forwardStuckBeforeStairs = true;
+      break;
+    }
     //Serial.println(center());
     double adjustment = myPID.getPID(difference);
     // emergency stop
@@ -233,7 +274,8 @@ void fwd(double dist){ // in mm
   
   fullstop();
   encoderCountA = 0; encoderCountB = 0;
-
+  if(forwardStuckBeforeStairs == true) return false;
+  return black == false;
 }
 // absolute turning
 void absoluteturn(double angle){ 

@@ -60,6 +60,10 @@ double gyro::get_filtered_acceleration(){
   return accelFiltered;
 }
 
+bool gyro::is_linear_motion_detected(double threshold){
+  return abs(get_filtered_acceleration()) >= threshold;
+}
+
 void gyro::reset_accel_filter(){
   accelFilterInitialized = false;
   accelFiltered = 0.0;

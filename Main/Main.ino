@@ -131,6 +131,7 @@ const int logicswitch = 31;
 bool Pausemaze = false;
 int x_checkpoint, y_checkpoint;
 bool tilecheck = false;
+bool forwardStuckBeforeStairs = false;
 
 double headingErrorDeg(double targetDeg, double actualDeg) {
   double err = targetDeg - actualDeg;
@@ -270,7 +271,43 @@ void loop(){
         }
       }
       // 2) drive one tile
-      fwd(TILE_MM);
+      bool moved = fwd(TILE_MM);
+      if(moved == false && forwardStuckBeforeStairs == true){
+        Serial.println("recovering stair approach with rear-first climb");
+        Direction originalDir = currentDir;
+        Direction oppositeDir = rotateDir(currentDir, 2);
+        absoluteturn(turnNeededDeg(oppositeDir));
+        delay(200);
+        parallel();
+        delay(100);
+        currentDir = oppositeDir;
+
+        bool recovered = moveBackwardTile(TILE_MM);
+
+        absoluteturn(turnNeededDeg(originalDir));
+        delay(200);
+        parallel();
+        delay(100);
+        currentDir = originalDir;
+
+        if(recovered == true){
+          markEdgeBothWays(x_pos, y_pos, currentDir);
+          stepForward(currentDir, x_pos, y_pos);
+          delay(200);
+          parallel();
+          delay(100);
+          iterator += 1;
+          victimtoggle = false;
+          turnCompletedForMove = false;
+          tilecheck = false;
+          state = SENSE_TILE;
+          break;
+        }
+        turnCompletedForMove = false;
+        tilecheck = false;
+        state = PLAN_NEXT;
+        break;
+      }
       // 3) update map + robot position only on successful move
       if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
         fullstop();
