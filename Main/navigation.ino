@@ -11,7 +11,7 @@ void stepForward(Direction d, int &x, int &y) {
   else if (d == EAST) x++;
   else if (d == SOUTH) y--;
   else if (d == WEST) x--;
-  if(victimAtCurrent == false&&victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+  //if(victimAtCurrent == false&&victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
 }
 
 bool inBounds(int x, int y) {
@@ -93,7 +93,7 @@ Direction pickNextDirection() {
   Direction absR = rotateDir(currentDir, +1);
   Direction absB = rotateDir(currentDir, +2);
   // Plan directly in absolute map directions.
-  const Direction priority[4] = {absR,absL, absF, absB};
+  const Direction priority[4] = {absF,absR, absL, absB};
 
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };

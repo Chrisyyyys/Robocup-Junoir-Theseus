@@ -187,7 +187,7 @@ void setup(){
   state = SENSE_TILE;
   
   delay(2000); // wait for camera to start.
-  detect();
+  
   
 }
 int iterator = 0;

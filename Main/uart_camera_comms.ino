@@ -185,11 +185,11 @@ void detect(){ // the robot goes forward until it detects something( does not re
       victimtoggle = true;
       break;
     }
-    if(myTimer.getTime() >= 1000000*1) break; // give 1.5 seconds to detect.
-    motorA->setSpeed(100);
-    motorB->setSpeed(100);
-    motorC->setSpeed(100);
-    motorD->setSpeed(100);
+    if(myTimer.getTime() >= 1000000*1.2) break; // give 1.5 seconds to detect.
+    motorA->setSpeed(80);
+    motorB->setSpeed(80);
+    motorC->setSpeed(80);
+    motorD->setSpeed(80);
   }
   motorA->setSpeed(0);
   motorB->setSpeed(0);
@@ -211,16 +211,11 @@ void detect(){ // the robot goes forward until it detects something( does not re
   motorC->run(BACKWARD);
   motorD->run(BACKWARD);
   while(encoderCountA > 0){
-    Serial.println("backtracking");
     motorA->setSpeed(150);
     motorB->setSpeed(150);
     motorC->setSpeed(150);
     motorD->setSpeed(150);
   }
-  motorA->setSpeed(0);
-  motorB->setSpeed(0);
-  motorC->setSpeed(0);
-  motorD->setSpeed(0);
-  encoderCountA = 0; encoderCountB = 0;
+  fullstop();
 
 }

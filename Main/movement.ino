@@ -57,14 +57,14 @@ void fwd(double dist){ // in mm
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   double init_heading = myGyro.heading();
-  PID myPID(0.20,0,0.2); // 0.28 for 125
+  PID myPID(0.30,0,0.2); // 0.28 for 125
   Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // check cameras
     
-    
+    /*
     if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){ // check serial
       fullstop();
       
@@ -100,6 +100,7 @@ void fwd(double dist){ // in mm
       }
       else victimAtCurrent = false;
     }
+    */
     // color
     
     int color = read_color(); // read color
@@ -208,10 +209,10 @@ void fwd(double dist){ // in mm
       attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
       encoderCountB = _encoderCountB;
     }
-    motorA->setSpeed(80+adjustment);
-    motorC->setSpeed(80+adjustment);
-    motorB->setSpeed(80-adjustment);
-    motorD->setSpeed(80-adjustment);
+    motorA->setSpeed(150+adjustment);
+    motorC->setSpeed(150+adjustment);
+    motorB->setSpeed(150-adjustment);
+    motorD->setSpeed(150-adjustment);
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){
@@ -227,7 +228,7 @@ void fwd(double dist){ // in mm
     motorB->setSpeed(200);
     motorC->setSpeed(200);
     motorD->setSpeed(200);
-    delay(200);
+    delay(100);
   }
   
   fullstop();
@@ -276,7 +277,7 @@ void absoluteturn(double angle){
           victimtoggle = true;
         }
       }
-      else if(readSerial2()!=0&&victimtoggle == false&&t.getVictim()==false){
+      else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
         fullstop();
         if(detectWall(1)==0){
           Serial.println("victim at right");
