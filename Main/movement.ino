@@ -49,12 +49,27 @@ void fullstop(){
   motorC->setSpeed(0);
   motorD->setSpeed(0);
 }
-bool frontWallBlockedWithThreshold(int thresholdMm) {
+bool frontNoWallBothWithThreshold(int thresholdMm) {
   int a = measure(1);
   int b = measure(7);
-  bool aBlocked = (a != -1 && a != 8191 && a <= thresholdMm);
-  bool bBlocked = (b != -1 && b != 8191 && b <= thresholdMm);
-  return aBlocked || bBlocked;
+  bool aNoWall = (a == -1 || a == 8191 || a > thresholdMm);
+  bool bNoWall = (b == -1 || b == 8191 || b > thresholdMm);
+  return aNoWall && bNoWall;
+}
+
+void backupForRecovery(unsigned long durationMs) {
+  unsigned long start = millis();
+  while (millis() - start < durationMs) {
+    motorA->run(BACKWARD);
+    motorB->run(BACKWARD);
+    motorC->run(BACKWARD);
+    motorD->run(BACKWARD);
+    motorA->setSpeed(120);
+    motorB->setSpeed(120);
+    motorC->setSpeed(120);
+    motorD->setSpeed(120);
+  }
+  fullstop();
 }
 
 ForwardMoveResult moveBackwardForStairs(double dist) { // in mm
@@ -90,10 +105,10 @@ ForwardMoveResult fwd(double dist){ // in mm
   Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   myGyro.reset_accel_filter();
-  double integratedProgressMm = 0.0;
-  long lastProgressTicks = (abs(encoderCountA) + abs(encoderCountB)) / 2;
-  unsigned long zeroProgressSinceMs = 0;
-  bool zeroProgressTiming = false;
+  myGyro.reset_velocity_estimator();
+  unsigned long lowVelocitySinceMs = 0;
+  bool lowVelocityTiming = false;
+  unsigned long moveStartedMs = millis();
   while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // check cameras
@@ -184,28 +199,22 @@ ForwardMoveResult fwd(double dist){ // in mm
       delay(50);
       break;
     }
-    long currentProgressTicks = (abs(encoderCountA) + abs(encoderCountB)) / 2;
-    long deltaTicks = currentProgressTicks - lastProgressTicks;
-    if (deltaTicks > 0) {
-      integratedProgressMm += (deltaTicks / (wheel_cpr * gear_ratio)) * (wheel_diameter * M_PI);
-    }
-    lastProgressTicks = currentProgressTicks;
-    double filteredAccel = abs(myGyro.get_filtered_acceleration());
-
-    if (integratedProgressMm <= ZERO_PROGRESS_THRESHOLD_MM &&
-        filteredAccel <= ZERO_MOTION_ACCEL_THRESHOLD &&
+    double estimatedVelocity = abs(myGyro.update_forward_velocity());
+    bool attemptedToMove = (millis() - moveStartedMs) > 200;
+    if (attemptedToMove &&
+        estimatedVelocity <= VELOCITY_ZERO_THRESHOLD &&
         climbtoggle == false) {
-      if (zeroProgressTiming == false) {
-        zeroProgressSinceMs = millis();
-        zeroProgressTiming = true;
-      } else if (millis() - zeroProgressSinceMs >= ZERO_PROGRESS_CONFIRMATION_MS) {
+      if (lowVelocityTiming == false) {
+        lowVelocitySinceMs = millis();
+        lowVelocityTiming = true;
+      } else if (millis() - lowVelocitySinceMs >= STUCK_CONFIRM_TIME_MS) {
         fullstop();
-        bool blocked = frontWallBlockedWithThreshold(WALL_DISTANCE_THRESHOLD_MM);
+        bool stairsCandidate = frontNoWallBothWithThreshold(WALL_DISTANCE_THRESHOLD);
         encoderCountA = 0; encoderCountB = 0;
-        return blocked ? FORWARD_MOVE_FAILED_WALL : FORWARD_MOVE_FAILED_STAIRS;
+        return stairsCandidate ? FORWARD_MOVE_FAILED_STAIRS : FORWARD_MOVE_FAILED_WALL;
       }
     } else {
-      zeroProgressTiming = false;
+      lowVelocityTiming = false;
     }
     // self correction
     // if acceleration is greater than a certain value and it is not just a stop then do something.

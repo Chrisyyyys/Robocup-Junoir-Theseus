@@ -14,9 +14,15 @@ class gyro{
     double get_acceleration();
     double get_filtered_acceleration();       // EMA filtered
     void reset_accel_filter();
+    double update_forward_velocity();
+    double get_forward_velocity();
+    void reset_velocity_estimator();
     private:
       bool accelFilterInitialized = false;
       double accelFiltered = 0.0;
+      double forwardVelocity = 0.0;
+      unsigned long lastVelocityUpdateMs = 0;
+      bool velocityEstimatorInitialized = false;
 
 };
 #endif

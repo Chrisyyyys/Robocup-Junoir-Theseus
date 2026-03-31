@@ -18,6 +18,23 @@ bool inBounds(int x, int y) {
   return x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE;
 }
 
+bool isTileBlockedForPlanning(int x, int y) {
+  TileTypes t = mapGrid[x][y].getType();
+  return t == BLACK || t == STAIRS || t == BLUE || mapGrid[x][y].getBlue();
+}
+
+void markStairsAhead(Direction attemptedDir) {
+  mapGrid[x_pos][y_pos].setWall(attemptedDir, true);
+  int nx = x_pos;
+  int ny = y_pos;
+  stepForward(attemptedDir, nx, ny);
+  if (inBounds(nx, ny)) {
+    mapGrid[nx][ny].setType(STAIRS);
+    mapGrid[nx][ny].setDiscovered(true);
+    mapGrid[nx][ny].setWall(opposite(attemptedDir), true);
+  }
+}
+
 void initializeMap() {
   for (int x = 0; x < MAP_SIZE; x++) {
     for (int y = 0; y < MAP_SIZE; y++) {
@@ -101,7 +118,7 @@ Direction pickNextDirection() {
     return mapGrid[nx][ny].getType() == BLUE || mapGrid[nx][ny].getBlue();
   };
   auto blockedForTravel = [&](int nx, int ny){
-    return mapGrid[nx][ny].getType() == BLACK || isBlueTile(nx, ny);
+    return isTileBlockedForPlanning(nx, ny) || isBlueTile(nx, ny);
   };
   
   // 1) try open + untraveled first
@@ -224,7 +241,7 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             if (nx < rows && ny < columns && nx >= 0 && ny >= 0) {
-                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(opposite(i))&&mapGrid[nx][ny].getDiscovered()&&mapGrid[nx][ny].getType()!=3) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
+                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(opposite(i)) && mapGrid[nx][ny].getDiscovered() && !isTileBlockedForPlanning(nx, ny)) { //IMPORTANT: ADD MORE CONDITIONALS HERE
                     queue.enqueue(coord{nx, ny}); // add tile
                     visited[nx][ny] = true;
                     
@@ -251,4 +268,3 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
     return i;
     
 }
-

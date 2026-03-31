@@ -19,10 +19,10 @@
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 0.10 // color clear-channel threshold ratio for black
 #define SILVER_THRESHOLD 800 // tun3
-const double ZERO_PROGRESS_THRESHOLD_MM = 8.0;
-const unsigned long ZERO_PROGRESS_CONFIRMATION_MS = 800;
-const int WALL_DISTANCE_THRESHOLD_MM = 90;
-const double ZERO_MOTION_ACCEL_THRESHOLD = 0.08;
+const int WALL_DISTANCE_THRESHOLD = 90;
+const double VELOCITY_ZERO_THRESHOLD = 0.03;
+const unsigned long STUCK_CONFIRM_TIME_MS = 350;
+const unsigned long BACKUP_TIME_MS = 120;
 float clear; 
 
 #include "MazeTile.h"
@@ -94,6 +94,8 @@ enum ForwardMoveResult {
 };
 ForwardMoveResult fwd(double dist);
 ForwardMoveResult moveBackwardForStairs(double dist);
+void backupForRecovery(unsigned long durationMs);
+void markStairsAhead(Direction attemptedDir);
 enum Steps {
   TURN,
   PARALLEL,
@@ -335,6 +337,10 @@ void loop(){
       if (lastForwardMoveResult == FORWARD_MOVE_FAILED_STAIRS) {
         Serial.println("forward no-progress without wall: stairs fallback");
         Direction stairsDir = currentDir;
+        markStairsAhead(stairsDir);
+        if (BACKUP_TIME_MS > 0) {
+          backupForRecovery(BACKUP_TIME_MS);
+        }
         Direction reverseDir = rotateDir(currentDir, +2);
         int reverseHeading = turnNeededDeg(reverseDir);
         absoluteturn(reverseHeading);
@@ -347,8 +353,6 @@ void loop(){
         if (stairMoveResult == FORWARD_MOVE_COMPLETED) {
           markEdgeBothWays(x_pos, y_pos, stairsDir);
           stepForward(stairsDir, x_pos, y_pos);
-        } else if (stairMoveResult == FORWARD_MOVE_FAILED_WALL) {
-          mapGrid[x_pos][y_pos].setWall(stairsDir, true);
         }
       }
 

@@ -64,6 +64,44 @@ void gyro::reset_accel_filter(){
   accelFilterInitialized = false;
   accelFiltered = 0.0;
 }
+double gyro::update_forward_velocity(){
+  const double accelDeadband = 0.05; // m/s^2
+  const double velocityDecay = 0.96; // bleed integration drift
+  const double velocityClamp = 1.2;  // m/s
+  unsigned long nowMs = millis();
+
+  if (!velocityEstimatorInitialized) {
+    lastVelocityUpdateMs = nowMs;
+    forwardVelocity = 0.0;
+    velocityEstimatorInitialized = true;
+    return forwardVelocity;
+  }
+
+  double dt = (nowMs - lastVelocityUpdateMs) / 1000.0;
+  if (dt <= 0.0) dt = 0.001;
+  if (dt > 0.2) dt = 0.2; // skip long stalls in loop timing
+  lastVelocityUpdateMs = nowMs;
+
+  double accel = get_filtered_acceleration();
+  if (abs(accel) < accelDeadband) {
+    accel = 0.0;
+  }
+
+  forwardVelocity += accel * dt;
+  forwardVelocity *= velocityDecay;
+  forwardVelocity = constrain(forwardVelocity, -velocityClamp, velocityClamp);
+  return forwardVelocity;
+}
+
+double gyro::get_forward_velocity(){
+  return forwardVelocity;
+}
+
+void gyro::reset_velocity_estimator(){
+  forwardVelocity = 0.0;
+  lastVelocityUpdateMs = millis();
+  velocityEstimatorInitialized = false;
+}
 int gyro::headingToCardinal(double heading){
     // normalize angle
     if (heading < 0) heading += 360;
