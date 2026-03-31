@@ -17,6 +17,7 @@ class gyro{
     private:
       bool accelFilterInitialized = false;
       double accelFiltered = 0.0;
+      double v;
 
 };
 #endif

@@ -25,7 +25,7 @@ int gyro::inverse(int val, bool inv){
   return val;
 }
 int gyro::modulus(int val){
-  
+  if(val<0) return 360 - val;
   if(val> 180) {val = val - 360;}
   else{val = val%360;}
   return val;
@@ -63,6 +63,18 @@ double gyro::get_filtered_acceleration(){
 void gyro::reset_accel_filter(){
   accelFilterInitialized = false;
   accelFiltered = 0.0;
+}
+double gyro::get_velocity(){
+  
+  double a = get_acceleration();
+
+  unsigned long now = millis();
+  float dt = (now - lastTime) / 1000.0f;   // seconds
+  lastTime = now;
+
+  v += a * dt;
+  return v;
+  
 }
 int gyro::headingToCardinal(double heading){
     // normalize angle

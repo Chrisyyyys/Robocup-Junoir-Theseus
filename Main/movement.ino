@@ -176,6 +176,43 @@ void fwd(double dist){ // in mm
       encoderCountA = 0; encoderCountB = 0;
     }
     */
+    // check for steps( stop)
+    if(myGyro.get_velocity()<0.01&&encoderCountA>pulses/30&&encoderCountA<pulses*29/30){
+      if(measure(1)>=MIN_DIST&&measure(7)>=MIN_DIST){
+        detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
+        detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
+        motorA->run(BACKWARD);
+        motorB->run(BACKWARD);
+        motorC->run(BACKWARD);
+        motorD->run(BACKWARD);
+        motorA->setSpeed(150);
+        motorB->setSpeed(150);
+        motorC->setSpeed(150);
+        motorD->setSpeed(150);
+        delay(250);
+        fullstop();
+        delay(200);
+        absoluteturn(myGyro.modulus(plannedTurnDeg-180)); // turn 180
+        delay(200);
+        motorA->run(BACKWARD);
+        motorB->run(BACKWARD);
+        motorC->run(BACKWARD);
+        motorD->run(BACKWARD);
+        attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING); // turn encoders back on
+        attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
+        while(encoderCountA>-pulses&&encoderCountB>-pulses){
+          motorA->setSpeed(150);
+          motorB->setSpeed(150);
+          motorC->setSpeed(150);
+          motorD->setSpeed(150);
+        }
+        fullstop();
+        delay(200);
+        absoluteturn(plannedTurnDeg);
+        delay(100);
+        break;
+      }
+    }
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
      if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){

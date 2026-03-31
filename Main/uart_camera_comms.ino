@@ -171,6 +171,7 @@ void detect(){ // the robot goes forward until it detects something( does not re
   bool wallAtRight = false;
   if(measure(3) <MIN_DIST&&measure(3)!=-1) wallAtRight = true;
   if(measure(6)<MIN_DIST&&measure(6)!=-1) wallAtLeft = true;
+  if(wallAtRight == false && wallAtLeft == false) return;
   timer myTimer;
   while(true){
     if(readSerial1() != -1&&wallAtLeft == true){
