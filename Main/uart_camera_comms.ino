@@ -118,7 +118,7 @@ void detectCam1(){ // doesn't return anything.
     }
   }
   flashLED(res);
-  disp.dispenseRight(res);
+  disp.dispenseLeft(res);
   return;
 }
 void detectCam2(){
