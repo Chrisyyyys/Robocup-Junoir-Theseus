@@ -118,7 +118,7 @@ void detectCam1(){ // doesn't return anything.
     }
   }
   flashLED(res);
-  //disp.dispenseRight(res);
+  disp.dispenseRight(res);
   return;
 }
 void detectCam2(){
@@ -156,7 +156,7 @@ void detectCam2(){
     }
   }
   flashLED(res);
-  //disp.dispenseRight(res);
+  disp.dispenseRight(res);
   return;
 }
 void detect(){ // the robot goes forward until it detects something( does not return)

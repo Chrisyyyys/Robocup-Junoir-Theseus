@@ -164,8 +164,8 @@ void setup(){
 
   // begin UART communication.
   Serial.begin(115200);
-  Serial2.begin(9600); // switch to 9600 for reliability
-  Serial3.begin(9600);
+  Serial2.begin(115200); // switch to 9600 for reliability
+  Serial3.begin(115200);
   flashLED('S');
   uint8_t cause = MCUSR;
   MCUSR = 0;
@@ -187,7 +187,7 @@ void setup(){
   state = SENSE_TILE;
   
   delay(2000); // wait for camera to start.
-  
+  detect();
   
 }
 int iterator = 0;
