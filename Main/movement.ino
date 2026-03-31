@@ -186,12 +186,10 @@ void fwd(double dist){ // in mm
         int stairX = x_pos;
         int stairY = y_pos;
         stepForward(currentDir, stairX, stairY);
-        mapGrid[x_pos][y_pos].setWall(currentDir, true);
         updateFullyExploredAt(x_pos, y_pos);
         if (inBounds(stairX, stairY)) {
           mapGrid[stairX][stairY].setDiscovered(true);
           mapGrid[stairX][stairY].setType(STAIR);
-          mapGrid[stairX][stairY].setWall(opposite(currentDir), true);
         }
         stairtoggle = true;
         delay(1000);
