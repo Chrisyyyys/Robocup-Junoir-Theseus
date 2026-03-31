@@ -19,6 +19,10 @@
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 0.10 // color clear-channel threshold ratio for black
 #define SILVER_THRESHOLD 800 // tun3
+const unsigned long ZERO_PROGRESS_CONFIRMATION_MS = 800;
+const int WALL_DISTANCE_THRESHOLD_MM = 90;
+const double ZERO_MOTION_ACCEL_THRESHOLD = 0.08;
+const double ZERO_MOTION_INTEGRAL_THRESHOLD = 0.03;
 float clear; 
 
 #include "MazeTile.h"
@@ -77,11 +81,19 @@ enum RobotState {
   PLAN_NEXT,
   VICTIM_DETECT,
   EXECUTE_MOVE,
+  FORWARD_MOVE_RECOVERY,
   BOTCHED_TURN_RECOVERY,
   BACKPEDAL,
   PAUSE,
   RETURN
 };
+enum ForwardMoveResult {
+  FORWARD_MOVE_COMPLETED,
+  FORWARD_MOVE_FAILED_WALL,
+  FORWARD_MOVE_FAILED_STAIRS
+};
+ForwardMoveResult fwd(double dist);
+ForwardMoveResult moveBackwardForStairs(double dist);
 enum Steps {
   TURN,
   PARALLEL,
@@ -131,6 +143,7 @@ const int logicswitch = 31;
 bool Pausemaze = false;
 int x_checkpoint, y_checkpoint;
 bool tilecheck = false;
+ForwardMoveResult lastForwardMoveResult = FORWARD_MOVE_COMPLETED;
 
 double headingErrorDeg(double targetDeg, double actualDeg) {
   double err = targetDeg - actualDeg;
@@ -270,7 +283,12 @@ void loop(){
         }
       }
       // 2) drive one tile
-      fwd(TILE_MM);
+      lastForwardMoveResult = fwd(TILE_MM);
+      if (lastForwardMoveResult != FORWARD_MOVE_COMPLETED) {
+        state = FORWARD_MOVE_RECOVERY;
+        turnCompletedForMove = false;
+        break;
+      }
       // 3) update map + robot position only on successful move
       if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
         fullstop();
@@ -303,6 +321,42 @@ void loop(){
       if(iterator >= 20) state = RETURN;
       break;
      
+    }
+    case FORWARD_MOVE_RECOVERY: {
+      if (lastForwardMoveResult == FORWARD_MOVE_FAILED_WALL) {
+        mapGrid[x_pos][y_pos].setWall(currentDir, true);
+        Serial.println("forward move blocked by wall, aborting tile transition");
+        turnCompletedForMove = false;
+        tilecheck = false;
+        state = SENSE_TILE;
+        break;
+      }
+
+      if (lastForwardMoveResult == FORWARD_MOVE_FAILED_STAIRS) {
+        Serial.println("forward no-progress without wall: stairs fallback");
+        Direction stairsDir = currentDir;
+        Direction reverseDir = rotateDir(currentDir, +2);
+        int reverseHeading = turnNeededDeg(reverseDir);
+        absoluteturn(reverseHeading);
+        delay(150);
+        parallel();
+        delay(100);
+        currentDir = reverseDir;
+
+        ForwardMoveResult stairMoveResult = moveBackwardForStairs(TILE_MM);
+        if (stairMoveResult == FORWARD_MOVE_COMPLETED) {
+          markEdgeBothWays(x_pos, y_pos, stairsDir);
+          stepForward(stairsDir, x_pos, y_pos);
+        } else if (stairMoveResult == FORWARD_MOVE_FAILED_WALL) {
+          mapGrid[x_pos][y_pos].setWall(stairsDir, true);
+        }
+      }
+
+      turnCompletedForMove = false;
+      tilecheck = false;
+      victimtoggle = false;
+      state = SENSE_TILE;
+      break;
     }
     case BOTCHED_TURN_RECOVERY: {
       Direction snappedDir = (Direction)myGyro.headingToCardinal(myGyro.heading());
