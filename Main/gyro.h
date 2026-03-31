@@ -13,6 +13,7 @@ class gyro{
     int headingToCardinal(double);
     double get_acceleration();
     double get_filtered_acceleration();       // EMA filtered
+    bool is_linear_motion_detected(double threshold = 0.08);
     void reset_accel_filter();
     private:
       bool accelFilterInitialized = false;
