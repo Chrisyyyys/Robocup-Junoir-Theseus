@@ -14,7 +14,8 @@ enum TileTypes {
   BLANK = 0,
   BLUE  = 1,
   CHECKPOINT =2,
-  BLACK = 3
+  BLACK = 3,
+  STAIRS = 4
 
 };
 
@@ -26,7 +27,7 @@ struct Tile {
   private:
   //first 4 bit is wall, last 4 bit is edge
   //set amount of bits
-  Bitset<16> bitset;
+  Bitset<24> bitset;
   TileTypes tileType;
   public:
   //get and set functions
@@ -80,6 +81,12 @@ struct Tile {
   }
   void setBlue(bool stat){
     bitset.set(12,stat);
+  }
+  bool getBadStairsEntry(unsigned dir){
+    return bitset.get(13 + dir);
+  }
+  void setBadStairsEntry(unsigned dir, bool stat){
+    bitset.set(13 + dir, stat);
   }
 
   //bool wall[4];

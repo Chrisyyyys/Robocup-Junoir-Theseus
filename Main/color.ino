@@ -41,7 +41,7 @@ int read_color(){
   if((float)c/clear>SILVER_THRESHOLD){
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
-    mapGrid[nx][ny].setType(2);
+    mapGrid[nx][ny].setType(CHECKPOINT);
     x_checkpoint = nx, y_checkpoint = ny;
   }
   if(b>g&&b>r){
@@ -54,4 +54,3 @@ int read_color(){
     return 0; // good
   }
 }
-  
