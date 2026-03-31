@@ -101,7 +101,7 @@ Direction pickNextDirection() {
     return mapGrid[nx][ny].getType() == BLUE || mapGrid[nx][ny].getBlue();
   };
   auto blockedForTravel = [&](int nx, int ny){
-    return mapGrid[nx][ny].getType() == BLACK || isBlueTile(nx, ny);
+    return mapGrid[nx][ny].getType() == BLACK || mapGrid[nx][ny].getType() == STAIR || isBlueTile(nx, ny);
   };
   
   // 1) try open + untraveled first
@@ -224,7 +224,12 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             if (nx < rows && ny < columns && nx >= 0 && ny >= 0) {
-                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(opposite(i))&&mapGrid[nx][ny].getDiscovered()&&mapGrid[nx][ny].getType()!=3) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
+                if (!visited[nx][ny] &&
+                    !mapGrid[x][y].getWall((Direction)i) &&
+                    !mapGrid[nx][ny].getWall(opposite((Direction)i)) &&
+                    mapGrid[nx][ny].getDiscovered() &&
+                    mapGrid[nx][ny].getType() != BLACK &&
+                    mapGrid[nx][ny].getType() != STAIR) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
                     queue.enqueue(coord{nx, ny}); // add tile
                     visited[nx][ny] = true;
                     
@@ -251,4 +256,3 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
     return i;
     
 }
-

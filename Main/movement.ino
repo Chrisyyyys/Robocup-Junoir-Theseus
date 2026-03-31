@@ -183,6 +183,17 @@ void fwd(double dist){ // in mm
     if(acceleration>0.3&&encoderCountA>pulses/30&&encoderCountA<pulses*29/30){
       if(measure(1)>=MIN_DIST&&measure(7)>=MIN_DIST&&abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)<5){
         Serial.println(acceleration);
+        int stairX = x_pos;
+        int stairY = y_pos;
+        stepForward(currentDir, stairX, stairY);
+        mapGrid[x_pos][y_pos].setWall(currentDir, true);
+        updateFullyExploredAt(x_pos, y_pos);
+        if (inBounds(stairX, stairY)) {
+          mapGrid[stairX][stairY].setDiscovered(true);
+          mapGrid[stairX][stairY].setType(STAIR);
+          mapGrid[stairX][stairY].setWall(opposite(currentDir), true);
+        }
+        stairtoggle = true;
         delay(1000);
         detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
         detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
