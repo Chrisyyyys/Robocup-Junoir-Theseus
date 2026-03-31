@@ -131,6 +131,7 @@ const int logicswitch = 31;
 bool Pausemaze = false;
 int x_checkpoint, y_checkpoint;
 bool tilecheck = false;
+bool fwdMoveStuck = false;
 
 double headingErrorDeg(double targetDeg, double actualDeg) {
   double err = targetDeg - actualDeg;
@@ -151,6 +152,44 @@ bool turnCompletedSuccessfully(Direction intendedDir) {
   Serial.print(", err=");
   Serial.println(err);
   return err <= TURN_SUCCESS_TOLERANCE_DEG;
+}
+
+bool recoverFromFrontStairsStuck(Direction blockedMoveDir) {
+  Serial.println("recovering from front-stairs stuck");
+  int sx = x_pos;
+  int sy = y_pos;
+  int tx = sx;
+  int ty = sy;
+  stepForward(blockedMoveDir, tx, ty);
+  if (!inBounds(tx, ty)) return false;
+
+  mapGrid[tx][ty].setType(STAIRS);
+  mapGrid[tx][ty].setBadStairsEntry(opposite(blockedMoveDir), true);
+
+  Direction recoveryHeading = opposite(blockedMoveDir);
+  absoluteturn(turnNeededDeg(recoveryHeading));
+  delay(200);
+  parallel();
+  delay(100);
+  currentDir = recoveryHeading;
+
+  fwd(TILE_MM);
+  if (fwdMoveStuck || blacktoggle) {
+    blacktoggle = false;
+    bluetoggle = false;
+    return false;
+  }
+
+  if (bluetoggle) {
+    fullstop();
+    delay(5000);
+    mapGrid[x_pos][y_pos].setBlue(true);
+  }
+  bluetoggle = false;
+
+  markEdgeBothWays(x_pos, y_pos, currentDir);
+  stepForward(currentDir, x_pos, y_pos);
+  return true;
 }
 void setup(){
   // initialize LED puns
@@ -271,6 +310,21 @@ void loop(){
       }
       // 2) drive one tile
       fwd(TILE_MM);
+      if (fwdMoveStuck) {
+        turnCompletedForMove = false;
+        tilecheck = false;
+        if (recoverFromFrontStairsStuck(plannedMoveDir) == false) {
+          state = PLAN_NEXT;
+          break;
+        }
+        delay(200);
+        parallel();
+        delay(100);
+        iterator += 1;
+        victimtoggle = false;
+        state = SENSE_TILE;
+        break;
+      }
       // 3) update map + robot position only on successful move
       if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
         fullstop();
