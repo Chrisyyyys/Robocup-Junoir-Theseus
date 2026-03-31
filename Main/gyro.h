@@ -14,7 +14,6 @@ class gyro{
     double get_acceleration();
     double get_filtered_acceleration();       // EMA filtered
     void reset_accel_filter();
-    bool detect_forward_motion_sample();
     private:
       bool accelFilterInitialized = false;
       double accelFiltered = 0.0;

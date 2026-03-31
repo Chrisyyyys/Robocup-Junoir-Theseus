@@ -50,18 +50,14 @@ void fullstop(){
   motorD->setSpeed(0);
 }
 void fwd(double dist){ // in mm
-  fwdMoveStuck = false;
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
   int cnt = 0; // tiles traversed while climbing.
-  int motionSampleCount = 0;
-  int noMotionSampleCount = 0;
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   double init_heading = myGyro.heading();
   PID myPID(0.30,0,0.2); // 0.28 for 125
-  myGyro.reset_accel_filter();
   Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
@@ -112,7 +108,7 @@ void fwd(double dist){ // in mm
       bluetoggle = true;
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
-      mapGrid[nx][ny].setType(BLUE);
+      mapGrid[nx][ny].setType(1);
     }
     if(color == -1&&use_color%2==0){
       fullstop();
@@ -122,7 +118,7 @@ void fwd(double dist){ // in mm
       // find next tile, set it to black
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
-      mapGrid[nx][ny].setType(BLACK);
+      mapGrid[nx][ny].setType(3);
       blacktoggle = true;
       
       while(encoderCountA >= 0 && encoderCountB >= 0){
@@ -182,19 +178,6 @@ void fwd(double dist){ // in mm
     */
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
-    if (climbtoggle == false && encoderCountA > (pulses / 8)) {
-      motionSampleCount++;
-      if (myGyro.detect_forward_motion_sample()) {
-        noMotionSampleCount = 0;
-      } else {
-        noMotionSampleCount++;
-      }
-      if (motionSampleCount > 8 && noMotionSampleCount >= 5) {
-        Serial.println("stuck before stairs/front clearance");
-        fwdMoveStuck = true;
-        break;
-      }
-    }
      if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){
       int _encoderCountB = encoderCountB;
       climbtoggle = true;

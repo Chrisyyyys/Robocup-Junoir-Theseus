@@ -18,14 +18,6 @@ bool inBounds(int x, int y) {
   return x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE;
 }
 
-bool isBlockedStairsEntry(int fromX, int fromY, Direction travelDir) {
-  int nx = fromX, ny = fromY;
-  stepForward(travelDir, nx, ny);
-  if (!inBounds(nx, ny)) return true;
-  if (mapGrid[nx][ny].getType() != STAIRS) return false;
-  return mapGrid[nx][ny].getBadStairsEntry(opposite(travelDir));
-}
-
 void initializeMap() {
   for (int x = 0; x < MAP_SIZE; x++) {
     for (int y = 0; y < MAP_SIZE; y++) {
@@ -119,7 +111,7 @@ Direction pickNextDirection() {
     Direction d = priority[i];
     stepForward(d,nx,ny);
 
-    if (inBounds(nx, ny) && open(d) && untr(d) && !mapGrid[nx][ny].getVisited() && !blockedForTravel(nx, ny) && !isBlockedStairsEntry(x_pos, y_pos, d)) return d;
+    if (inBounds(nx, ny) && open(d) && untr(d) && !mapGrid[nx][ny].getVisited() && !blockedForTravel(nx, ny)) return d;
   }
 
   // 2) else any open (still avoid black/blue) using the same absolute priority.
@@ -127,7 +119,7 @@ Direction pickNextDirection() {
     int nx = x_pos, ny = y_pos;
     Direction d = priority[i];
     stepForward(d,nx,ny);
-    if (inBounds(nx, ny) && open(d) && !blockedForTravel(nx, ny) && !isBlockedStairsEntry(x_pos, y_pos, d)) return d;
+    if (inBounds(nx, ny) && open(d) && !blockedForTravel(nx, ny)) return d;
   }
 
   // figure out BFS later
@@ -232,7 +224,7 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             if (nx < rows && ny < columns && nx >= 0 && ny >= 0) {
-                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(opposite(i))&&mapGrid[nx][ny].getDiscovered()&&mapGrid[nx][ny].getType()!=BLACK && !isBlockedStairsEntry(x, y, (Direction)i)) {
+                if (!visited[nx][ny] && !mapGrid[nx][ny].getWall(opposite(i))&&mapGrid[nx][ny].getDiscovered()&&mapGrid[nx][ny].getType()!=3) { //IMPORTANT: ADD MORE CONDITIONALS HERE 
                     queue.enqueue(coord{nx, ny}); // add tile
                     visited[nx][ny] = true;
                     
@@ -259,3 +251,4 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
     return i;
     
 }
+

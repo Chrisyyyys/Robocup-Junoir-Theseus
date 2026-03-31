@@ -64,11 +64,6 @@ void gyro::reset_accel_filter(){
   accelFilterInitialized = false;
   accelFiltered = 0.0;
 }
-bool gyro::detect_forward_motion_sample(){
-  const double MOTION_ACCEL_THRESHOLD = 0.12;
-  double accel = get_filtered_acceleration();
-  return abs(accel) >= MOTION_ACCEL_THRESHOLD;
-}
 int gyro::headingToCardinal(double heading){
     // normalize angle
     if (heading < 0) heading += 360;
