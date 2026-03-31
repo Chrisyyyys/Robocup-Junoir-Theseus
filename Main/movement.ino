@@ -177,8 +177,13 @@ void fwd(double dist){ // in mm
     }
     */
     // check for steps( stop)
-    if(myGyro.get_velocity()<0.01&&encoderCountA>pulses/30&&encoderCountA<pulses*29/30){
-      if(measure(1)>=MIN_DIST&&measure(7)>=MIN_DIST){
+    
+    double acceleration = myGyro.get_acceleration();
+    Serial.println(acceleration);
+    if(acceleration>0.3&&encoderCountA>pulses/30&&encoderCountA<pulses*29/30){
+      if(measure(1)>=MIN_DIST&&measure(7)>=MIN_DIST&&abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)<5){
+        Serial.println(acceleration);
+        delay(1000);
         detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
         detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
         motorA->run(BACKWARD);
@@ -192,7 +197,7 @@ void fwd(double dist){ // in mm
         delay(250);
         fullstop();
         delay(200);
-        absoluteturn(myGyro.modulus(plannedTurnDeg-180)); // turn 180
+        absoluteturn(myGyro.opposite_heading(plannedTurnDeg)); // turn 180
         delay(200);
         motorA->run(BACKWARD);
         motorB->run(BACKWARD);
@@ -200,7 +205,7 @@ void fwd(double dist){ // in mm
         motorD->run(BACKWARD);
         attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING); // turn encoders back on
         attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
-        while(encoderCountA>-pulses&&encoderCountB>-pulses){
+        while(encoderCountA>-pulses*1.3&&encoderCountB>-pulses*1.3){
           motorA->setSpeed(150);
           motorB->setSpeed(150);
           motorC->setSpeed(150);

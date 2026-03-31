@@ -14,10 +14,13 @@ class gyro{
     double get_acceleration();
     double get_filtered_acceleration();       // EMA filtered
     void reset_accel_filter();
+    double opposite_heading(double);
+    double get_velocity();
     private:
       bool accelFilterInitialized = false;
       double accelFiltered = 0.0;
       double v;
+      unsigned long lastTime;
 
 };
 #endif

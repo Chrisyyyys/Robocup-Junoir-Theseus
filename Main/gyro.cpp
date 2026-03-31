@@ -66,15 +66,20 @@ void gyro::reset_accel_filter(){
 }
 double gyro::get_velocity(){
   
-  double a = get_acceleration();
+  double a = get_filtered_acceleration();
 
-  unsigned long now = millis();
-  float dt = (now - lastTime) / 1000.0f;   // seconds
+  unsigned long now = micros();
+  float dt = (now - lastTime) / 1000000.0;   // seconds
   lastTime = now;
-
+  if(abs(a)<0.02) a = 0.0; 
   v += a * dt;
   return v;
   
+}
+double gyro::opposite_heading(double h) {
+  h += 180.0;
+  if (h >= 360.0) h -= 360.0;
+  return h;
 }
 int gyro::headingToCardinal(double heading){
     // normalize angle
