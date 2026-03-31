@@ -49,17 +49,51 @@ void fullstop(){
   motorC->setSpeed(0);
   motorD->setSpeed(0);
 }
-void fwd(double dist){ // in mm
+bool frontWallBlockedWithThreshold(int thresholdMm) {
+  int a = measure(1);
+  int b = measure(7);
+  bool aBlocked = (a != -1 && a != 8191 && a <= thresholdMm);
+  bool bBlocked = (b != -1 && b != 8191 && b <= thresholdMm);
+  return aBlocked || bBlocked;
+}
+
+ForwardMoveResult moveBackwardForStairs(double dist) { // in mm
+  double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio;
+  encoderCountA = 0;
+  encoderCountB = 0;
+
+  while ((abs(encoderCountA) <= pulses) && (abs(encoderCountB) <= pulses)) {
+    motorA->run(BACKWARD);
+    motorB->run(BACKWARD);
+    motorC->run(BACKWARD);
+    motorD->run(BACKWARD);
+    motorA->setSpeed(150);
+    motorB->setSpeed(150);
+    motorC->setSpeed(150);
+    motorD->setSpeed(150);
+  }
+
+  fullstop();
+  encoderCountA = 0;
+  encoderCountB = 0;
+  return FORWARD_MOVE_COMPLETED;
+}
+
+ForwardMoveResult fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
   int cnt = 0; // tiles traversed while climbing.
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
-  double init_heading = myGyro.heading();
   PID myPID(0.30,0,0.2); // 0.28 for 125
   Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
+  myGyro.reset_accel_filter();
+  double integratedProgressMm = 0.0;
+  long lastProgressTicks = (abs(encoderCountA) + abs(encoderCountB)) / 2;
+  unsigned long zeroProgressSinceMs = 0;
+  bool zeroProgressTiming = false;
   while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // check cameras
@@ -150,6 +184,29 @@ void fwd(double dist){ // in mm
       delay(50);
       break;
     }
+    long currentProgressTicks = (abs(encoderCountA) + abs(encoderCountB)) / 2;
+    long deltaTicks = currentProgressTicks - lastProgressTicks;
+    if (deltaTicks > 0) {
+      integratedProgressMm += (deltaTicks / (wheel_cpr * gear_ratio)) * (wheel_diameter * M_PI);
+    }
+    lastProgressTicks = currentProgressTicks;
+    double filteredAccel = abs(myGyro.get_filtered_acceleration());
+
+    if (integratedProgressMm <= ZERO_PROGRESS_THRESHOLD_MM &&
+        filteredAccel <= ZERO_MOTION_ACCEL_THRESHOLD &&
+        climbtoggle == false) {
+      if (zeroProgressTiming == false) {
+        zeroProgressSinceMs = millis();
+        zeroProgressTiming = true;
+      } else if (millis() - zeroProgressSinceMs >= ZERO_PROGRESS_CONFIRMATION_MS) {
+        fullstop();
+        bool blocked = frontWallBlockedWithThreshold(WALL_DISTANCE_THRESHOLD_MM);
+        encoderCountA = 0; encoderCountB = 0;
+        return blocked ? FORWARD_MOVE_FAILED_WALL : FORWARD_MOVE_FAILED_STAIRS;
+      }
+    } else {
+      zeroProgressTiming = false;
+    }
     // self correction
     // if acceleration is greater than a certain value and it is not just a stop then do something.
     /*
@@ -233,7 +290,7 @@ void fwd(double dist){ // in mm
   
   fullstop();
   encoderCountA = 0; encoderCountB = 0;
-
+  return FORWARD_MOVE_COMPLETED;
 }
 // absolute turning
 void absoluteturn(double angle){ 
