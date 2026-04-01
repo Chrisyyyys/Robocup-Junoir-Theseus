@@ -103,6 +103,9 @@ Direction pickNextDirection() {
   auto blockedForTravel = [&](int nx, int ny){
     return mapGrid[nx][ny].getType() == BLACK || mapGrid[nx][ny].getType() == STAIR || isBlueTile(nx, ny);
   };
+  auto isBlackTile = [&](int nx, int ny){
+    return mapGrid[nx][ny].getType() == BLACK;
+  };
   
   // 1) try open + untraveled first
   for (int i = 0; i < 4; i++) {
@@ -120,6 +123,12 @@ Direction pickNextDirection() {
     Direction d = priority[i];
     stepForward(d,nx,ny);
     if (inBounds(nx, ny) && open(d) && !blockedForTravel(nx, ny)) return d;
+  }
+  for (int i=0;i<4;i++){
+    int nx = x_pos, ny = y_pos;
+    Direction d = priority[i];
+    stepForward(d,nx,ny);
+    if (inBounds(nx, ny) && open(d)&&!isBlackTile(nx,ny)) return d;
   }
 
   // figure out BFS later
