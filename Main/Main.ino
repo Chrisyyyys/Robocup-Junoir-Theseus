@@ -300,7 +300,7 @@ void loop(){
       if(Pausemaze == true) state = PAUSE;
       //if(mazeTime.getTime() >= 1000000*60*6) state = RETURN;
       //if(medkits <= 0) state = RETURN;
-      if(iterator >= 20) state = RETURN;
+      if(iterator >= 15) state = RETURN;
       break;
      
     }

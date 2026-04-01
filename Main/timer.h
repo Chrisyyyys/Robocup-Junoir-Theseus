@@ -7,6 +7,12 @@ class timer{
     double startTimeStamp = 0; double endTimeStamp = 0;
     timer();
     double getTime();
+    double delta_time();
+    double reset_delta_time();
     void pause(int);
+  private:
+    double last;
+    double current;
+    double delta;
 };
 #endif
