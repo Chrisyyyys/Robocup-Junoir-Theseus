@@ -169,8 +169,10 @@ void detect(){ // the robot goes forward until it detects something( does not re
   // don't detect if there is no wall( prevent misdetection)
   bool wallAtLeft = false;
   bool wallAtRight = false;
-  if(measure(3) <MIN_DIST&&measure(3)!=-1) wallAtRight = true;
-  if(measure(6)<MIN_DIST&&measure(6)!=-1) wallAtLeft = true;
+  int right = measure(3);
+  int left = measure(6);
+  if(right <MIN_DIST&&right!=-1) wallAtRight = true;
+  if(left<MIN_DIST&&right!=-1) wallAtLeft = true;
   if(wallAtRight == false && wallAtLeft == false) return;
   timer myTimer;
   while(true){
