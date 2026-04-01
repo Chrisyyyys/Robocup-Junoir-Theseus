@@ -269,10 +269,10 @@ void fwd(double dist){ // in mm
   if(climbtoggle == true){
     for(int i = 0; i<cnt;i++){
       Serial.println("adding ramp to map");
-      writeWallsToCurrentTile(0, 1, 0, 1);
-      updateFullyExploredAt(x_pos, y_pos);
       markEdgeBothWays(x_pos, y_pos, currentDir);
       stepForward(currentDir, x_pos, y_pos);
+      writeWallsToCurrentTile(0, 1, 0, 1);
+      updateFullyExploredAt(x_pos, y_pos);
     }
     Serial.println("compensating");
     motorA->setSpeed(200);
