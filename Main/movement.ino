@@ -229,6 +229,15 @@ void fwd(double dist){ // in mm
       if(measure(1)>=MIN_DIST&&measure(7)>=MIN_DIST&&abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)<5){
         Serial.println("acceleration");
         Serial.println(acceleration);
+        int stairX = x_pos;
+        int stairY = y_pos;
+        stepForward(currentDir, stairX, stairY);
+        updateFullyExploredAt(x_pos, y_pos);
+        if (inBounds(stairX, stairY)) {
+          mapGrid[stairX][stairY].setDiscovered(true);
+          mapGrid[stairX][stairY].setType(STAIR);
+        }
+        stairtoggle = true;
         delay(1000);
         detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
         detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
@@ -307,10 +316,10 @@ void fwd(double dist){ // in mm
   if(climbtoggle == true){
     for(int i = 0; i<cnt;i++){
       Serial.println("adding ramp to map");
-      writeWallsToCurrentTile(0, 1, 0, 1);
-      updateFullyExploredAt(x_pos, y_pos);
       markEdgeBothWays(x_pos, y_pos, currentDir);
       stepForward(currentDir, x_pos, y_pos);
+      writeWallsToCurrentTile(0, 1, 0, 1);
+      updateFullyExploredAt(x_pos, y_pos);
     }
     Serial.println("compensating");
     motorA->setSpeed(200);

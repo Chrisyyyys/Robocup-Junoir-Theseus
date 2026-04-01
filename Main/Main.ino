@@ -110,6 +110,7 @@ timer mazeTime;
 // black blue toggles
 bool blacktoggle = false;
 bool bluetoggle = false;
+bool stairtoggle = false;
 // victim toggles
 bool victimtoggle = false;
 bool victimAtCurrent = false;
@@ -278,7 +279,7 @@ void loop(){
         mapGrid[x_pos][y_pos].setBlue(true);
       }
       bluetoggle = false;
-      if(blacktoggle == false){
+      if(blacktoggle == false && stairtoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos);
         
@@ -326,6 +327,7 @@ void loop(){
       turnCompletedForMove = false;
       state = EXECUTE_MOVE;
       blacktoggle = false;
+      stairtoggle = false;
       if(Pausemaze == true) state = PAUSE;
       delay(500);
       break;
