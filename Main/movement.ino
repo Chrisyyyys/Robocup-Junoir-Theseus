@@ -60,6 +60,10 @@ void fwd(double dist){ // in mm
   PID myPID(0.30,0,0.2); // 0.28 for 125
   Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
+  int front_left_current=measure(7); int front_right_current=measure(1);
+  int front_left_last=measure(7); int front_right_last=measure(1);
+  timer myTime;
+  myTime.reset_delta_time();
   while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // check cameras
@@ -140,15 +144,56 @@ void fwd(double dist){ // in mm
     //Serial.println(center());
     double adjustment = myPID.getPID(difference);
     // emergency stop
-    int a = measure(1);
-    int b = measure(7);
-    if((a<=50&&a!=-1)||(b<=50&&b!=-1)){
+    front_left_current = measure(7);
+    front_right_current = measure(1);
+    if((front_left_current<=50&&front_left_current!=-1)||(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
-      Serial.println(a);
-      Serial.println(b);
       fullstop();
       delay(50);
       break;
+    }
+    
+    if(myTime.delta_time()>200000){
+      myTime.reset_delta_time();
+      Serial.println(front_left_current-front_left_last);
+      front_left_last = front_left_current;
+      front_right_last=front_right_current;
+      if(front_left_current-front_left_last>-15&&front_right_current-front_right_last>-15&&climbtoggle == false&&encoderCountA>pulses/30&&encoderCountA<pulses*29/30){
+        delay(500);
+        detachInterrupt(digitalPinToInterrupt(encoderPin_A_A));
+        detachInterrupt(digitalPinToInterrupt(encoderPin_B_A));
+        motorA->run(BACKWARD);
+        motorB->run(BACKWARD);
+        motorC->run(BACKWARD);
+        motorD->run(BACKWARD);
+        motorA->setSpeed(150);
+        motorB->setSpeed(150);
+        motorC->setSpeed(150);
+        motorD->setSpeed(150);
+        delay(250);
+        fullstop();
+        delay(200);
+        absoluteturn(myGyro.opposite_heading(plannedTurnDeg)); // turn 180
+        delay(200);
+        motorA->run(BACKWARD);
+        motorB->run(BACKWARD);
+        motorC->run(BACKWARD);
+        motorD->run(BACKWARD);
+        attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING); // turn encoders back on
+        attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
+        while(encoderCountA>-pulses*1.3&&encoderCountB>-pulses*1.3){
+          motorA->setSpeed(150);
+          motorB->setSpeed(150);
+          motorC->setSpeed(150);
+          motorD->setSpeed(150);
+        }
+        fullstop();
+        delay(200);
+        absoluteturn(plannedTurnDeg);
+        delay(100);
+        break;
+        continue;
+      }
     }
     // self correction
     // if acceleration is greater than a certain value and it is not just a stop then do something.
@@ -177,11 +222,12 @@ void fwd(double dist){ // in mm
     }
     */
     // check for steps( stop)
-    
+    /*
     double acceleration = myGyro.get_acceleration();
     Serial.println(acceleration);
-    if(acceleration>0.3&&encoderCountA>pulses/30&&encoderCountA<pulses*29/30){
+    if(acceleration>1.2&&encoderCountA>pulses/30&&encoderCountA<pulses*29/30){
       if(measure(1)>=MIN_DIST&&measure(7)>=MIN_DIST&&abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)<5){
+        Serial.println("acceleration");
         Serial.println(acceleration);
         int stairX = x_pos;
         int stairY = y_pos;
@@ -227,6 +273,7 @@ void fwd(double dist){ // in mm
         break;
       }
     }
+    */
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
      if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){
@@ -279,7 +326,7 @@ void fwd(double dist){ // in mm
     motorB->setSpeed(200);
     motorC->setSpeed(200);
     motorD->setSpeed(200);
-    delay(100);
+    delay(300);
   }
   
   fullstop();
