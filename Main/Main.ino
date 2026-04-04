@@ -248,7 +248,9 @@ void loop(){
     }
     case EXECUTE_MOVE: {
       if (turnCompletedForMove == false) {
-        absoluteturn(plannedTurnDeg);
+        if(plannedMoveDir != currentDir){
+          absoluteturn(plannedTurnDeg);
+        }
         delay(200);
         parallel();
         delay(100);

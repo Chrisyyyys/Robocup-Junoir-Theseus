@@ -230,14 +230,14 @@ void fwd(double dist){ // in mm
     */
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
-     if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){
+     if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
       int _encoderCountB = encoderCountB;
       climbtoggle = true;
       encoderCountB = 0;
       Serial.println(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw));
       Serial.println("climbing");
       
-      while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 15){
+      while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
         Serial.println(encoderCountB);
         detachInterrupt(digitalPinToInterrupt(encoderPin_A_A)); // stop encoders
          // PID centering

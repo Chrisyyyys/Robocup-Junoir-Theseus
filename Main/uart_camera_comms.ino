@@ -93,7 +93,7 @@ void detectCam1(){ // doesn't return anything.
   char output;
   timer myTimer;
   while(n<5){
-    if(myTimer.getTime() > 5*1000000) return;
+    if(myTimer.getTime() > 4*1000000) return;
     
     int value = readSerial1();
     
@@ -131,7 +131,7 @@ void detectCam2(){
   char output;
   timer myTimer;
   while(n<5){
-    if(myTimer.getTime() > 5*1000000) return;
+    if(myTimer.getTime() > 4*1000000) return;
     
     int value = readSerial2();
 
@@ -200,11 +200,11 @@ void detect(){ // the robot goes forward until it detects something( does not re
   motorD->setSpeed(0);
   delay(200);
   if(victimAtLeft == true){
-    clearSerialBuffer1();
+    
     detectCam1();
   }
   else if(victimAtRight == true){
-    clearSerialBuffer2();
+    
     detectCam2();
   }
   
