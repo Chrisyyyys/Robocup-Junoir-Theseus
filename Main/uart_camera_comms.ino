@@ -160,7 +160,7 @@ void detectCam2(){
   return;
 }
 void detect(){ // the robot goes forward until it detects something( does not return)
-  fullstop();
+  drivetrain.fullstop();
   bool victimAtLeft = false; // victim at left
   bool victimAtRight = false; // victim at right
   // clear buffers
@@ -189,15 +189,9 @@ void detect(){ // the robot goes forward until it detects something( does not re
       break;
     }
     if(myTimer.getTime() >= 1000000*1.2) break; // give 1.5 seconds to detect.
-    motorA->setSpeed(80);
-    motorB->setSpeed(80);
-    motorC->setSpeed(80);
-    motorD->setSpeed(80);
+    drivetrain.fw(80);
   }
-  motorA->setSpeed(0);
-  motorB->setSpeed(0);
-  motorC->setSpeed(0);
-  motorD->setSpeed(0);
+  drivetrain.fullstop();
   delay(200);
   if(victimAtLeft == true){
     
@@ -209,16 +203,9 @@ void detect(){ // the robot goes forward until it detects something( does not re
   }
   
   // backpedal
-  motorA->run(BACKWARD);
-  motorB->run(BACKWARD);
-  motorC->run(BACKWARD);
-  motorD->run(BACKWARD);
   while(encoderCountA > 0){
-    motorA->setSpeed(150);
-    motorB->setSpeed(150);
-    motorC->setSpeed(150);
-    motorD->setSpeed(150);
+    drivetrain.backward(100);
   }
-  fullstop();
+  drivetrain.fullstop();
 
 }

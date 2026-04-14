@@ -212,7 +212,7 @@ void parallel(){
     sensorB = 5;
     wallDir=3;
   } else {
-    fullstop();
+    drivetrain.fullstop();
     return;
   }
 
@@ -266,14 +266,11 @@ void parallel(){
       motorA->run(BACKWARD);
       motorC->run(BACKWARD);
     }
-
-    motorA->setSpeed(PARALLEL_SPEED);
-    motorB->setSpeed(PARALLEL_SPEED);
-    motorC->setSpeed(PARALLEL_SPEED);
-    motorD->setSpeed(PARALLEL_SPEED);
+    drivetrain.drive(PARALLEL_SPEED,PARALLEL_SPEED,PARALLEL_SPEED,PARALLEL_SPEED);
+    
   }
 
-  fullstop();
+  drivetrain.fullstop();
 }
 int center(){
   int a = measure(2);
@@ -282,7 +279,7 @@ int center(){
   else return 0;
 }
 int leftright = 0;
-void obstacleavoidance(int leftright){
+void obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
   while(true){
     switch (steps){
       case TURN:{
@@ -290,31 +287,22 @@ void obstacleavoidance(int leftright){
           while(measure(7) < MIN_DIST){
             motorB->run(BACKWARD);
             motorD->run(BACKWARD);
-            motorA->setSpeed(255);
-            motorB->setSpeed(255);
-            motorC->setSpeed(255);
-            motorD->setSpeed(255);
+            drivetrain.drive(255,255,255,255);
           }
         }
         else if(leftright == 0){ // obstacle at right
           while(measure(1)<MIN_DIST){
             motorA->run(BACKWARD);
             motorC->run(BACKWARD);
-            motorA->setSpeed(255);
-            motorB->setSpeed(255);
-            motorC->setSpeed(255);
-            motorD->setSpeed(255);
+            drivetrain.drive(255,255,255,255);
           }
           
         }
-        fullstop();
+        drivetrain.fullstop();
         delay(200);
-        motorA->setSpeed(255);
-        motorB->setSpeed(255);
-        motorC->setSpeed(255);
-        motorD->setSpeed(255);
+        drivetrain.fw(255);
         delay(300);
-        fullstop();
+        drivetrain.fullstop();
         delay(200);
         steps = PARALLEL;
         break;
@@ -324,12 +312,9 @@ void obstacleavoidance(int leftright){
         if(leftright == 1){
           while(measure(2)>=25){
             double increment = pid.getPID(abs(measure(3)-measure(2))); // get close to the edge as possible.
-            motorA->setSpeed(constrain(100-increment,30,255));
-            motorB->setSpeed(constrain(100+increment,30,225));
-            motorC->setSpeed(constrain(100-increment,30,255));
-            motorD->setSpeed(constrain(100+increment,30,225));
+            drivetrain.drive(constrain(100-increment,30,255),constrain(100-increment,30,255),constrain(100+increment,30,225),constrain(100+increment,30,225));
             if(abs(measure(3)-measure(2))<=5){
-              fullstop();
+              drivetrain.fullstop();
               delay(200);
               steps = FWD;
               goto end;
@@ -340,12 +325,9 @@ void obstacleavoidance(int leftright){
         else if(leftright == 0){
           while(measure(6)>=25){
             double increment = pid.getPID(abs(measure(6)-measure(5))); // get close to the edge as possible.
-            motorA->setSpeed(constrain(100-increment,30,255));
-            motorB->setSpeed(constrain(100+increment,30,225));
-            motorC->setSpeed(constrain(100-increment,30,225));
-            motorD->setSpeed(constrain(100+increment,30,225));
+            drivetrain.drive(constrain(100-increment,30,255),constrain(100-increment,30,255),constrain(100+increment,30,225),constrain(100+increment,30,225));
             if(abs(measure(6)-measure(5))<=5){
-              fullstop();
+              drivetrain.fullstop();
               delay(200);
               steps = FWD;
               goto end;
@@ -363,29 +345,15 @@ void obstacleavoidance(int leftright){
         Serial.println("backtracking");
         if(leftright == 0){
           while(measure(6)<=25){
-            motorA->run(BACKWARD);
-            motorB->run(BACKWARD);
-            motorC->run(BACKWARD);
-            motorD->run(BACKWARD);
-            motorA->setSpeed(100);
-            motorB->setSpeed(100);
-            motorC->setSpeed(100);
-            motorD->setSpeed(100);
+            drivetrain.backward(100);
           }
         }
         else if(leftright == 1){
           while(measure(2)<=40){
-            motorA->run(BACKWARD);
-            motorB->run(BACKWARD);
-            motorC->run(BACKWARD);
-            motorD->run(BACKWARD);
-            motorA->setSpeed(100);
-            motorB->setSpeed(100);
-            motorC->setSpeed(100);
-            motorD->setSpeed(100);
+            drivetrain.backward(100);
           }
         }
-        fullstop();
+        drivetrain.fullstop();
         delay(200);
         steps = PARALLEL;
         break;

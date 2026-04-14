@@ -15,6 +15,7 @@
 #include "timer.h"
 #include "gyro.h"
 #include "dispenser.h"
+#include "motors.h"
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 0.10 // color clear-channel threshold ratio for black
@@ -43,6 +44,7 @@ Adafruit_DCMotor *motorA = AFMS.getMotor(1);
 Adafruit_DCMotor *motorB = AFMS.getMotor(2);
 Adafruit_DCMotor *motorC = AFMS.getMotor(3);
 Adafruit_DCMotor *motorD = AFMS.getMotor(4);
+
 // set up encoder pins
 const int encoderPin_A_A = 2;
 const int encoderPin_A_B = 4; 
@@ -51,6 +53,8 @@ const int encoderPin_B_B = 5;
 // encoder counters
 volatile int encoderCountB;
 volatile int encoderCountA;
+//drivetrain class object
+motors drivetrain(encoderPin_A_A,encoderPin_A_B,encoderPin_B_A,encoderPin_B_B);
 // wheel cpr
 const double wheel_cpr = 5; // 20/4
 //gear ratio
@@ -177,7 +181,6 @@ void setup(){
   scanAllPorts();
   init_color();
   init_drive();
-  //
   //detect();
   //initialize map
   initializeMap();
@@ -276,7 +279,7 @@ void loop(){
       fwd(TILE_MM);
       // 3) update map + robot position only on successful move
       if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
-        fullstop();
+        drivetrain.fullstop();
         delay(5000);
         mapGrid[x_pos][y_pos].setBlue(true);
       }
@@ -397,12 +400,12 @@ void loop(){
       }
       flashLED('H');
       while(true){
-        fullstop();
+        drivetrain.fullstop();
       }
     }
     case PAUSE: {
       while(digitalRead(logicswitch)==true){
-        fullstop();
+        drivetrain.fullstop();
         x_pos = x_checkpoint; y_pos = y_checkpoint;
       }
       myGyro.headingToCardinal(myGyro.heading());

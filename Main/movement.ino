@@ -19,36 +19,12 @@ void encoder_update_A(){ // every pulse consists for once going up and once goin
   }
 }
 void init_drive(){
-  pinMode(encoderPin_A_A, INPUT);
-  pinMode(encoderPin_A_B,INPUT);
-  pinMode(encoderPin_B_A, INPUT);
-  pinMode(encoderPin_B_B,INPUT);
-  attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING);
-  attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING); // only counting rising of Pin: (20/2)/2
-  if(!AFMS.begin()){
-    Serial.println("could not find motor shield");
-  }
-  else{
-    Serial.println("motor shield found");
-  }
-  motorA->run(FORWARD);
-  motorB->run(FORWARD);
-  motorC->run(FORWARD);
-  motorD->run(FORWARD);
+  drivetrain.init_drive();
   // initialize gyro
   myGyro.init_Gyro();
 }
 // full stop
-void fullstop(){
-  motorA->run(FORWARD);
-  motorB->run(FORWARD);
-  motorC->run(FORWARD);
-  motorD->run(FORWARD);
-  motorA->setSpeed(0);
-  motorB->setSpeed(0);
-  motorC->setSpeed(0);
-  motorD->setSpeed(0);
-}
+
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   bool black = false; // toggle for black tile
@@ -64,7 +40,7 @@ void fwd(double dist){ // in mm
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
-  while((encoderCountA<= pulses && (encoderCountB <= pulses||climbtoggle == true))&&black!=true){
+  while((drivetrain.encoderCountA<= pulses && (drivetrain.encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // check cameras
     
@@ -115,7 +91,7 @@ void fwd(double dist){ // in mm
       mapGrid[nx][ny].setType(1);
     }
     if(color == -1&&use_color%2==0){
-      fullstop();
+      drivetrain.fullstop();
       delay(100);
       
       //Do you mean  t.setWall(plannedMoveDir, true)
@@ -126,15 +102,7 @@ void fwd(double dist){ // in mm
       blacktoggle = true;
       
       while(encoderCountA >= 0 && encoderCountB >= 0){
-        motorA->run(BACKWARD);
-        motorB->run(BACKWARD);
-        motorC->run(BACKWARD);
-        motorD->run(BACKWARD);
-       
-        motorA->setSpeed(200);
-        motorB->setSpeed(200);
-        motorC->setSpeed(200);
-        motorD->setSpeed(200);
+        drivetrain.backward(200);
       }
       black = true;
     }
@@ -148,7 +116,7 @@ void fwd(double dist){ // in mm
     front_right_current = measure(1);
     if((front_left_current<=50&&front_left_current!=-1)||(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
-      fullstop();
+      drivetrain.fullstop();
       delay(50);
       break;
     }
@@ -231,40 +199,32 @@ void fwd(double dist){ // in mm
     // check yaw heading
     // if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
      if(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
-      int _encoderCountB = encoderCountB;
+      int _encoderCountB = drivetrain.encoderCountB;
       climbtoggle = true;
-      encoderCountB = 0;
+      drivetrain.reset_encoderCount(true, false);
       Serial.println(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw));
       Serial.println("climbing");
       
       while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
         Serial.println(encoderCountB);
-        detachInterrupt(digitalPinToInterrupt(encoderPin_A_A)); // stop encoders
+        drivetrain.set_interrupt(false,true); // stop encoders
          // PID centering
         difference = center();
         //Serial.println(center());
         double adjustment = myPID.getPID(difference);
-        motorA->setSpeed(200+adjustment); // center during climbing
-        motorC->setSpeed(200+adjustment);
-        motorB->setSpeed(200-adjustment);
-        motorD->setSpeed(200-adjustment);
-        if(encoderCountB >= pulses/cos(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)*(M_PI/180))){
-          //Serial.println(pulses/cos(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)));nigger
-          Serial.println(encoderCountB);
+        // center during climbing
+        drivetrain.drive(200+adjustment,200+adjustment,200-adjustment,200-adjustment);
+        if(drivetrain.encoderCountB >= pulses/cos(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)*(M_PI/180))){
           Serial.println("1 section of the ramp climbed");
           cnt++;
-          encoderCountB=0;
+          drivetrain.reset_encoderCount(false,true);
         } // track tiles
       }
       use_color++;
-      attachInterrupt(digitalPinToInterrupt(encoderPin_A_A), encoder_update_A, RISING);
-      attachInterrupt(digitalPinToInterrupt(encoderPin_B_A), encoder_update_B, RISING);
-      encoderCountB = _encoderCountB;
+      drivetrain.set_interrupt(true,true);
+      drivetrain.set_encoderCountB(_encoderCountB);
     }
-    motorA->setSpeed(150+adjustment);
-    motorC->setSpeed(150+adjustment);
-    motorB->setSpeed(150-adjustment);
-    motorD->setSpeed(150-adjustment);
+    drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){
@@ -276,14 +236,11 @@ void fwd(double dist){ // in mm
       updateFullyExploredAt(x_pos, y_pos);
     }
     Serial.println("compensating");
-    motorA->setSpeed(200);
-    motorB->setSpeed(200);
-    motorC->setSpeed(200);
-    motorD->setSpeed(200);
+    drivetrain.fw(200);
     delay(300);
   }
   
-  fullstop();
+  drivetrain.fullstop();
   encoderCountA = 0; encoderCountB = 0;
 
 }
@@ -316,7 +273,7 @@ void absoluteturn(double angle){
       
       MOTORSPEED = myPID.getPID(myGyro.inverse(angle,fasterway)-current_angle);
       if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        fullstop();
+        drivetrain.fullstop();
         if(detectWall(3)==0){
           Serial.println("victim at left");
           myPID.pausePID(1);
@@ -330,7 +287,7 @@ void absoluteturn(double angle){
         }
       }
       else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        fullstop();
+        drivetrain.fullstop();
         if(detectWall(1)==0){
           Serial.println("victim at right");
           myPID.pausePID(1);
@@ -343,10 +300,7 @@ void absoluteturn(double angle){
           victimtoggle = true;
         }
       }
-      motorA->setSpeed(constrain(MOTORSPEED,20,200));
-      motorB->setSpeed(constrain(MOTORSPEED,20,200));
-      motorC->setSpeed(constrain(MOTORSPEED,20,200));
-      motorD->setSpeed(constrain(MOTORSPEED,20,200));
+      drivetrain.turnright(constrain(MOTORSPEED,20,200));
     }
   }
 
@@ -359,7 +313,7 @@ void absoluteturn(double angle){
       current_angle = myGyro.inverse(myGyro.heading(),fasterway);
       MOTORSPEED = myPID.getPID(current_angle-myGyro.inverse(angle,fasterway));
       if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        fullstop();
+        drivetrain.fullstop();
         if(detectWall(3)==1){
           Serial.println("victim at left");
           myPID.pausePID(1);
@@ -374,7 +328,7 @@ void absoluteturn(double angle){
         
       }
       else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        fullstop();
+        drivetrain.fullstop();
         if(detectWall(1)==1){
           Serial.println("victim at right");
           myPID.pausePID(1);
@@ -386,16 +340,13 @@ void absoluteturn(double angle){
           victimtoggle = true;
         }
       }
-      motorA->setSpeed(constrain(MOTORSPEED,20,200));
-      motorB->setSpeed(constrain(MOTORSPEED,20,200));
-      motorC->setSpeed(constrain(MOTORSPEED,20,200));
-      motorD->setSpeed(constrain(MOTORSPEED,20,200));
+      drivetrain.turnleft(constrain(MOTORSPEED,20,200));
     }
   }
   
   if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
   Serial.println("finished turning");
-  fullstop();
+  drivetrain.fullstop();
   encoderCountA = 0; encoderCountB = 0; // reset encoder counters.
 }
 // full stop function
