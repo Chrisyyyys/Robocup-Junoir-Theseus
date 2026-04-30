@@ -5,47 +5,53 @@ Direction rotateDir(Direction base, int offset) {
 }
 // at orientation w, conver heading of x to local heading of y.
 
-void stepForward(Direction d, int &x, int &y) {
+void stepForward(Direction d, int &x, int &y, int &z) {
   // global direction
   if (d == NORTH) y++;
   else if (d == EAST) x++;
   else if (d == SOUTH) y--;
   else if (d == WEST) x--;
+  else if (d == TOP) z++;
+  else if (d == BOTTOM) z--;
   //if(victimAtCurrent == false&&victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
 }
 
-bool inBounds(int x, int y) {
-  return x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE;
+bool inBounds(int x, int y, int z) {
+  return x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE && z >= 0 && z <;
 }
 
 void initializeMap() {
   for (int x = 0; x < MAP_SIZE; x++) {
     for (int y = 0; y < MAP_SIZE; y++) {
-      mapGrid[x][y].setDiscovered(false);
-      mapGrid[x][y].setFully(false);
-      mapGrid[x][y].setVisited(false);
-      for (int d = 0; d < 4; d++) {
-        mapGrid[x][y].setWall(d, false);
-        mapGrid[x][y].setEdge(d, false);
+      for (int z = 0; z < 5; z++){
+        mapGrid[x][y][z].setDiscovered(false);
+        mapGrid[x][y][z].setFully(false);
+        mapGrid[x][y][z].setVisited(false);
+        mapGrid[x][y][z].setElevation(false);
+        mapGrid[x][y][z].setDescension(false);
+        for (int d = 0; d < 4; d++) {
+          mapGrid[x][y][z].setWall(d, false);
+          mapGrid[x][y][z].setEdge(d, false);
+        }
+        mapGrid[x][y][z].setType(BLANK);
       }
-      mapGrid[x][y].setType(BLANK);
-    }
+    }  
   }
 }
 
 // mark traveled edge in BOTH tiles (current and next)
-void markEdgeBothWays(int x, int y, Direction d) {
-  int nx = x, ny = y;
-  stepForward(d, nx, ny);
-  if (!inBounds(nx, ny)) return;
+void markEdgeBothWays(int x, int y, int z, Direction d) {
+  int nx = x, ny = y, nz = z;
+  stepForward(d, nx, ny, nz);
+  if (!inBounds(nx, ny, nz)) return;
 
-  mapGrid[x][y].setEdge(d, true); // connected
-  mapGrid[nx][ny].setEdge(opposite(d), true); // update both sides.
+  mapGrid[x][y][z].setEdge(d, true); // connected
+  mapGrid[nx][ny][nz].setEdge(opposite(d), true); // update both sides.
 }
 
 // update fullyExplored = all OPEN dirs have been traveled at least once
-void updateFullyExploredAt(int x, int y) {
-  Tile &t = mapGrid[x][y];
+void updateFullyExploredAt(int x, int y, int z) {
+  Tile &t = mapGrid[x][y][z];
   bool allDone = true;
   t.setVisited(true);
   for (int d = 0; d < 4; d++) {
@@ -58,6 +64,7 @@ void updateFullyExploredAt(int x, int y) {
   }
   t.setFully(allDone);
 }
+
 // 0=front, 1=right, 2=back, 3=left
 void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // references needed here to update the variable values
   wallF = (detectWall(0)==0);
@@ -72,7 +79,7 @@ void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // refer
 //get the wall from L,R(local) into N W(global)
 // absF is the absolute heading the the robot front is heading.
 void writeWallsToCurrentTile(bool wallF, bool wallR, bool wallB, bool wallL) {
-  Tile &t = mapGrid[x_pos][y_pos];
+  Tile &t = mapGrid[x_pos][y_pos][z_pos];
   t.setDiscovered(true);
   // shouldn't absolute directions be north south east west?
   Direction absF = currentDir;
@@ -86,7 +93,7 @@ void writeWallsToCurrentTile(bool wallF, bool wallR, bool wallB, bool wallL) {
   // need to mark both ways.
 }
 Direction pickNextDirection() {
-  Tile &t = mapGrid[x_pos][y_pos];
+  Tile &t = mapGrid[x_pos][y_pos][z_pos];
 
   Direction absL = rotateDir(currentDir, -1);
   Direction absF = currentDir;
@@ -97,38 +104,40 @@ Direction pickNextDirection() {
 
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
-  auto isBlueTile = [&](int nx, int ny){
-    return mapGrid[nx][ny].getType() == BLUE || mapGrid[nx][ny].getBlue();
+  auto isBlueTile = [&](int nx, int ny, int nz){
+    return mapGrid[nx][ny][nz].getType() == BLUE || mapGrid[nx][ny][nz].getBlue();
   };
-  auto blockedForTravel = [&](int nx, int ny){
-    return mapGrid[nx][ny].getType() == BLACK || mapGrid[nx][ny].getType() == STAIR || isBlueTile(nx, ny);
+  auto blockedForTravel = [&](int nx, int ny, int nz){
+    return mapGrid[nx][ny][nz].getType() == BLACK || mapGrid[nx][ny][nz].getType() == STAIR || isBlueTile(nx, ny, nz);
   };
-  auto isBlackTile = [&](int nx, int ny){
-    return mapGrid[nx][ny].getType() == BLACK;
+  auto isBlackTile = [&](int nx, int ny, int nz){
+    return mapGrid[nx][ny][nz].getType() == BLACK;
   };
   
+
+  //im unsure if this will work? it probably will since TOP/BOTTOM shouldnt be explored
   // 1) try open + untraveled first
   for (int i = 0; i < 3; i++) {
-    int nx = x_pos, ny = y_pos;
+    int nx = x_pos, ny = y_pos, nz = z_pos;
     
     Direction d = priority[i];
-    stepForward(d,nx,ny);
+    stepForward(d,nx,ny,nz);
 
-    if (inBounds(nx, ny) && open(d) && untr(d) && !mapGrid[nx][ny].getVisited() && !blockedForTravel(nx, ny)) return d;
+    if (inBounds(nx, ny, nz) && open(d) && untr(d) && !mapGrid[nx][ny][nz].getVisited() && !blockedForTravel(nx, ny, nz)) return d;
   }
 
   // 2) else any open (still avoid black/blue) using the same absolute priority.
   for (int i = 0; i < 3; i++) {
-    int nx = x_pos, ny = y_pos;
+    int nx = x_pos, ny = y_pos, nz = z_pos;
     Direction d = priority[i];
-    stepForward(d,nx,ny);
-    if (inBounds(nx, ny) && open(d) && !blockedForTravel(nx, ny)) return d;
+    stepForward(d,nx,ny, nz);
+    if (inBounds(nx, ny, nz) && open(d) && !blockedForTravel(nx, ny, nz)) return d;
   }
   for (int i=0;i<3;i++){
-    int nx = x_pos, ny = y_pos;
+    int nx = x_pos, ny = y_pos, nz = z_pos;
     Direction d = priority[i];
-    stepForward(d,nx,ny);
-    if (inBounds(nx, ny) && open(d)&&!isBlackTile(nx,ny)) return d;
+    stepForward(d,nx,ny, nz);
+    if (inBounds(nx, ny, nz) && open(d)&&!isBlackTile(nx,ny, nz)) return d;
   }
 
   // figure out BFS later
@@ -144,30 +153,25 @@ int turnNeededDeg(Direction direction) {
   return 270; // diff==3
 
 }
-int dir[4][2] = {
-    {0, 1},
-    {1, 0},
-    {0, -1},
-    {-1, 0}
+int dir[6][3] = {
+    {0, 1, 0},
+    {1, 0, 0},
+    {0, -1, 0},
+    {-1, 0, 0},
+    {0, 0, 1},
+    {0, 0, -1}
 };
-void initTile(int x, int y) {
-    mapGrid[x][y].setDiscovered(false);
-    mapGrid[x][y].setFully(false);
-    for (int d = 0; d < 4; d++) {
-        mapGrid[x][y].setWall(d, false);
-        mapGrid[x][y].setEdge(d, false);
-    }
-    mapGrid[x][y].setType(BLANK);
-}
 
-void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) { //input mapgrid, and next tile location
+void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0, int pos_z = 0) { //input mapgrid, and next tile location
     //cout << "start reallocate" << endl;
 
     //expand to bottom (remove top)
     if (pos_y >= MAP_SIZE) {
         for (int i = 0; i < MAP_SIZE - 1; i++) {
             for (int j = 0; j < MAP_SIZE; j++) {
-                mapgrid[i][j] = mapgrid[i + 1][j];
+              for(int k = 0; k < 5; k++){
+                mapgrid[i][j][k] = mapgrid[i + 1][j][k];
+              }
             }
             //printmap(mapgrid);
         }
@@ -179,7 +183,9 @@ void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) 
     else if (pos_y < 0) {
         for (int i = MAP_SIZE-1; i > 0; i--) {
             for (int j = 0; j < MAP_SIZE; j++) {
-                mapgrid[i][j] = mapgrid[i - 1][j];
+              for(int k = 0; k < 5; k++){
+                mapgrid[i][j][k] = mapgrid[i - 1][j][k];
+              }
             }
             //printmap(mapgrid);
         }
@@ -192,7 +198,9 @@ void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) 
     else if (pos_x >= MAP_SIZE) {
         for (int j = 0; j < MAP_SIZE - 1; j++) {
             for (int i = 0; i < MAP_SIZE; i++) {
-                mapgrid[i][j] = mapgrid[i][j+1];
+                for(int k = 0; k < 5; k++){
+                mapgrid[i][j] = mapgrid[i - 1][j];
+                }
             }
             //printmap(mapgrid);
         }

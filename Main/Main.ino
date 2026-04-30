@@ -70,8 +70,10 @@ const int steps_per_revolution = 2048;
 Stepper myStepper = Stepper(steps_per_revolution, 8, 9,10,11); 
 // map size variables
 const int MAP_SIZE=20;
-Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
+//Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
+Tile mapGrid[MAP_SIZE][MAP_SIZE][5]; // 0 is bottom, 2 is normal, 4 is top
 // queue
+
 
 
 //states that the robot will be in
@@ -96,6 +98,7 @@ enum Steps {
 struct coord {
   int x;
   int y;
+  int z;
 };
 Steps steps = TURN;
 
@@ -107,6 +110,7 @@ Direction plannedMoveDir = NORTH; // absolute direction robot will move next
 bool turnCompletedForMove = false;
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
+int z_pos = 2;
 RobotState state = SENSE_TILE;
 // maze return to start condition variables
 int medkits = 8;
@@ -134,7 +138,7 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 // logic switch pin
 const int logicswitch = 31;
 bool Pausemaze = false;
-int x_checkpoint, y_checkpoint;
+int x_checkpoint, y_checkpoint, z_checkpoint;
 bool tilecheck = false;
 
 double headingErrorDeg(double targetDeg, double actualDeg) {
@@ -186,7 +190,8 @@ void setup(){
   initializeMap();
   x_pos=MAP_SIZE/2;
   y_pos=MAP_SIZE/2;
-  mapGrid[x_pos][y_pos].setDiscovered(true); 
+  z_pos = 2;
+  mapGrid[x_pos][y_pos][z_pos].setDiscovered(true); 
   currentDir = NORTH;
   state = SENSE_TILE;
   
@@ -227,12 +232,12 @@ void loop(){
       break;
     }
     case VICTIM_DETECT: {
-       if(mapGrid[x_pos][y_pos].getVictim() == false){
+       if(mapGrid[x_pos][y_pos][z_pos].getVictim() == false){
         if(measure(1)>MIN_DIST){
           detect();
         }
         
-        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+        if(victimtoggle == true) mapGrid[x_pos][y_pos][z_pos].setVictim(true);
         victimtoggle = false;
       }
       delay(200);
@@ -266,12 +271,12 @@ void loop(){
         turnCompletedForMove = true;
       }
       if(tilecheck == false){
-        if(mapGrid[x_pos][y_pos].getVictim() == false){
+        if(mapGrid[x_pos][y_pos][z_pos].getVictim() == false){
           if(measure(1)>MIN_DIST){
             tilecheck = true;
             detect();
           }
-        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+        if(victimtoggle == true) mapGrid[x_pos][y_pos][z_pos].setVictim(true);
           victimtoggle = false;
         }
       }
@@ -281,7 +286,7 @@ void loop(){
       if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
         drivetrain.fullstop();
         delay(5000);
-        mapGrid[x_pos][y_pos].setBlue(true);
+        mapGrid[x_pos][y_pos][z_pos].setBlue(true);
       }
       bluetoggle = false;
       if(blacktoggle == false && stairtoggle == false){
