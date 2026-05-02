@@ -7,9 +7,7 @@ enum Direction {
   NORTH = 0,
   EAST  = 1,
   SOUTH = 2,
-  WEST  = 3,
-  TOP = 4,
-  BOTTOM = 5
+  WEST  = 3
 };
 
 enum TileTypes {
@@ -18,6 +16,7 @@ enum TileTypes {
   CHECKPOINT =2,
   BLACK = 3,
   STAIR = 4
+
 };
 
 struct Tile {
@@ -82,21 +81,6 @@ struct Tile {
   }
   void setBlue(bool stat){
     bitset.set(12,stat);
-  }
-
-  //multifloor -> elevation for going up, descension for going down
-  void setElevation(bool e){
-    bitset.set(13,e);
-  }
-  bool getElevate(){
-    return bitset.get(13);
-  }
-
-  void setDescension(bool d){
-    bitset.set(14,d);
-  }
-  bool getDecend(){
-    return bitset.get(14);
   }
 
   //bool wall[4];
