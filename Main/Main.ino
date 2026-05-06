@@ -86,6 +86,8 @@ enum RobotState {
   PAUSE,
   RETURN
 };
+// VICTIM_DETECT is a post-sensing phase: SENSE_TILE -> UPDATE_MAP -> VICTIM_DETECT -> PLAN_NEXT.
+// Keeping victim detection here avoids hidden detection logic during EXECUTE_MOVE.
 enum Steps {
   TURN,
   PARALLEL,
@@ -222,22 +224,25 @@ void loop(){
     case UPDATE_MAP: {
       writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
       updateFullyExploredAt(x_pos, y_pos);
-      state = PLAN_NEXT;
+      state = VICTIM_DETECT;
       if(Pausemaze == true) state = PAUSE;
       break;
     }
     case VICTIM_DETECT: {
-       if(mapGrid[x_pos][y_pos].getVictim() == false){
+      if(mapGrid[x_pos][y_pos].getVictim() == false){
         if(measure(1)>MIN_DIST){
           detect();
         }
-        
+
         if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
         victimtoggle = false;
       }
       delay(200);
       parallel();
       delay(100);
+      // Explicitly return to planning after tile-level victim scan.
+      state = PLAN_NEXT;
+      if(Pausemaze == true) state = PAUSE;
       break;
     }
     case PLAN_NEXT: {
@@ -265,16 +270,6 @@ void loop(){
         }
         currentDir = plannedMoveDir;
         turnCompletedForMove = true;
-      }
-      if(tilecheck == false){
-        if(mapGrid[x_pos][y_pos].getVictim() == false){
-          if(measure(1)>MIN_DIST){
-            tilecheck = true;
-            detect();
-          }
-        if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
-          victimtoggle = false;
-        }
       }
       // 2) drive one tile
       fwd(TILE_MM);
