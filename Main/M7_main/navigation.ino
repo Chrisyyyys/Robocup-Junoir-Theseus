@@ -58,6 +58,8 @@ void updateFullyExploredAt(int x, int y) {
   }
   t.setFully(allDone);
 }
+// set black tile
+
 // 0=front, 1=right, 2=back, 3=left
 void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // references needed here to update the variable values
   wallF = (detectWall(0)==0);
@@ -128,7 +130,7 @@ Direction pickNextDirection() {
     int nx = x_pos, ny = y_pos;
     Direction d = priority[i];
     stepForward(d,nx,ny);
-    if (inBounds(nx, ny) && open(d) && !isBlackTile(nx,ny) && mapGrid[nx][ny].getType() != STAIR) return d;
+    if (inBounds(nx, ny) && open(d)&&!isBlackTile(nx,ny)) return d;
   }
 
   // figure out BFS later
@@ -249,12 +251,8 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
         }
         queue.dequeue();
     }
-    // Check endpos was actually reached before reconstructing
-    if (!visited[endpos.x][endpos.y]) {
-      return 0; // endpos unreachable — caller must handle empty path
-    }
     //reconstruct path
-    // path[0] is endpos, path[n] is current tile.
+    // path[0] is (0,0), path[n] is current tile.
     int i = 0;
     coord curr = endpos;
     while (true) {

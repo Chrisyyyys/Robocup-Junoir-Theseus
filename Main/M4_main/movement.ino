@@ -27,9 +27,11 @@ void init_drive(){
 
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
-  bool black = false; // toggle for black tile
-  bool climbtoggle = false; // toggle for climbing
-  int cnt = 0; // tiles traversed while climbing.
+  blacktoggle = false; // toggle for black tile
+  climbtoggle = false; // toggle for climbing
+  bluetoggle = false;
+  rampCount = 0; // tiles traversed while climbing.
+  isVictim = false;
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   double init_heading = myGyro.heading();
@@ -43,54 +45,21 @@ void fwd(double dist){ // in mm
   while((drivetrain.encoderCountA<= pulses && (drivetrain.encoderCountB <= pulses||climbtoggle == true))&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // check cameras
-    
-    /*
-    if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){ // check serial
-      fullstop();
-      
-      if(detectWall(3)==0){
-        Serial.println(measure(6));
-        Serial.println("victim at left");
-        //Serial.println((char)Serial2.read());
-        myPID.pausePID(1);
-        clearSerialBuffer1();
-        detectCam1();
-        myPID.pausePID(2);
-        victimtoggle = true;
-      }
-    }
-    else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
-      fullstop();
-      if(detectWall(1)==0){
-        Serial.println(measure(2));
-        Serial.println("victim at right");
-        //Serial.println((char)Serial3.read());
-        myPID.pausePID(1);
-        clearSerialBuffer2();
-        detectCam2();
-        myPID.pausePID(2);
-        victimtoggle = true;
-      }
+    if(victimAtLeft == true){
+      drivetrain.fullstop()
     }
     
-    if(victimtoggle == true){
-      if(encoderCountA<2*pulses/3){
-        victimAtCurrent = true;
-        mapGrid[x_pos][y_pos].setVictim(true);
-      }
-      else victimAtCurrent = false;
-    }
-    */
     // color
     
     int color = read_color(); // read color
-    if(color == 1&&use_color%2==0){
+    if(latestColor == 1){
       bluetoggle = true;
+      
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
       mapGrid[nx][ny].setType(1);
     }
-    if(color == -1&&use_color%2==0){
+    if(latestColor == -1){
       drivetrain.fullstop();
       delay(100);
       
@@ -104,7 +73,7 @@ void fwd(double dist){ // in mm
       while(encoderCountA >= 0 && encoderCountB >= 0){
         drivetrain.backward(200);
       }
-      black = true;
+      
     }
     
     // PID centering
@@ -216,15 +185,16 @@ void fwd(double dist){ // in mm
         drivetrain.drive(200+adjustment,200+adjustment,200-adjustment,200-adjustment);
         if(drivetrain.encoderCountB >= pulses/cos(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw)*(M_PI/180))){
           Serial.println("1 section of the ramp climbed");
-          cnt++;
+          rampCount++;
           drivetrain.reset_encoderCount(false,true);
         } // track tiles
       }
-      use_color++;
+      
       drivetrain.set_interrupt(true,true);
       drivetrain.set_encoderCountB(_encoderCountB);
     }
-    drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
+    if(!stopToggle) drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
+    else: drivetrain.fullstop();
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){
@@ -272,35 +242,10 @@ void absoluteturn(double angle){
       current_angle = myGyro.inverse(myGyro.heading(),fasterway);
       
       MOTORSPEED = myPID.getPID(myGyro.inverse(angle,fasterway)-current_angle);
-      if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        drivetrain.fullstop();
-        if(detectWall(3)==0){
-          Serial.println("victim at left");
-          myPID.pausePID(1);
-          myTimer.pause(1);
-          
-          clearSerialBuffer1();
-          detectCam1();
-          myTimer.pause(2);
-          myPID.pausePID(2);
-          victimtoggle = true;
-        }
-      }
-      else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        drivetrain.fullstop();
-        if(detectWall(1)==0){
-          Serial.println("victim at right");
-          myPID.pausePID(1);
-          myTimer.pause(1);
-          
-          clearSerialBuffer2();
-          detectCam2();
-          myTimer.pause(2);
-          myPID.pausePID(2);
-          victimtoggle = true;
-        }
-      }
-      drivetrain.turnright(constrain(MOTORSPEED,20,200));
+     
+      
+      if(!stopToggle) drivetrain.turnright(constrain(MOTORSPEED,20,200));
+      else: drivetrain.fullstop();
     }
   }
 
@@ -312,35 +257,9 @@ void absoluteturn(double angle){
       if(myTimer.getTime() > 2*abs(myGyro.inverse(angle,fasterway)-init_angle)/90*1000000) break;
       current_angle = myGyro.inverse(myGyro.heading(),fasterway);
       MOTORSPEED = myPID.getPID(current_angle-myGyro.inverse(angle,fasterway));
-      if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        drivetrain.fullstop();
-        if(detectWall(3)==1){
-          Serial.println("victim at left");
-          myPID.pausePID(1);
-          myTimer.pause(1);
-          
-          clearSerialBuffer1();
-          detectCam1();
-          myTimer.pause(2);
-          myPID.pausePID(2);
-          victimtoggle = true;
-        }
-        
-      }
-      else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        drivetrain.fullstop();
-        if(detectWall(1)==1){
-          Serial.println("victim at right");
-          myPID.pausePID(1);
-          myTimer.pause(1);
-          clearSerialBuffer2();
-          detectCam2();
-          myTimer.pause(2);
-          myPID.pausePID(2);
-          victimtoggle = true;
-        }
-      }
-      drivetrain.turnleft(constrain(MOTORSPEED,20,200));
+      
+      if(!stopToggle) drivetrain.turnleft(constrain(MOTORSPEED,20,200));
+      else: drivetrain.fullstop();
     }
   }
   
@@ -349,4 +268,32 @@ void absoluteturn(double angle){
   drivetrain.fullstop();
   encoderCountA = 0; encoderCountB = 0; // reset encoder counters.
 }
-// full stop function
+double headingErrorDeg(double targetDeg, double actualDeg) {
+  double err = targetDeg - actualDeg;
+  while (err > 180.0) err -= 360.0;
+  while (err < -180.0) err += 360.0;
+  return abs(err);
+}
+bool turnCompletedSuccessfully(Direction intendedDir) {
+  const double TURN_SUCCESS_TOLERANCE_DEG = 20.0;
+  double targetHeading = turnNeededDeg(intendedDir);
+  double actualHeading = myGyro.heading();
+  double err = headingErrorDeg(targetHeading, actualHeading);
+  Serial.print("turn target=");
+  Serial.print(targetHeading);
+  Serial.print(", actual=");
+  Serial.print(actualHeading);
+  Serial.print(", err=");
+  Serial.println(err);
+  return err <= TURN_SUCCESS_TOLERANCE_DEG;
+}
+// turntask
+turnTask(double angle){
+  turnflag = true;
+  turn_angle = angle;
+}
+//fwdtask
+fwdTask(double distance){
+  fwdflag = true;
+  fwd_distance = distance;
+}

@@ -25,7 +25,7 @@ void init_color(){
   Serial.println(clear);
   
 }
-int read_color(){
+Color read_color(){
   myMux.setPort(TCS_PORT);          
   tcs.setInterrupt(true);  // turn on LED
   float red, green, blue;
@@ -43,16 +43,16 @@ int read_color(){
     stepForward(currentDir,nx,ny);
     mapGrid[nx][ny].setType(CHECKPOINT);
     x_checkpoint = nx; y_checkpoint = ny;
-    return 3; // SILVER — prevent fall-through into blue/red checks
+    return SILVER; // SILVER — prevent fall-through into blue/red checks
   }
   if(b>g&&b>r){
-    return 1; // blue
+    return BLUE; // blue
   }
   if(r>g&&r>b){
-    return 2;
+    return RED;
   }
   else{
-    return 0; // good
+    return SILVER; // good
   }
 }
   
