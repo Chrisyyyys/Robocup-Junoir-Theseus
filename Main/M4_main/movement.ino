@@ -33,7 +33,7 @@ void fwd(double dist){ // in mm
   rampCount = 0; // tiles traversed while climbing.
   isVictim = false;
   double difference = 0; // centering distance
-  Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
+ 
   double init_heading = myGyro.heading();
   PID myPID(0.30,0,0.2); // 0.28 for 125
   Serial.println("forwarding");
@@ -42,32 +42,28 @@ void fwd(double dist){ // in mm
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
-  while((drivetrain.encoderCountA<= pulses && (drivetrain.encoderCountB <= pulses||climbtoggle == true))&&black!=true){
+  while((drivetrain.encoderCountA<= pulses && (drivetrain.encoderCountB <= pulses||climbtoggle == true))&&blacktoggle!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
-    // check cameras
-    if(victimAtLeft == true){
-      drivetrain.fullstop()
+   // Stop immediately when the M7 pauses movement to handle camera/victim work.
+    if(stopToggle == true){
+      drivetrain.fullstop();
+      continue;
     }
     
     // color
     
-    int color = read_color(); // read color
-    if(latestColor == 1){
+    //int color = read_color(); // read color
+    if(latestColor == BLUE){
       bluetoggle = true;
       
-      int nx = x_pos; int ny = y_pos;
-      stepForward(currentDir,nx,ny);
-      mapGrid[nx][ny].setType(1);
+      
     }
-    if(latestColor == -1){
+    if(latestColor == BLACK){
       drivetrain.fullstop();
       delay(100);
       
       //Do you mean  t.setWall(plannedMoveDir, true)
       // find next tile, set it to black
-      int nx = x_pos; int ny = y_pos;
-      stepForward(currentDir,nx,ny);
-      mapGrid[nx][ny].setType(3);
       blacktoggle = true;
       
       while(encoderCountA >= 0 && encoderCountB >= 0){
@@ -194,17 +190,10 @@ void fwd(double dist){ // in mm
       drivetrain.set_encoderCountB(_encoderCountB);
     }
     if(!stopToggle) drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
-    else: drivetrain.fullstop();
+    else drivetrain.fullstop();
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){
-    for(int i = 0; i<cnt;i++){
-      Serial.println("adding ramp to map");
-      markEdgeBothWays(x_pos, y_pos, currentDir);
-      stepForward(currentDir, x_pos, y_pos);
-      writeWallsToCurrentTile(0, 1, 0, 1);
-      updateFullyExploredAt(x_pos, y_pos);
-    }
     Serial.println("compensating");
     drivetrain.fw(200);
     delay(300);
@@ -221,7 +210,7 @@ void absoluteturn(double angle){
   double MOTORSPEED = 0;
   double current_angle=myGyro.heading();
   bool fasterway = false;
-  Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
+  
   if(abs(angle-current_angle)> abs(angle-(360-current_angle))){
     current_angle = myGyro.inverse(current_angle,true); // make sure the robot turns the least amount
     fasterway = true;
@@ -245,7 +234,7 @@ void absoluteturn(double angle){
      
       
       if(!stopToggle) drivetrain.turnright(constrain(MOTORSPEED,20,200));
-      else: drivetrain.fullstop();
+      else drivetrain.fullstop();
     }
   }
 
@@ -259,41 +248,23 @@ void absoluteturn(double angle){
       MOTORSPEED = myPID.getPID(current_angle-myGyro.inverse(angle,fasterway));
       
       if(!stopToggle) drivetrain.turnleft(constrain(MOTORSPEED,20,200));
-      else: drivetrain.fullstop();
+      else drivetrain.fullstop();
     }
   }
   
-  if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+  
   Serial.println("finished turning");
   drivetrain.fullstop();
   encoderCountA = 0; encoderCountB = 0; // reset encoder counters.
 }
-double headingErrorDeg(double targetDeg, double actualDeg) {
-  double err = targetDeg - actualDeg;
-  while (err > 180.0) err -= 360.0;
-  while (err < -180.0) err += 360.0;
-  return abs(err);
-}
-bool turnCompletedSuccessfully(Direction intendedDir) {
-  const double TURN_SUCCESS_TOLERANCE_DEG = 20.0;
-  double targetHeading = turnNeededDeg(intendedDir);
-  double actualHeading = myGyro.heading();
-  double err = headingErrorDeg(targetHeading, actualHeading);
-  Serial.print("turn target=");
-  Serial.print(targetHeading);
-  Serial.print(", actual=");
-  Serial.print(actualHeading);
-  Serial.print(", err=");
-  Serial.println(err);
-  return err <= TURN_SUCCESS_TOLERANCE_DEG;
-}
+
 // turntask
-turnTask(double angle){
-  turnflag = true;
+void turnTask(double angle){
+  turn_flag = true;
   turn_angle = angle;
 }
 //fwdtask
-fwdTask(double distance){
-  fwdflag = true;
+void fwdTask(double distance){
+  fwd_flag = true;
   fwd_distance = distance;
 }

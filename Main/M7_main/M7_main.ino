@@ -1,22 +1,19 @@
 #include <mbed.h> // access arduino mbed OS
 #include <RPC.h> // RPC
 #include <Wire.h>
-#include <SparkFun_I2C_Mux_Arduino_Library.h>
-#include <VL53L0X.h>
-#include "Adafruit_TCS34725.h"
-#include <Adafruit_MotorShield.h>
+
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
-#include <Stepper.h>
+
 #include <ArduinoQueue.h> // queue
 #include <Vector.h> // vector
-#include "PID.h"
+
 #include "timer.h"
 #include "gyro.h"
 #include "dispenser.h"
-#include "motors.h"
+
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 0.10 // color clear-channel threshold ratio for black
@@ -87,12 +84,6 @@ enum RobotState {
   PAUSE,
   RETURN
 };
-enum Steps {
-  TURN,
-  PARALLEL,
-  BACKTRACK,
-  FWD,
-};
 // coord struct
 struct coord {
   int x;
@@ -119,8 +110,6 @@ bool stairtoggle = false;
 // victim toggle
 bool isVictim = false;
 // GET RID OF THESE EXTRA TOGGLES
-bool victimtoggle = false;
-bool victimAtCurrent = false;
 // LED pins
 const int pinHarmed = 41;
 const int pinStable = 37;
@@ -162,10 +151,12 @@ bool turnCompletedSuccessfully(Direction intendedDir) {
 }
 
 void fwd(int distanceMm) {
-  RPC.call("fwd", distanceMm);
+  isVictim = false;
+  RPC.call("fwdTask", distanceMm);
+  Tile &t = mapGrid[x_pos][y_pos];
   if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
-        if(RPC.call("detectWall",3)==0){
-          RPC.detectWall(3)call("togglestop",true);
+        if(RPC.call("detectWall",3).as<int>()==0){
+          RPC.call("togglestop",true);
           Serial.println("victim at left");
           clearSerialBuffer1();
           detectCam1();
@@ -174,8 +165,8 @@ void fwd(int distanceMm) {
         }
       }
   else if(readSerial2()!=-1&&isVictim == false&&t.getVictim()==false){ // right camera
-    if(RPC.call("detectWall",1)==0){
-      RPC.call("togglestop");
+    if(RPC.call("detectWall",1).as<int>()==0){
+      RPC.call("togglestop",true);
       Serial.println("victim at right");
       clearSerialBuffer2();
       detectCam2();
@@ -185,13 +176,13 @@ void fwd(int distanceMm) {
   }
   // label victim in maze.
   if(isVictim){
-    RPC.call("encoderCountA");
-    // find tile.
+    markVictimAtEncoderPosition(300);
   }
 }
 
 void absoluteturn(int targetDirectionOrDeg) {
-  RPC.call("absoluteturn", targetDirectionOrDeg);
+  isVictim = false;
+  RPC.call("turnTask", targetDirectionOrDeg);
   if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
         if(RPC.call("detectWall",3)==0){
           RPC.call("togglestop",true);
@@ -213,8 +204,8 @@ void absoluteturn(int targetDirectionOrDeg) {
     }
   }
   if(isVictim){
-    RPC.call("encoderCountA");
-    // find tile.
+    mapGrid[victimX][victimY].setVictim(true);
+    mapGrid[victimX][victimY].setDiscovered(true);
   }
 }
 void setup(){
@@ -260,7 +251,7 @@ void loop(){
   switch (state) {
     case SENSE_TILE: {
       // reset toggles
-      blacktoggle = false; bluetoggle = false; climbtoggle = false; isVictim = false;
+      blacktoggle = false; bluetoggle = false; climbtoggle = false;
       // Read for walls
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
@@ -291,7 +282,7 @@ void loop(){
           absoluteturn(plannedMoveDir);
         }
         delay(200);
-        RPC.call("parallel",parallel);
+        RPC.call("parallel");
         delay(100);
 
         if (turnCompletedSuccessfully(plannedMoveDir) == false) {
@@ -305,13 +296,13 @@ void loop(){
       // 2) drive one tile
       fwd(TILE_MM);
       // obtain tile type by querying M4
-      bluetoggle = RPC.call("queryBlue").as<bool>;
-      blacktoggle = RPC.call("queryBlack").as<bool>;
-      climbtoggle = RPC.call("queryClimb").as<bool>;
+      bluetoggle = RPC.call("queryBlue").as<bool>();
+      blacktoggle = RPC.call("queryBlack").as<bool>();
+      climbtoggle = RPC.call("queryClimb").as<bool>();
       
       // update ramps to the map
-      int cnt = RPC.call("queryRamps").as<int>;
-      if(climbtoggle = true){
+      int cnt = RPC.call("queryRamps").as<int>();
+      if(climbtoggle == true){
         for(int i = 0; i<cnt;i++){
           Serial.println("adding ramp to map");
           markEdgeBothWays(x_pos, y_pos, currentDir);
@@ -339,7 +330,7 @@ void loop(){
         break;
       }
       delay(200);
-      parallel();
+      RPC.call("parallel");
       delay(100);
       iterator += 1;
       
@@ -360,7 +351,7 @@ void loop(){
       Serial.println("botched turn detected, snapping to cardinal");
       absoluteturn(snappedHeading);
       delay(150);
-      RPC.call("parallel",parallel);
+      RPC.call("parallel");
       delay(100);
 
       currentDir = snappedDir;
@@ -397,7 +388,7 @@ void loop(){
             plannedTurnDeg = turnNeededDeg(1);
             absoluteturn(plannedTurnDeg);
             delay(200);
-            RPC.call("parallel",parallel);
+            RPC.call("parallel");
             delay(100);
             //update currentDir
             currentDir = 1;
@@ -408,7 +399,7 @@ void loop(){
             plannedTurnDeg = turnNeededDeg(3);
             absoluteturn(plannedTurnDeg);
             delay(200);
-            RPC.call("parallel",parallel);
+            RPC.call("parallel");
             delay(100);
             //update currentDir
             currentDir = 3;
@@ -421,7 +412,7 @@ void loop(){
             plannedTurnDeg = turnNeededDeg(0);
             absoluteturn(plannedTurnDeg);
             delay(200);
-            RPC.call("parallel",parallel);
+            RPC.call("parallel");
             delay(100);
             //update currentDir
             currentDir = 2;
@@ -432,7 +423,7 @@ void loop(){
             plannedTurnDeg = turnNeededDeg(2);
             absoluteturn(plannedTurnDeg);
             delay(200);
-            RPC.call("parallel",parallel);
+            RPC.call("parallel");
             delay(100);
             //update currentDir
             currentDir = 4;

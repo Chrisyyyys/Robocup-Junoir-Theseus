@@ -13,6 +13,44 @@ void stepForward(Direction d, int &x, int &y) {
   else if (d == WEST) x--;
   //if(victimAtCurrent == false&&victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
 }
+// pulses for distance(mm)
+double pulsesForDistanceMm(double distanceMm) {
+  return distanceMm / (wheel_diameter * M_PI) * wheel_cpr * gear_ratio;
+}
+// which tile victim is depending on encoder.
+void victimTileFromEncoder(int distanceMm, int encoderCount, int &victimX, int &victimY) {
+  victimX = x_pos;
+  victimY = y_pos;
+
+  double tilePulses = pulsesForDistanceMm(distanceMm); // total pulses to traverse a tile.
+  if(abs(encoderCount) >= tilePulses / 2.0){
+    stepForward(currentDir, victimX, victimY);
+  }
+}
+//  check if tile was already marked.
+bool victimTileAlreadyMarked(int distanceMm) {
+  int encoderCount = RPC.call("readEncoderA").as<int>();
+  int victimX, victimY;
+  victimTileFromEncoder(distanceMm, encoderCount, victimX, victimY); // tests the local victimX and victimY
+  return inBounds(victimX, victimY) && mapGrid[victimX][victimY].getVictim();
+}
+// 
+void markVictimAtEncoderPosition(int distanceMm) {
+  int encoderCount = RPC.call("readEncoderA").as<int>();
+  int victimX, victimY;
+  victimTileFromEncoder(distanceMm, encoderCount, victimX, victimY);
+  if(!inBounds(victimX, victimY)) return;
+
+  mapGrid[victimX][victimY].setVictim(true);
+  mapGrid[victimX][victimY].setDiscovered(true);
+
+  Serial.print("marked victim at tile x=");
+  Serial.print(victimX);
+  Serial.print(", y=");
+  Serial.print(victimY);
+  Serial.print(", encoderA=");
+  Serial.println(encoderCount);
+}
 
 bool inBounds(int x, int y) {
   return x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE;
