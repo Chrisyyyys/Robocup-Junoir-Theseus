@@ -100,10 +100,10 @@ void updateFullyExploredAt(int x, int y) {
 
 // 0=front, 1=right, 2=back, 3=left
 void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // references needed here to update the variable values
-  wallF = (detectWall(0)==0);
-  wallR = (detectWall(1)==0);
-  wallB = (detectWall(2)==0);
-  wallL = (detectWall(3)==0);
+  wallF = (RPC.call("detectWall",0).as<int>()==0);
+  wallR = (RPC.call("detectWall",1).as<int>()==0);
+  wallB = (RPC.call("detectWall",2).as<int>()==0);
+  wallL = (RPC.call("detectWall",3).as<int>()==0);
   Serial.println(wallF);
   Serial.println(wallR);
   Serial.println(wallB);

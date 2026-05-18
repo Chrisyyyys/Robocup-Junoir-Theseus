@@ -15,7 +15,8 @@ enum TileTypes {
   BLUE  = 1,
   CHECKPOINT =2,
   BLACK = 3,
-  STAIR = 4
+  STAIR = 4,
+  OBSTACLE = 5 // obstacle type
 
 };
 

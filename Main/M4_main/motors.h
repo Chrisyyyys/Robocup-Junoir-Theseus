@@ -16,6 +16,7 @@ class motors {
     void backward(int);
     void turnleft(int);
     void turnright(int);
+    // encoder Counters
     volatile int encoderCountA;
     volatile int encoderCountB;
   private:

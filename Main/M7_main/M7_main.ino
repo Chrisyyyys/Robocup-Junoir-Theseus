@@ -31,34 +31,15 @@ QWIICMUX myMux;
 #define ALLCALL_BIT 0x01  // MODE1 bit0
 
 // set up color sensor
-#define TCS_PORT 7
-Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X);
+
 // set up gyro
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 gyro myGyro;
 // set up motorshield and motors.
-Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
-Adafruit_DCMotor *motorA = AFMS.getMotor(1);
-Adafruit_DCMotor *motorB = AFMS.getMotor(2);
-Adafruit_DCMotor *motorC = AFMS.getMotor(3);
-Adafruit_DCMotor *motorD = AFMS.getMotor(4);
 
-// set up encoder pins
-const int encoderPin_A_A = 2;
-const int encoderPin_A_B = 4; 
-const int encoderPin_B_A = 3;
-const int encoderPin_B_B = 5; 
-// encoder counters
-volatile int encoderCountB;
-volatile int encoderCountA;
-//drivetrain class object
-motors drivetrain(encoderPin_A_A,encoderPin_A_B,encoderPin_B_A,encoderPin_B_B);
-// wheel cpr
-const double wheel_cpr = 5; // 20/4
-//gear ratio
-const double gear_ratio = 195;
-// wheel diameter
-const double wheel_diameter = 68.7; // millimeters.
+
+
+
 // detection classes
 
 char classes[6] = {'H','S','U','R','Y','G'};
@@ -89,7 +70,7 @@ struct coord {
   int x;
   int y;
 };
-Steps steps = TURN;
+
 
 // initialize 
 
@@ -106,7 +87,7 @@ timer mazeTime;
 // black blue toggles
 bool blacktoggle = false;
 bool bluetoggle = false;
-bool stairtoggle = false;
+bool climbtoggle = false;
 // victim toggle
 bool isVictim = false;
 // GET RID OF THESE EXTRA TOGGLES
@@ -117,8 +98,7 @@ const int pinUnharmed = 29;
 // camera GPIOs
 const int gpio1 = 13;
 const int gpio2 = 12;
-// de-activate color sensor while climbing
-int use_color = 0;
+
 // stepper variables
 const int angle_offset = 44;
 const int angle_increment = 22;
@@ -152,60 +132,66 @@ bool turnCompletedSuccessfully(Direction intendedDir) {
 
 void fwd(int distanceMm) {
   isVictim = false;
-  RPC.call("fwdTask", distanceMm);
+  RPC.call("fwd", distanceMm);
   Tile &t = mapGrid[x_pos][y_pos];
-  if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
-        if(RPC.call("detectWall",3).as<int>()==0){
-          RPC.call("togglestop",true);
-          Serial.println("victim at left");
-          clearSerialBuffer1();
-          detectCam1();
-          isVictim = true;
-          RPC.call("togglestop",false);
+  while(RPC.call("isTurnComplete").as<bool>()==true){
+    if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
+          if(RPC.call("detectWall",3).as<int>()==0){
+            RPC.call("togglestop",true);
+            Serial.println("victim at left");
+            clearSerialBuffer1();
+            detectCam1();
+            isVictim = true;
+            RPC.call("togglestop",false);
+          }
         }
+    else if(readSerial2()!=-1&&isVictim == false&&t.getVictim()==false){ // right camera
+      if(RPC.call("detectWall",1).as<int>()==0){
+        RPC.call("togglestop",true);
+        Serial.println("victim at right");
+        clearSerialBuffer2();
+        detectCam2();
+        isVictim = true;
+        RPC.call("togglestop",false);
       }
-  else if(readSerial2()!=-1&&isVictim == false&&t.getVictim()==false){ // right camera
-    if(RPC.call("detectWall",1).as<int>()==0){
-      RPC.call("togglestop",true);
-      Serial.println("victim at right");
-      clearSerialBuffer2();
-      detectCam2();
-      isVictim = true;
-      RPC.call("togglestop",false);
     }
-  }
-  // label victim in maze.
-  if(isVictim){
-    markVictimAtEncoderPosition(300);
+    // label victim in maze.
+    if(isVictim){
+      markVictimAtEncoderPosition(300);
+    }
   }
 }
 
 void absoluteturn(int targetDirectionOrDeg) {
   isVictim = false;
-  RPC.call("turnTask", targetDirectionOrDeg);
-  if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
-        if(RPC.call("detectWall",3)==0){
-          RPC.call("togglestop",true);
-          Serial.println("victim at left");
-          clearSerialBuffer1();
-          detectCam1();
-          isVictim = true;
-          RPC.call("togglestop",false);
+  RPC.call("absoluteturn", targetDirectionOrDeg);
+  Tile &t = mapGrid[x_pos][y_pos]; // define tile pointer
+  while(RPC.call("isTurnComplete").as<bool>()==true){
+    if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
+          if(RPC.call("detectWall",3).as<int>()==0){
+            RPC.call("togglestop",true);
+            Serial.println("victim at left");
+            clearSerialBuffer1();
+            detectCam1();
+            isVictim = true;
+            RPC.call("togglestop",false);
+          }
         }
+    else if(readSerial2()!=-1&&isVictim == false&&t.getVictim()==false){ // right camera
+      if(RPC.call("detectWall",3).as<int>()==0){
+        RPC.call("togglestop",true);
+        Serial.println("victim at right");
+        clearSerialBuffer2();
+        detectCam2();
+        isVictim = true;
+        RPC.call("togglestop",false);
       }
-  else if(readSerial2()!=-1&&isVictim == false&&t.getVictim()==false){ // right camera
-    if(RPC.call("detectWall",1)==0){
-      RPC.call("togglestop");
-      Serial.println("victim at right");
-      clearSerialBuffer2();
-      detectCam2();
-      isVictim = true;
-      RPC.call("togglestop",false);
     }
-  }
-  if(isVictim){
-    mapGrid[victimX][victimY].setVictim(true);
-    mapGrid[victimX][victimY].setDiscovered(true);
+    
+    if(isVictim){
+      mapGrid[x_pos][y_pos].setVictim(true);
+      mapGrid[x_pos][y_pos].setDiscovered(true);
+    }
   }
 }
 void setup(){
@@ -223,15 +209,9 @@ void setup(){
   Serial2.begin(115200); // switch to 9600 for reliability
   Serial3.begin(115200);
   flashLED('S');
-  uint8_t cause = MCUSR;
-  MCUSR = 0;
-  Wire.begin();
-  disableAllCall();
-  myMux.begin();
-  init_dist(); // initialize mux before distance sensors.
-  scanAllPorts();
-  init_color();
-  init_drive();
+  
+
+ 
   //detect();
   //initialize map
   initializeMap();
@@ -317,24 +297,22 @@ void loop(){
         mapGrid[x_pos][y_pos].setBlue(true);
       }
       bluetoggle = false;
-      if(blacktoggle == false && stairtoggle == false){
+      if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos);
-        
       }
-      if(blacktoggle == true) mapGrid[nx][ny].setType(3);
-      if(bluetoggle == true) mapGrid[nx][ny].setType(1);
       else{
         state = BACKPEDAL;
         turnCompletedForMove = false;
         break;
       }
+      if(blacktoggle == true) mapGrid[x_pos]][y_pos].setType(3);
       delay(200);
       RPC.call("parallel");
       delay(100);
       iterator += 1;
       
-      victimtoggle = false;
+      isVictim = false;
       turnCompletedForMove = false;
       tilecheck = false;
       state = SENSE_TILE;

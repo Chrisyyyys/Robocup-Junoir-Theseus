@@ -14,6 +14,9 @@
 #include "PID.h"
 #include "timer.h"
 #include "gyro.h"
+//wifi
+
+
 
 #include "motors.h"
 #define MIN_DIST 120         // mm (tune this)
@@ -50,9 +53,7 @@ const int encoderPin_A_A = 2;
 const int encoderPin_A_B = 4; 
 const int encoderPin_B_A = 3;
 const int encoderPin_B_B = 5; 
-// encoder counters
-volatile int encoderCountB;
-volatile int encoderCountA;
+
 //drivetrain class object
 motors drivetrain(encoderPin_A_A,encoderPin_A_B,encoderPin_B_A,encoderPin_B_B);
 // wheel cpr
@@ -60,7 +61,7 @@ const double wheel_cpr = 5; // 20/4
 //gear ratio
 const double gear_ratio = 195;
 // wheel diameter
-const double wheel_diameter = 68.7; // millimeters.
+const double wheel_diameter = 80.0; // millimeters.
 // detection classes
 
 char classes[6] = {'H','S','U','R','Y','G'};
@@ -120,6 +121,8 @@ int queryRamps(){ return rampCount; }
 int readEncoderA(){ return encoderCountA; }
 int readEncoderB(){ return encoderCountB; }
 void rpcFullStop(){ drivetrain.fullstop(); }
+void isFwdComplete(){ return fwd_flag;}
+void isTurnComplete(){ return turn_flag;}
 double headingErrorDeg(double targetDeg, double actualDeg) {
   double err = targetDeg - actualDeg;
   while (err > 180.0) err -= 360.0;
@@ -142,7 +145,8 @@ bool turnCompletedSuccessfully(double targetHeading) {
 
 void setup(){
 
-  // initialize logic switch pin
+  // init wifi
+
 
   // begin UART communication.
   Serial.begin(115200);
@@ -163,6 +167,9 @@ void setup(){
   RPC.bind("parallel",parallel);
   RPC.bind("fullstop",rpcFullStop);
   RPC.bind("togglestop",setstopToggle);
+  // query movement completion
+  RPC.bind("isFwdComplete",isFwdComplete);
+  RPC.bind("isTurnComplete",isTurnComplete);
   // bind RPC for tile types: black, blue, ramp
   RPC.bind("queryBlack",queryBlack);
   RPC.bind("queryBlue",queryBlue);
@@ -182,6 +189,7 @@ void setup(){
 }
 int iterator = 0;
 void loop(){
+  
   if(turn_flag == true){
      absoluteturn(turn_angle);
     if(turnCompletedSuccessfully(turn_angle) == false){

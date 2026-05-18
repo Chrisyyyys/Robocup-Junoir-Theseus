@@ -200,7 +200,7 @@ void fwd(double dist){ // in mm
   }
   
   drivetrain.fullstop();
-  encoderCountA = 0; encoderCountB = 0;
+  drivetrain.reset_encoderCount(true,true);
 
 }
 // absolute turning
@@ -255,7 +255,7 @@ void absoluteturn(double angle){
   
   Serial.println("finished turning");
   drivetrain.fullstop();
-  encoderCountA = 0; encoderCountB = 0; // reset encoder counters.
+  drivetrain.reset_encoderCount(true,true); // reset encoder counters.
 }
 
 // turntask
