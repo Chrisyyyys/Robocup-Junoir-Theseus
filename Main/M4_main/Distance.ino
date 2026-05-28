@@ -92,51 +92,51 @@ void scanAllPorts() {
 int measure(int sensor){
   
   if(sensor ==1){
-    myMux.setPort(2);
-    int value = sensors[2].readRangeContinuousMillimeters();
+    myMux.setPort(1);
+    int value = sensors[1].readRangeContinuousMillimeters();
     
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
       
   }
   if(sensor == 2){
-    myMux.setPort(1);
-    int value = sensors[1].readRangeContinuousMillimeters();
+    myMux.setPort(0);
+    int value = sensors[0].readRangeContinuousMillimeters();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
       
   }
   if(sensor==3){
-    myMux.setPort(0);
-    int value = sensors[0].readRangeContinuousMillimeters();
-    if (value != -1 && value != 8191) { return value;}
-    else { return -1;}
-    
-  }
-  if(sensor==4){
-    myMux.setPort(3);
-    int value = sensors[3].readRangeContinuousMillimeters();
-    if (value != -1 && value != 8191) { return value;}
-    else { return -1;}
-    
-  }
-  if(sensor==5){
     myMux.setPort(6);
     int value = sensors[6].readRangeContinuousMillimeters();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
     
   }
-  if(sensor==6){
+  if(sensor==4){
+    myMux.setPort(4);
+    int value = sensors[4].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
+    
+  }
+  if(sensor==5){
     myMux.setPort(5);
     int value = sensors[5].readRangeContinuousMillimeters();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
     
   }
+  if(sensor==6){
+    myMux.setPort(3);
+    int value = sensors[3].readRangeContinuousMillimeters();
+    if (value != -1 && value != 8191) { return value;}
+    else { return -1;}
+    
+  }
   if(sensor==7){
-    myMux.setPort(4);
-    int value = sensors[4].readRangeContinuousMillimeters();
+    myMux.setPort(2);
+    int value = sensors[2].readRangeContinuousMillimeters();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
     
