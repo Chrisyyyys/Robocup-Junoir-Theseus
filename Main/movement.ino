@@ -226,7 +226,7 @@ void fwd(double dist){ // in mm
 
 }
 // absolute turning
-/*
+
 void absoluteturn(double angle){ 
   // create PID instance.
   PID myPID(10,0,0.3); 
@@ -254,34 +254,7 @@ void absoluteturn(double angle){
       current_angle = myGyro.inverse(myGyro.heading(),fasterway);
       
       MOTORSPEED = myPID.getPID(myGyro.inverse(angle,fasterway)-current_angle);
-      if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        drivetrain.fullstop();
-        if(detectWall(3)==0){
-          Serial.println("victim at left");
-          myPID.pausePID(1);
-          myTimer.pause(1);
-          
-          clearSerialBuffer1();
-          detectCam1();
-          myTimer.pause(2);
-          myPID.pausePID(2);
-          victimtoggle = true;
-        }
-      }
-      else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        drivetrain.fullstop();
-        if(detectWall(1)==0){
-          Serial.println("victim at right");
-          myPID.pausePID(1);
-          myTimer.pause(1);
-          
-          clearSerialBuffer2();
-          detectCam2();
-          myTimer.pause(2);
-          myPID.pausePID(2);
-          victimtoggle = true;
-        }
-      }
+      
       drivetrain.turnright(constrain(MOTORSPEED,20,200));
     }
   }
@@ -294,34 +267,7 @@ void absoluteturn(double angle){
       if(myTimer.getTime() > 2*abs(myGyro.inverse(angle,fasterway)-init_angle)/90*1000000) break;
       current_angle = myGyro.inverse(myGyro.heading(),fasterway);
       MOTORSPEED = myPID.getPID(current_angle-myGyro.inverse(angle,fasterway));
-      if(readSerial1()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        drivetrain.fullstop();
-        if(detectWall(3)==1){
-          Serial.println("victim at left");
-          myPID.pausePID(1);
-          myTimer.pause(1);
-          
-          clearSerialBuffer1();
-          detectCam1();
-          myTimer.pause(2);
-          myPID.pausePID(2);
-          victimtoggle = true;
-        }
-        
-      }
-      else if(readSerial2()!=-1&&victimtoggle == false&&t.getVictim()==false){
-        drivetrain.fullstop();
-        if(detectWall(1)==1){
-          Serial.println("victim at right");
-          myPID.pausePID(1);
-          myTimer.pause(1);
-          clearSerialBuffer2();
-          detectCam2();
-          myTimer.pause(2);
-          myPID.pausePID(2);
-          victimtoggle = true;
-        }
-      }
+      
       drivetrain.turnleft(constrain(MOTORSPEED,20,200));
     }
   }
@@ -332,4 +278,3 @@ void absoluteturn(double angle){
   drivetrain.reset_encoderCount(true,true); // reset encoder counters.
 }
 // full stop function
-*/

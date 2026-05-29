@@ -18,8 +18,9 @@
 #include "motors.h"
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define BLACK_THRESHOLD 0.10 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 1.5f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define BLACK_THRESHOLD 7 // color clear-channel threshold ratio for black
+#define SILVER_THRESHOLD 120 // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define WHITE_THRESHOLD 80
 float clear; 
 
 #include "MazeTile.h"
@@ -190,13 +191,14 @@ void setup(){
   state = SENSE_TILE;
   
   delay(2000); // wait for camera to start.
-  disp.dispenseLeft('H');
+  Serial.println(read_color());
   
 }
 int iterator = 0;
 void loop(){
   //drivetrain.drive(150,150,150,150);
-  
+    Serial.println(read_color());
+
   /*
   if(Serial2.available()>0){
     Serial.println((char)Serial2.read());

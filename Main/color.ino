@@ -32,7 +32,13 @@ int read_color(){
   uint16_t r, g, b, c, colorTemp, lux;
 
   tcs.getRawData(&r, &g, &b, &c);
-  
+  Serial.print(r);
+  Serial.print(" ");
+  Serial.print(g);
+  Serial.print(" ");
+  Serial.print(b);
+  Serial.print(" ");
+  Serial.println(c/clear);
   if((float)c/clear<BLACK_THRESHOLD){
     
     
@@ -46,14 +52,10 @@ int read_color(){
     Serial.println((float)c/clear);
     return 3; // SILVER — prevent fall-through into blue/red checks
   }
-  if(b>g&&b>r){
-    return 1; // blue
-  }
-  if(r>g&&r>b){
-    return 2;
-  }
-  else{
-    return 0; // good
-  }
+  if((float)c/clear>WHITE_THRESHOLD) return 0;
+  if(b>g+10&&b>r+10) return 1; //blue
+    
+  if(r>g+10&&r>b+10) return 2;
+
 }
   
