@@ -14,14 +14,15 @@ void fwd(double dist){ // in mm
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   double init_heading = myGyro.heading();
-  PID myPID(0.30,0,0.2); // 0.28 for 125
+  PID myPID(0.30,0,0.2); // pid for centering
+  PID Scale_PID(0.002,0,0.0008); // pid for encoder
   Serial.println("forwarding");
   int init_yaw = myGyro.modulus((int)myGyro.yaw_heading());
   int front_left_current=measure(7); int front_right_current=measure(1);
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
-  while((drivetrain.encoderCountA<= pulses && (drivetrain.encoderCountB <= pulses||climbtoggle == true))&&black!=true){
+  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB)/2<=pulses)&&black!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
     // check cameras
     
@@ -63,18 +64,18 @@ void fwd(double dist){ // in mm
     }
     */
     // color
-    
+    /*
     int color = read_color(); // read color
-    if(color == 1&&use_color%2==0){
+    if(color == 1){
       bluetoggle = true;
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
       mapGrid[nx][ny].setType(1);
     }
-    if(color == -1&&use_color%2==0){
+    if(color == -1){
       drivetrain.fullstop();
       delay(100);
-      
+      Serial.println("black");
       //Do you mean  t.setWall(plannedMoveDir, true)
       // find next tile, set it to black
       int nx = x_pos; int ny = y_pos;
@@ -87,20 +88,24 @@ void fwd(double dist){ // in mm
       }
       black = true;
     }
-    
+    */
     // PID centering
     difference = center();
     //Serial.println(center());
     double adjustment = myPID.getPID(difference);
+    double Scale = Scale_PID.getPID(pulses-(drivetrain.encoderCountA+drivetrain.encoderCountB)/2);
     // emergency stop
+    
     front_left_current = measure(7);
     front_right_current = measure(1);
+    
     if((front_left_current<=50&&front_left_current!=-1)||(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
       drivetrain.fullstop();
       delay(50);
       break;
     }
+    
     /*
     if(myTime.delta_time()>200000){
       Serial.println("ping");
@@ -205,7 +210,7 @@ void fwd(double dist){ // in mm
       drivetrain.set_interrupt(true,true);
       drivetrain.set_encoderCountB(_encoderCountB);
     }
-    drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
+    drivetrain.drive(constrain(Scale*(150+adjustment),20,200),constrain(Scale*(150+adjustment),20,200),constrain(Scale*(150-adjustment),20,200),constrain(Scale*(150-adjustment),20,200));
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){
@@ -220,7 +225,7 @@ void fwd(double dist){ // in mm
     drivetrain.fw(200);
     delay(300);
   }
-  
+  Serial.println("stop- end of fwd");
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true);
 

@@ -18,9 +18,9 @@
 #include "motors.h"
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define BLACK_THRESHOLD 7 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 120 // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
-#define WHITE_THRESHOLD 80
+#define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
+#define SILVER_THRESHOLD 1.2f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define WHITE_THRESHOLD 0.9f
 float clear; 
 
 #include "MazeTile.h"
@@ -35,7 +35,7 @@ QWIICMUX myMux;
 
 // set up color sensor
 #define TCS_PORT 7
-Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X);
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_24MS, TCS34725_GAIN_1X);
 // set up gyro
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 gyro myGyro;
@@ -60,7 +60,7 @@ const double wheel_cpr = 5; // 20/4
 //gear ratio
 const double gear_ratio = 195;
 // wheel diameter
-const double wheel_diameter = 68.7; // millimeters.
+const double wheel_diameter = 80; // millimeters.
 // detection classes
 
 char classes[6] = {'H','S','U','R','Y','G'};
@@ -90,7 +90,8 @@ enum Steps {
   TURN,
   PARALLEL,
   BACKTRACK,
-  FWD,
+  WIGGLE,
+  FWD
 };
 // coord struct
 struct coord {
@@ -191,14 +192,15 @@ void setup(){
   state = SENSE_TILE;
   
   delay(2000); // wait for camera to start.
-  Serial.println(read_color());
+  //obstacleavoidance(1);
+  fwd(300);
   
 }
 int iterator = 0;
 void loop(){
+  
   //drivetrain.drive(150,150,150,150);
-    Serial.println(read_color());
-
+  //Serial.println(measure(2));
   /*
   if(Serial2.available()>0){
     Serial.println((char)Serial2.read());

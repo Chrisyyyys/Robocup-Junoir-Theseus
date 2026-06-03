@@ -327,7 +327,7 @@ void parallel(){
     drivetrain.drive(PARALLEL_SPEED,PARALLEL_SPEED,PARALLEL_SPEED,PARALLEL_SPEED);
     
   }
-
+  drivetrain.reset_encoderCount(true,true);
   drivetrain.fullstop();
 }
 int center(){
@@ -336,13 +336,14 @@ int center(){
   if(a<MIN_DIST && a != -1 && b<MIN_DIST && b != -1) return (measure(2)-measure(6));
   else return 0;
 }
-/*
+
 int leftright = 0;
 void obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
   while(true){
     switch (steps){
       case TURN:{
         if(leftright == 1){ // obstacle at left
+          Serial.println("turn step");
           while(measure(7) < MIN_DIST){
             motorB->run(BACKWARD);
             motorD->run(BACKWARD);
@@ -369,10 +370,21 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
       case PARALLEL:{
         PID pid(1,0,0.1);
         if(leftright == 1){
-          while(measure(2)>=25){
-            double increment = pid.getPID(abs(measure(3)-measure(2))); // get close to the edge as possible.
-            drivetrain.drive(constrain(100-increment,30,255),constrain(100-increment,30,255),constrain(100+increment,30,225),constrain(100+increment,30,225));
-            if(abs(measure(3)-measure(2))<=5){
+          int a = measure(2); int b = measure(3);
+          while(true){
+            a=measure(2); b = measure(3);
+            if(a<=30) break;
+            Serial.println("paralleling step");
+            double increment = pid.getPID(abs(a-b)); // get close to the edge as possible.
+            drivetrain.drive(constrain(100-increment,50,170),constrain(100-increment,50,170),constrain(100+increment,50,170),constrain(100+increment,50,170));
+            
+            if(measure(6)<=35&&a<=35){
+              steps = WIGGLE;
+              goto end;
+            }
+            
+            if(abs(b-a)<=15){
+              //fwd
               drivetrain.fullstop();
               delay(200);
               steps = FWD;
@@ -382,10 +394,14 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
           
         }
         else if(leftright == 0){
-          while(measure(6)>=25){
+          while(measure(6)>=35){
             double increment = pid.getPID(abs(measure(6)-measure(5))); // get close to the edge as possible.
-            drivetrain.drive(constrain(100-increment,30,255),constrain(100-increment,30,255),constrain(100+increment,30,225),constrain(100+increment,30,225));
-            if(abs(measure(6)-measure(5))<=5){
+            drivetrain.drive(constrain(100-increment,50,170),constrain(100-increment,50,170),constrain(100+increment,50,170),constrain(100+increment,50,170));
+            if(measure(6)<=35&&measure(2)<=35){
+              steps = WIGGLE;
+              goto end;
+            }
+            if(abs(measure(6)-measure(5))<=10){
               drivetrain.fullstop();
               delay(200);
               steps = FWD;
@@ -394,6 +410,8 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
           }
           
         }
+        Serial.println("too close, backing up");
+        Serial.println(measure(2));
         steps = BACKTRACK; // put switch step in front of end( always meet it)
         break;
         end:
@@ -401,28 +419,58 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
         
       }
       case BACKTRACK:{
-        Serial.println("backtracking");
+        Serial.println("backtracking step");
+        // put a timer on to prevent it from taking too long
+        timer myTime;
         if(leftright == 0){
-          while(measure(6)<=25){
-            drivetrain.backward(100);
+          while(measure(6)<=40&&myTime.getTime()<800000){
+            drivetrain.backward(120);
           }
         }
         else if(leftright == 1){
-          while(measure(2)<=40){
-            drivetrain.backward(100);
+          while(measure(2)<=40&&myTime.getTime()<800000){
+            drivetrain.backward(120);
           }
         }
         drivetrain.fullstop();
         delay(200);
+        Serial.println("sensor 2, now reading");
+        Serial.println(measure(2));
         steps = PARALLEL;
         break;
       }
+      
       case FWD:{
+        
+        if(measure(6)<=35&&measure(2)<=35){
+          steps = WIGGLE;
+          break;
+        }
+        
+        Serial.println("fwd step");
+        parallel();
+        drivetrain.reset_encoderCount(true,true);
+        delay(200);
         fwd(300);
+        return;
+      }
+      case WIGGLE:{
+        PID pid(8,0,0.1);
+        Serial.println("wiggle step");
+        delay(2000);
+        timer myTime;
+        while(abs(measure(2)-measure(6))>=15&&myTime.getTime()<1000000){
+          double diff = pid.getPID(measure(2)-measure(6));
+          drivetrain.drive(70+diff,70+diff,70-diff,70-diff);
+        }
+        drivetrain.fullstop();
+        delay(200);
+        steps = FWD;
+        break;
       }
     }
   }
 }
-*/
+
 
 
