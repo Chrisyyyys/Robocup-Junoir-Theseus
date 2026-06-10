@@ -82,7 +82,18 @@ struct Tile {
   void setBlue(bool stat){
     bitset.set(12,stat);
   }
-
+  void getElevate(){
+    return bitset.get(13);
+  }
+  void setElevate(bool e){
+    bitset.set(13,e);
+  }
+  void getDescend(){
+    return bitset.get(13);
+  }
+  void setDescend(bool d){
+    bitset.set(14,d);
+  }
   //bool wall[4];
   //bool edge[4];
 

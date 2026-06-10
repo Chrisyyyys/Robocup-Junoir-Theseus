@@ -71,6 +71,10 @@ Stepper myStepper = Stepper(steps_per_revolution, 8, 9,10,11);
 // map size variables
 const int MAP_SIZE=20;
 Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
+Tile m1[MAP_SIZE][MAP_SIZE];
+Tile m2[MAP_SIZE][MAP_SIZE];
+Tile m3[MAP_SIZE][MAP_SIZE];
+int floor = 1;
 // queue
 
 
@@ -184,6 +188,9 @@ void setup(){
   //detect();
   //initialize map
   initializeMap();
+  m1 = mapGrid;
+  m2 = mapGrid;
+  m3 = mapGrid;
   x_pos=MAP_SIZE/2;
   y_pos=MAP_SIZE/2;
   mapGrid[x_pos][y_pos].setDiscovered(true); 
@@ -413,8 +420,4 @@ void loop(){
       break;
     }
  }
- 
-
-
-
 }
