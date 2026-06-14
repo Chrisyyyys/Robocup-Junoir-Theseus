@@ -190,7 +190,6 @@ void fwd(double dist){ // in mm
       drivetrain.set_encoderCountB(_encoderCountB);
     }
     drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
-    else drivetrain.fullstop();
   }
   // sometimes it barely makes it over the slope
   if(climbtoggle == true){
@@ -234,7 +233,6 @@ void absoluteturn(double angle){
      
       
       drivetrain.turnright(constrain(MOTORSPEED,20,200));
-      else drivetrain.fullstop();
     }
   }
 
@@ -248,7 +246,6 @@ void absoluteturn(double angle){
       MOTORSPEED = myPID.getPID(current_angle-myGyro.inverse(angle,fasterway));
       
       drivetrain.turnleft(constrain(MOTORSPEED,20,200));
-      else drivetrain.fullstop();
     }
   }
   

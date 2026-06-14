@@ -105,13 +105,14 @@ const int angle_increment = 22;
 dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 // logic switch pin
 const int logicswitch = 31;
-bool Pausemaze = false;
+volatile bool Pausemaze = false;
 // pause maze thread
 
 rtos::Thread pauseThread;
 void pauseTask(){
   while(true){
-    if(digitalRead(logicswtich)==true) Pausemaze = true;
+    if(digitalRead(logicswitch)==true) Pausemaze = true;
+    rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
   }
 }
 int x_checkpoint=0;int y_checkpoint=0;
@@ -125,7 +126,7 @@ void fwd(int distanceMm) {
   isVictim = false;
   RPC.call("fwd", distanceMm);
   Tile &t = mapGrid[x_pos][y_pos];
-  while(RPC.call("isFwdComplete").as<bool>()==true){
+  while(RPC.call("isFwdComplete").as<bool>()==false){
     if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
           if(RPC.call("detectWall",3).as<int>()==0){
             RPC.call("togglestop",true);
@@ -157,7 +158,7 @@ void absoluteturn(int targetDirectionOrDeg) {
   isVictim = false;
   RPC.call("absoluteturn", targetDirectionOrDeg);
   Tile &t = mapGrid[x_pos][y_pos]; // define tile pointer
-  while(RPC.call("isTurnComplete").as<bool>()==true){
+  while(RPC.call("isTurnComplete").as<bool>()==false){
     if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
           if(RPC.call("detectWall",3).as<int>()==0){
             RPC.call("togglestop",true);
@@ -194,7 +195,7 @@ void setup(){
   pinMode(gpio1, INPUT);
   pinMode(gpio2, INPUT);
   // initialize logic switch pin
-
+  pinMode(logicswitch,INPUT);
   // begin UART communication.
   Serial.begin(115200);
   Serial2.begin(115200); // switch to 9600 for reliability
@@ -391,14 +392,18 @@ void loop(){
       }
     }
     case PAUSE: {
-      while(digitalRead(logicswitch)==true){
-        RPC.call("fullstop");
-        x_pos = x_checkpoint; y_pos = y_checkpoint;
+      RPC.call("togglestop",true);
+      x_pos = x_checkpoint; y_pos = y_checkpoint;
+      if(digitalRead(logicswitch)==LOW){
+
+        RPC.call("togglestop",false);
+        Pausemaze = false;
+        Direction snapped = (Direction)RPC.call("headingToCardinal").as<int>(); // snap to this direction
+        absoluteturn(turnNeededDeg(snapped));
+        currentDir = snapped;
+        state = PLAN_NEXT;
+        break;
       }
-      Pausemaze = false;
-      currentDir = RPC.call("headingToCardinal").as<int>();
-      state = SENSE_TILE;
-      break;
     }
  }
  
