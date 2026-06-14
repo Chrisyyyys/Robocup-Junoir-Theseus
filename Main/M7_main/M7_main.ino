@@ -106,35 +106,26 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 // logic switch pin
 const int logicswitch = 31;
 bool Pausemaze = false;
-int x_checkpoint, y_checkpoint;
+// pause maze thread
+
+rtos::Thread pauseThread;
+void pauseTask(){
+  while(true){
+    if(digitalRead(logicswtich)==true) Pausemaze = true;
+  }
+}
+int x_checkpoint=0;int y_checkpoint=0;
 bool tilecheck = false;
 
-double headingErrorDeg(double targetDeg, double actualDeg) {
-  double err = targetDeg - actualDeg;
-  while (err > 180.0) err -= 360.0;
-  while (err < -180.0) err += 360.0;
-  return abs(err);
-}
 
-bool turnCompletedSuccessfully(Direction intendedDir) {
-  const double TURN_SUCCESS_TOLERANCE_DEG = 20.0;
-  double targetHeading = turnNeededDeg(intendedDir);
-  double actualHeading = myGyro.heading();
-  double err = headingErrorDeg(targetHeading, actualHeading);
-  Serial.print("turn target=");
-  Serial.print(targetHeading);
-  Serial.print(", actual=");
-  Serial.print(actualHeading);
-  Serial.print(", err=");
-  Serial.println(err);
-  return err <= TURN_SUCCESS_TOLERANCE_DEG;
-}
+
+
 
 void fwd(int distanceMm) {
   isVictim = false;
   RPC.call("fwd", distanceMm);
   Tile &t = mapGrid[x_pos][y_pos];
-  while(RPC.call("isTurnComplete").as<bool>()==true){
+  while(RPC.call("isFwdComplete").as<bool>()==true){
     if(readSerial1()!=-1&&isVictim==false&&t.getVictim()==false){ //left camera
           if(RPC.call("detectWall",3).as<int>()==0){
             RPC.call("togglestop",true);
@@ -220,7 +211,8 @@ void setup(){
   mapGrid[x_pos][y_pos].setDiscovered(true); 
   currentDir = NORTH;
   state = SENSE_TILE;
-  
+  pauseThread.start(pauseTask); // start pause thread
+  RPC.begin();
   delay(2000); // wait for camera to start.
   
   
@@ -252,8 +244,8 @@ void loop(){
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
       Serial.println(plannedTurnDeg);
-      if(Pausemaze == true) state = PAUSE;
       state = EXECUTE_MOVE;
+      if(Pausemaze == true) state = PAUSE;
       break;
     }
     case EXECUTE_MOVE: {
@@ -265,10 +257,7 @@ void loop(){
         RPC.call("parallel");
         delay(100);
 
-        if (turnCompletedSuccessfully(plannedMoveDir) == false) {
-          state = BOTCHED_TURN_RECOVERY;
-          break;
-        }
+       
         currentDir = plannedMoveDir;
         turnCompletedForMove = true;
       }
@@ -322,21 +311,6 @@ void loop(){
       if(iterator >= 15) state = RETURN;
       break;
      
-    }
-    case BOTCHED_TURN_RECOVERY: {
-      Direction snappedDir = (Direction)myGyro.headingToCardinal(myGyro.heading());
-      int snappedHeading = turnNeededDeg(snappedDir);
-      Serial.println("botched turn detected, snapping to cardinal");
-      absoluteturn(snappedHeading);
-      delay(150);
-      RPC.call("parallel");
-      delay(100);
-
-      currentDir = snappedDir;
-      plannedTurnDeg = turnNeededDeg(plannedMoveDir);
-      turnCompletedForMove = false;
-      state = EXECUTE_MOVE;
-      break;
     }
     case BACKPEDAL: {
       plannedMoveDir = pickNextDirection();
@@ -421,7 +395,8 @@ void loop(){
         RPC.call("fullstop");
         x_pos = x_checkpoint; y_pos = y_checkpoint;
       }
-      myGyro.headingToCardinal(myGyro.heading());
+      Pausemaze = false;
+      currentDir = RPC.call("headingToCardinal").as<int>();
       state = SENSE_TILE;
       break;
     }

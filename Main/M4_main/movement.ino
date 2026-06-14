@@ -42,7 +42,7 @@ void fwd(double dist){ // in mm
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
-  while((drivetrain.encoderCountA<= pulses && (drivetrain.encoderCountB <= pulses||climbtoggle == true))&&blacktoggle!=true){
+  while((drivetrain.encoderCountA<= pulses && (drivetrain.encoderCountB <= pulses||climbtoggle == true))&&blacktoggle!=true&&stopToggle!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
    // Stop immediately when the M7 pauses movement to handle camera/victim work.
     if(stopToggle == true){
@@ -189,7 +189,7 @@ void fwd(double dist){ // in mm
       drivetrain.set_interrupt(true,true);
       drivetrain.set_encoderCountB(_encoderCountB);
     }
-    if(!stopToggle) drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
+    drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
     else drivetrain.fullstop();
   }
   // sometimes it barely makes it over the slope
@@ -222,7 +222,7 @@ void absoluteturn(double angle){
   timer myTimer;
 
   if(myGyro.inverse(angle,fasterway) - current_angle > 0){
-    while(true){
+    while(true&&stopToggle!=true){
       motorB->run(BACKWARD);
       motorD->run(BACKWARD);
       if(myGyro.inverse(angle,fasterway)-current_angle<=0 && current_angle < 190) break;
@@ -233,13 +233,13 @@ void absoluteturn(double angle){
       MOTORSPEED = myPID.getPID(myGyro.inverse(angle,fasterway)-current_angle);
      
       
-      if(!stopToggle) drivetrain.turnright(constrain(MOTORSPEED,20,200));
+      drivetrain.turnright(constrain(MOTORSPEED,20,200));
       else drivetrain.fullstop();
     }
   }
 
   else if(myGyro.inverse(angle,fasterway)-current_angle<0) {
-    while(true){
+    while(true&&stopToggle!=true){
       motorA->run(BACKWARD);
       motorC->run(BACKWARD);
       if(myGyro.inverse(angle,fasterway)-current_angle>=0 && current_angle > 170) break;
@@ -247,7 +247,7 @@ void absoluteturn(double angle){
       current_angle = myGyro.inverse(myGyro.heading(),fasterway);
       MOTORSPEED = myPID.getPID(current_angle-myGyro.inverse(angle,fasterway));
       
-      if(!stopToggle) drivetrain.turnleft(constrain(MOTORSPEED,20,200));
+      drivetrain.turnleft(constrain(MOTORSPEED,20,200));
       else drivetrain.fullstop();
     }
   }

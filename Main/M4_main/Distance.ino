@@ -219,7 +219,7 @@ void parallel(){
   unsigned long startMs = millis();
   double startHeading = myGyro.heading();
 
-  while (true) {
+  while (true&&stopToggle!=true) {
     int a = measure(sensorA);
     int b = measure(sensorB);
 

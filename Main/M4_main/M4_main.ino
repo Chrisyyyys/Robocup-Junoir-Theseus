@@ -118,6 +118,7 @@ bool queryBlack(){ return blacktoggle; }
 bool queryBlue(){ return bluetoggle; }
 bool queryClimb(){ return climbtoggle; }
 int queryRamps(){ return rampCount; }
+int cardinalTask(){return myGyro.headingToCardinal(myGyro.heading())}
 int readEncoderA(){ return encoderCountA; }
 int readEncoderB(){ return encoderCountB; }
 void rpcFullStop(){ drivetrain.fullstop(); }
@@ -167,6 +168,8 @@ void setup(){
   RPC.bind("parallel",parallel);
   RPC.bind("fullstop",rpcFullStop);
   RPC.bind("togglestop",setstopToggle);
+  // bind RPC for cardinal snapping
+  RPC.bind("headingToCardinal",cardinalTask);
   // query movement completion
   RPC.bind("isFwdComplete",isFwdComplete);
   RPC.bind("isTurnComplete",isTurnComplete);
@@ -192,7 +195,7 @@ void loop(){
   
   if(turn_flag == true){
      absoluteturn(turn_angle);
-    if(turnCompletedSuccessfully(turn_angle) == false){
+    if(turnCompletedSuccessfully(turn_angle) == false&&stopToggle==false){
       delay(200);
       absoluteturn(turn_angle);
     }
