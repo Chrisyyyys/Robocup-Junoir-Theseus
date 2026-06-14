@@ -267,6 +267,14 @@ void descend(Tile mapgrid[MAP_SIZE][MAP_SIZE], int xpos, int ypos, Tile m1[MAP_S
     mapgrid = m1;
     floor++:
   }
+  if(floor = 2){
+    m2 = mapgrid;
+    mapgrid = m1;
+  }
+  if(floor = 3){
+    m3 = mapgrid;
+    mapgrid = m2;
+  }
   mapgrid[xpos,ypos].setElevate(true);
   floor--;
 }
