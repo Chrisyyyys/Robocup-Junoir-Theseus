@@ -90,11 +90,11 @@ void scanAllPorts() {
 }
 // measure distance
 int measure(int sensor){
-  
+  i2cMutex.lock();
   if(sensor ==1){
     myMux.setPort(1);
     int value = sensors[1].readRangeContinuousMillimeters();
-    
+    i2cMutex.unlock();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
       
@@ -102,6 +102,7 @@ int measure(int sensor){
   if(sensor == 2){
     myMux.setPort(0);
     int value = sensors[0].readRangeContinuousMillimeters();
+    i2cMutex.unlock();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
       
@@ -109,6 +110,7 @@ int measure(int sensor){
   if(sensor==3){
     myMux.setPort(6);
     int value = sensors[6].readRangeContinuousMillimeters();
+    i2cMutex.unlock();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
     
@@ -116,6 +118,7 @@ int measure(int sensor){
   if(sensor==4){
     myMux.setPort(4);
     int value = sensors[4].readRangeContinuousMillimeters();
+    i2cMutex.unlock();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
     
@@ -123,6 +126,7 @@ int measure(int sensor){
   if(sensor==5){
     myMux.setPort(5);
     int value = sensors[5].readRangeContinuousMillimeters();
+    i2cMutex.unlock();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
     
@@ -130,6 +134,7 @@ int measure(int sensor){
   if(sensor==6){
     myMux.setPort(3);
     int value = sensors[3].readRangeContinuousMillimeters();
+    i2cMutex.unlock();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
     
@@ -137,6 +142,7 @@ int measure(int sensor){
   if(sensor==7){
     myMux.setPort(2);
     int value = sensors[2].readRangeContinuousMillimeters();
+    i2cMutex.unlock();
     if (value != -1 && value != 8191) { return value;}
     else { return -1;}
     

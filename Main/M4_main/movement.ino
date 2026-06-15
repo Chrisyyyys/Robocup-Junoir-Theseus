@@ -1,23 +1,4 @@
-void encoder_update_B(){ // why the fuck is it high when going backwards???
-  int encoderState = digitalRead(encoderPin_B_B);
-  
-  if(encoderState == HIGH){
-    encoderCountB--;
-  }
-  else{
-    encoderCountB++;
-  }
-}
-void encoder_update_A(){ // every pulse consists for once going up and once going down.
-  int encoderState = digitalRead(encoderPin_A_B);
- 
-  if(encoderState == LOW){
-    encoderCountA--;
-  }
-  else{
-    encoderCountA++;
-  }
-}
+
 void init_drive(){
   drivetrain.init_drive();
   // initialize gyro
@@ -42,7 +23,7 @@ void fwd(double dist){ // in mm
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
-  while((drivetrain.encoderCountA<= pulses && (drivetrain.encoderCountB <= pulses||climbtoggle == true))&&blacktoggle!=true&&stopToggle!=true){
+  while(climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB)/2<=pulses)&&black!=true&&stopToggle!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
    // Stop immediately when the M7 pauses movement to handle camera/victim work.
     if(stopToggle == true){
@@ -55,8 +36,7 @@ void fwd(double dist){ // in mm
     //int color = read_color(); // read color
     if(latestColor == BLUE){
       bluetoggle = true;
-      
-      
+      delay(5000);
     }
     if(latestColor == BLACK){
       drivetrain.fullstop();
@@ -66,7 +46,7 @@ void fwd(double dist){ // in mm
       // find next tile, set it to black
       blacktoggle = true;
       
-      while(encoderCountA >= 0 && encoderCountB >= 0){
+      while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0){
         drivetrain.backward(200);
       }
       

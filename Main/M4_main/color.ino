@@ -26,13 +26,14 @@ void init_color(){
   
 }
 Color read_color(){
+  i2cMutex.lock();
   myMux.setPort(TCS_PORT);          
   tcs.setInterrupt(true);  // turn on LED
   float red, green, blue;
   uint16_t r, g, b, c, colorTemp, lux;
 
   tcs.getRawData(&r, &g, &b, &c);
- 
+  i2cMutex.unlock();
   if((float)c/clear<BLACK_THRESHOLD){
     
     

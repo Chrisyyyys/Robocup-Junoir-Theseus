@@ -1,5 +1,6 @@
 // libraries
 #include <mbed.h> // access arduino mbed OS
+
 #include <RPC.h> // RPC
 #include <Wire.h>
 #include <SparkFun_I2C_Mux_Arduino_Library.h>
@@ -87,6 +88,8 @@ int rampCount;
 
 // create color thread
 rtos::Thread colorThread;
+// i2c mutex to prevent conflict.
+rtos::Mutex i2cMutex;
 // color enum
 enum Color {
   WHITE = 0,
@@ -122,8 +125,8 @@ int cardinalTask(){return myGyro.headingToCardinal(myGyro.heading());}
 int readEncoderA(){ return encoderCountA; }
 int readEncoderB(){ return encoderCountB; }
 void rpcFullStop(){ drivetrain.fullstop(); }
-void isFwdComplete(){ return fwd_flag;}
-void isTurnComplete(){ return turn_flag;}
+bool isFwdComplete(){ return fwd_flag;}
+bool isTurnComplete(){ return turn_flag;}
 double headingErrorDeg(double targetDeg, double actualDeg) {
   double err = targetDeg - actualDeg;
   while (err > 180.0) err -= 360.0;

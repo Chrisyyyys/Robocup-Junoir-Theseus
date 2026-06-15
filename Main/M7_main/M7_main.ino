@@ -252,7 +252,7 @@ void loop(){
     case EXECUTE_MOVE: {
       if (turnCompletedForMove == false) {
         if(plannedMoveDir != currentDir){
-          absoluteturn(plannedMoveDir);
+          absoluteturn(plannedTurnDeg);
         }
         delay(200);
         RPC.call("parallel");
@@ -283,7 +283,6 @@ void loop(){
       }
       // 3) update map + robot position only on successful move
       if(bluetoggle == true){ // stop for 5 seconds on the blue tile.
-        delay(5000);
         mapGrid[x_pos][y_pos].setBlue(true);
       }
       bluetoggle = false;
@@ -294,9 +293,10 @@ void loop(){
       else{
         state = BACKPEDAL;
         turnCompletedForMove = false;
+        mapGrid[x_pos][y_pos].setType(3);
         break;
       }
-      if(blacktoggle == true) mapGrid[x_pos]][y_pos].setType(3);
+      
       delay(200);
       RPC.call("parallel");
       delay(100);
@@ -320,7 +320,6 @@ void loop(){
       turnCompletedForMove = false;
       state = EXECUTE_MOVE;
       blacktoggle = false;
-      stairtoggle = false;
       if(Pausemaze == true) state = PAUSE;
       delay(500);
       break;
@@ -393,6 +392,8 @@ void loop(){
     }
     case PAUSE: {
       RPC.call("togglestop",true);
+      delay(200);
+      RPC.call("fullstop");
       x_pos = x_checkpoint; y_pos = y_checkpoint;
       if(digitalRead(logicswitch)==LOW){
 
