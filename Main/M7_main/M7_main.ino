@@ -13,7 +13,7 @@
 #include "timer.h"
 #include "gyro.h"
 #include "dispenser.h"
-
+#include <Stepper.h>
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 0.10 // color clear-channel threshold ratio for black
@@ -23,8 +23,7 @@ float clear;
 #include "MazeTile.h"
 
 // set up mux and distance senosrs
-VL53L0X sensors[7];
-QWIICMUX myMux;
+
 // shut down allcall
 #define PCA_ADDR 0x60
 #define MODE1    0x00
@@ -35,11 +34,12 @@ QWIICMUX myMux;
 // set up gyro
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 gyro myGyro;
-// set up motorshield and motors.
-
-
-
-
+// wheel cpr
+const double wheel_cpr = 5; // 20/4
+//gear ratio
+const double gear_ratio = 195;
+// wheel diameter
+const double wheel_diameter = 80.0; // millimeters.
 // detection classes
 
 char classes[6] = {'H','S','U','R','Y','G'};
@@ -49,7 +49,7 @@ const int steps_per_revolution = 2048;
 Stepper myStepper = Stepper(steps_per_revolution, 8, 9,10,11); 
 // map size variables
 const int MAP_SIZE=20;
-Grid = std::array<std::array<Tile,MAP_SIZE>, MAP_SIZE>;// create a grid type
+using Grid = std::array<std::array<Tile,MAP_SIZE>, MAP_SIZE>;// create a grid type
 Grid mapGrid; // array of tiles
 Grid m1; // "basement"
 Grid m2;
@@ -108,7 +108,7 @@ const int angle_offset = 44;
 const int angle_increment = 22;
 dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 // logic switch pin
-const int logicswitch = 31;
+const int logicswitch = 22;
 volatile bool Pausemaze = false;
 // pause maze thread
 
@@ -332,6 +332,7 @@ void loop(){
       break;
     }
     case RETURN: {
+      /*
       coord currentpos = {x_pos,y_pos};
       coord endpos = {MAP_SIZE/2,MAP_SIZE/2};
       coord path[MAP_SIZE*MAP_SIZE];
@@ -396,6 +397,7 @@ void loop(){
       while(true){
         continue;
       }
+      */
     }
     case PAUSE: {
       RPC.call("togglestop",true);

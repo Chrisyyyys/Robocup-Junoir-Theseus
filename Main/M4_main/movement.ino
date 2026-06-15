@@ -23,7 +23,7 @@ void fwd(double dist){ // in mm
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
-  while(climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB)/2<=pulses)&&black!=true&&stopToggle!=true){
+  while(climbtoggle==true||((drivetrain.encoderCountA+drivetrain.encoderCountB)/2<=pulses)&&blacktoggle!=true&&stopToggle!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
    // Stop immediately when the M7 pauses movement to handle camera/victim work.
     if(stopToggle == true){
@@ -151,7 +151,7 @@ void fwd(double dist){ // in mm
       Serial.println("climbing");
       
       while(abs(myGyro.modulus(myGyro.yaw_heading())-init_yaw) > 20){
-        Serial.println(encoderCountB);
+        Serial.println(_encoderCountB);
         drivetrain.set_interrupt(false,true); // stop encoders
          // PID centering
         difference = center();

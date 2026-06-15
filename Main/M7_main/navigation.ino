@@ -100,10 +100,10 @@ void updateFullyExploredAt(int x, int y) {
 }
 // 0=front, 1=right, 2=back, 3=left
 void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // references needed here to update the variable values
-  wallF = (detectWall(0)==0);
-  wallR = (detectWall(1)==0);
-  wallB = (detectWall(2)==0);
-  wallL = (detectWall(3)==0);
+  wallF = (RPC.call("detectWall",0).as<int>()==0);
+  wallR = (RPC.call("detectWall",0).as<int>()==0);
+  wallB = (RPC.call("detectWall",0).as<int>()==0);
+  wallL = (RPC.call("detectWall",0).as<int>()==0);
   Serial.println(wallF);
   Serial.println(wallR);
   Serial.println(wallB);
@@ -190,7 +190,7 @@ int dir[4][2] = {
     {0, -1},
     {-1, 0}
 };
-void initTile(int x, int y, Tile map[MAP_SIZE][MAP_SIZE]) {
+void initTile(int x, int y, Grid& map) {
     map[x][y].setDiscovered(false);
     map[x][y].setFully(false);
     map[x][y].setVisited(false);
@@ -203,7 +203,7 @@ void initTile(int x, int y, Tile map[MAP_SIZE][MAP_SIZE]) {
     map[x][y].setType(BLANK);
 }
 
-void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) { //input mapgrid, and next tile location
+void reallocate(Grid& mapgrid, int pos_x = 0, int pos_y = 0) { //input mapgrid, and next tile location
     //cout << "start reallocate" << endl;
 
     //expand to bottom (remove top)
@@ -283,7 +283,7 @@ void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) 
     }
 }
 
-void elevation(Tile mapgrid[MAP_SIZE][MAP_SIZE], int xpos, int ypos, Tile m1[MAP_SIZE][MAP_SIZE], Tile m2[MAP_SIZE][MAP_SIZE], Tile m3[MAP_SIZE][MAP_SIZE],int* floor){
+void elevation(Grid& mapgrid, int xpos, int ypos, Grid& m1, Grid& m2, Grid& m3, int& floor){
   mapgrid[xpos][ypos].setElevate(true);
   if(floor == 1){
     m1 = mapgrid;
@@ -296,20 +296,20 @@ void elevation(Tile mapgrid[MAP_SIZE][MAP_SIZE], int xpos, int ypos, Tile m1[MAP
   floor++;
 }
 
-void descend(Tile mapgrid[MAP_SIZE][MAP_SIZE], int xpos, int ypos, Tile m1[MAP_SIZE][MAP_SIZE], Tile m2[MAP_SIZE][MAP_SIZE], Tile m3[MAP_SIZE][MAP_SIZE],int* floor){
+void descend(Grid& mapgrid, int xpos, int ypos, Grid& m1, Grid& m2, Grid& m3, int& floor){
   mapgrid[xpos][ypos].setDescend(true);
-  if(floor = 1){
+  if(floor == 1){
     m1 = m3; //m3 should always be empty if descended twice
     m3 = m2;
     m2 = m1;
     mapgrid = m1;
     floor++;
   }
-  if(floor = 2){
+  if(floor == 2){
     m2 = mapgrid;
     mapgrid = m1;
   }
-  if(floor = 3){
+  if(floor == 3){
     m3 = mapgrid;
     mapgrid = m2;
   }
@@ -319,6 +319,7 @@ void descend(Tile mapgrid[MAP_SIZE][MAP_SIZE], int xpos, int ypos, Tile m1[MAP_S
 
 
 // pair structure
+/*
 int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord path[MAP_SIZE * MAP_SIZE]) { // auto updates path
     ArduinoQueue<coord> queue = {};
     size_t rows = MAP_SIZE;
@@ -368,3 +369,4 @@ int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord p
     return i;
     
 }
+*/

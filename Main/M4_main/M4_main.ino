@@ -122,8 +122,8 @@ bool queryBlue(){ return bluetoggle; }
 bool queryClimb(){ return climbtoggle; }
 int queryRamps(){ return rampCount; }
 int cardinalTask(){return myGyro.headingToCardinal(myGyro.heading());}
-int readEncoderA(){ return encoderCountA; }
-int readEncoderB(){ return encoderCountB; }
+int readEncoderA(){ return drivetrain.encoderCountA; }
+int readEncoderB(){ return drivetrain.encoderCountB; }
 void rpcFullStop(){ drivetrain.fullstop(); }
 bool isFwdComplete(){ return fwd_flag;}
 bool isTurnComplete(){ return turn_flag;}
