@@ -153,9 +153,7 @@ void setup(){
 
 
   // begin UART communication.
-  Serial.begin(115200);
-  Serial2.begin(115200); // switch to 9600 for reliability
-  Serial3.begin(115200);
+  
 
   Wire.begin();
   disableAllCall();

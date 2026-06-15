@@ -1,7 +1,8 @@
 // distance sensor code
 // blue for SDA, yellow for SCL
 // the motor shield takes up the I2C address at 0x70 so chatgpt made some code that prevents conflict.
-
+#include <SparkFun_I2C_Mux_Arduino_Library.h>
+#include <VL53L0X.h>
 
 
 void disableAllCall() {

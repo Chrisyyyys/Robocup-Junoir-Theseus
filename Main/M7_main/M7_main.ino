@@ -227,6 +227,9 @@ void setup(){
 }
 int iterator = 0;
 void loop(){
+  //Serial.println(RPC.call("measure",1).as<int>());
+  Serial.println("hello world");
+  /*
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -332,7 +335,7 @@ void loop(){
       break;
     }
     case RETURN: {
-      /*
+      
       coord currentpos = {x_pos,y_pos};
       coord endpos = {MAP_SIZE/2,MAP_SIZE/2};
       coord path[MAP_SIZE*MAP_SIZE];
@@ -397,7 +400,7 @@ void loop(){
       while(true){
         continue;
       }
-      */
+      
     }
     case PAUSE: {
       RPC.call("togglestop",true);
@@ -416,7 +419,7 @@ void loop(){
       }
     }
  }
- 
+ */
 
 
 

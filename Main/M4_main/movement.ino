@@ -23,7 +23,7 @@ void fwd(double dist){ // in mm
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
-  while(climbtoggle==true||((drivetrain.encoderCountA+drivetrain.encoderCountB)/2<=pulses)&&blacktoggle!=true&&stopToggle!=true){
+  while(climbtoggle==true||((drivetrain.encoderCountA+drivetrain.encoderCountB)/2<=pulses)&&blacktoggle!=true){
     //if(digitalRead(logicswitch)==true) Pausemaze = true;
    // Stop immediately when the M7 pauses movement to handle camera/victim work.
     if(stopToggle == true){

@@ -28,12 +28,14 @@ void victimTileFromEncoder(int distanceMm, int encoderCount, int &victimX, int &
   }
 }
 //  check if tile was already marked.
+/*
 bool victimTileAlreadyMarked(int distanceMm) {
   int encoderCount = RPC.call("readEncoderA").as<int>();
   int victimX, victimY;
   victimTileFromEncoder(distanceMm, encoderCount, victimX, victimY); // tests the local victimX and victimY
   return inBounds(victimX, victimY) && mapGrid[victimX][victimY].getVictim();
 }
+*/
 // 
 void markVictimAtEncoderPosition(int distanceMm) { // mark victim of tile based on encoder position
   int encoderCount = RPC.call("readEncoderA").as<int>();
