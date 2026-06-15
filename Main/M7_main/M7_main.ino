@@ -9,7 +9,7 @@
 
 #include <ArduinoQueue.h> // queue
 #include <Vector.h> // vector
-
+#include <array> // array
 #include "timer.h"
 #include "gyro.h"
 #include "dispenser.h"
@@ -49,7 +49,11 @@ const int steps_per_revolution = 2048;
 Stepper myStepper = Stepper(steps_per_revolution, 8, 9,10,11); 
 // map size variables
 const int MAP_SIZE=20;
-Tile mapGrid[MAP_SIZE][MAP_SIZE]; // array of tiles
+Grid = std::array<std::array<Tile,MAP_SIZE>, MAP_SIZE>;// create a grid type
+Grid mapGrid; // array of tiles
+Grid m1; // "basement"
+Grid m2;
+Grid m3;
 // queue
 
 
@@ -207,6 +211,9 @@ void setup(){
   //detect();
   //initialize map
   initializeMap();
+  m1 = mapGrid;
+  m2 = mapGrid;
+  m3 = mapGrid;
   x_pos=MAP_SIZE/2;
   y_pos=MAP_SIZE/2;
   mapGrid[x_pos][y_pos].setDiscovered(true); 

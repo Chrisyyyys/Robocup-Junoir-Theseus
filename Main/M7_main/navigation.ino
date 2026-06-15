@@ -35,7 +35,7 @@ bool victimTileAlreadyMarked(int distanceMm) {
   return inBounds(victimX, victimY) && mapGrid[victimX][victimY].getVictim();
 }
 // 
-void markVictimAtEncoderPosition(int distanceMm) {
+void markVictimAtEncoderPosition(int distanceMm) { // mark victim of tile based on encoder position
   int encoderCount = RPC.call("readEncoderA").as<int>();
   int victimX, victimY;
   victimTileFromEncoder(distanceMm, encoderCount, victimX, victimY);
@@ -62,6 +62,8 @@ void initializeMap() {
       mapGrid[x][y].setDiscovered(false);
       mapGrid[x][y].setFully(false);
       mapGrid[x][y].setVisited(false);
+      mapGrid[x][y].setElevate(false);
+      mapGrid[x][y].setDescend(false);
       for (int d = 0; d < 4; d++) {
         mapGrid[x][y].setWall(d, false);
         mapGrid[x][y].setEdge(d, false);
@@ -96,14 +98,12 @@ void updateFullyExploredAt(int x, int y) {
   }
   t.setFully(allDone);
 }
-// set black tile
-
 // 0=front, 1=right, 2=back, 3=left
 void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // references needed here to update the variable values
-  wallF = (RPC.call("detectWall",0).as<int>()==0);
-  wallR = (RPC.call("detectWall",1).as<int>()==0);
-  wallB = (RPC.call("detectWall",2).as<int>()==0);
-  wallL = (RPC.call("detectWall",3).as<int>()==0);
+  wallF = (detectWall(0)==0);
+  wallR = (detectWall(1)==0);
+  wallB = (detectWall(2)==0);
+  wallL = (detectWall(3)==0);
   Serial.println(wallF);
   Serial.println(wallR);
   Serial.println(wallB);
@@ -190,14 +190,17 @@ int dir[4][2] = {
     {0, -1},
     {-1, 0}
 };
-void initTile(int x, int y) {
-    mapGrid[x][y].setDiscovered(false);
-    mapGrid[x][y].setFully(false);
+void initTile(int x, int y, Tile map[MAP_SIZE][MAP_SIZE]) {
+    map[x][y].setDiscovered(false);
+    map[x][y].setFully(false);
+    map[x][y].setVisited(false);
+    map[x][y].setElevate(false);
+    map[x][y].setDescend(false);
     for (int d = 0; d < 4; d++) {
-        mapGrid[x][y].setWall(d, false);
-        mapGrid[x][y].setEdge(d, false);
+        map[x][y].setWall(d, false);
+        map[x][y].setEdge(d, false);
     }
-    mapGrid[x][y].setType(BLANK);
+    map[x][y].setType(BLANK);
 }
 
 void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) { //input mapgrid, and next tile location
@@ -208,11 +211,18 @@ void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) 
         for (int i = 0; i < MAP_SIZE - 1; i++) {
             for (int j = 0; j < MAP_SIZE; j++) {
                 mapgrid[i][j] = mapgrid[i + 1][j];
+                m1[i][j] = m1[i + 1][j];
+                m2[i][j] = m2[i + 1][j];
+                m3[i][j] = m3[i + 1][j];
+        
             }
             //printmap(mapgrid);
         }
         for (int i = 0; i < MAP_SIZE; i++) {
-            initTile(MAP_SIZE - 1, i);
+            initTile(MAP_SIZE - 1, i, mapgrid);
+            initTile(MAP_SIZE - 1, i, m1);
+            initTile(MAP_SIZE - 1, i, m2);
+            initTile(MAP_SIZE - 1, i, m3);
         }
     }
     //expand to top (remove bottom)
@@ -220,11 +230,17 @@ void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) 
         for (int i = MAP_SIZE-1; i > 0; i--) {
             for (int j = 0; j < MAP_SIZE; j++) {
                 mapgrid[i][j] = mapgrid[i - 1][j];
+                m1[i][j] = m1[i - 1][j];
+                m2[i][j] = m2[i - 1][j];
+                m3[i][j] = m3[i - 1][j];
             }
             //printmap(mapgrid);
         }
         for (int i = 0; i < MAP_SIZE; i++) {
-            initTile(0, i);
+            initTile(0, i, mapgrid);
+            initTile(0, i, m1);
+            initTile(0, i, m2);
+            initTile(0, i, m3);
         }
     }
 
@@ -233,11 +249,17 @@ void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) 
         for (int j = 0; j < MAP_SIZE - 1; j++) {
             for (int i = 0; i < MAP_SIZE; i++) {
                 mapgrid[i][j] = mapgrid[i][j+1];
+                m1[i][j] = m1[i][j+1];
+                m2[i][j] = m2[i][j+1];
+                m3[i][j] = m3[i][j+1];
             }
             //printmap(mapgrid);
         }
         for (int i = 0; i < MAP_SIZE; i++) {
-            initTile(i, MAP_SIZE-1);
+            initTile(i, MAP_SIZE-1, mapgrid);
+            initTile(i, MAP_SIZE-1, m1);
+            initTile(i, MAP_SIZE-1, m2);
+            initTile(i, MAP_SIZE-1, m3);
         }
     }
 
@@ -246,14 +268,55 @@ void reallocate(Tile mapgrid[MAP_SIZE][MAP_SIZE], int pos_x = 0, int pos_y = 0) 
         for (int j = MAP_SIZE - 1; j > 0; j--) {
             for (int i = 0; i < MAP_SIZE; i++) {
                 mapgrid[i][j] =  mapgrid[i][j - 1];
+                m1[i][j] = m1[i][j-1];
+                m2[i][j] = m2[i][j-1];
+                m3[i][j] = m3[i][j-1];
             }
             //printmap(mapgrid);
         }
         for (int i = 0; i < MAP_SIZE; i++) {
-            initTile(i, 0);
+            initTile(i, 0, mapgrid);
+            initTile(i, 0, m1);
+            initTile(i, 0, m2);
+            initTile(i, 0, m3);
         }
     }
 }
+
+void elevation(Tile mapgrid[MAP_SIZE][MAP_SIZE], int xpos, int ypos, Tile m1[MAP_SIZE][MAP_SIZE], Tile m2[MAP_SIZE][MAP_SIZE], Tile m3[MAP_SIZE][MAP_SIZE],int* floor){
+  mapgrid[xpos][ypos].setElevate(true);
+  if(floor == 1){
+    m1 = mapgrid;
+    mapgrid = m2;
+  } else if(floor == 2){
+    m2 = mapgrid;
+    mapgrid = m3;
+  }
+  mapgrid[xpos][ypos].setDescend(true);
+  floor++;
+}
+
+void descend(Tile mapgrid[MAP_SIZE][MAP_SIZE], int xpos, int ypos, Tile m1[MAP_SIZE][MAP_SIZE], Tile m2[MAP_SIZE][MAP_SIZE], Tile m3[MAP_SIZE][MAP_SIZE],int* floor){
+  mapgrid[xpos][ypos].setDescend(true);
+  if(floor = 1){
+    m1 = m3; //m3 should always be empty if descended twice
+    m3 = m2;
+    m2 = m1;
+    mapgrid = m1;
+    floor++;
+  }
+  if(floor = 2){
+    m2 = mapgrid;
+    mapgrid = m1;
+  }
+  if(floor = 3){
+    m3 = mapgrid;
+    mapgrid = m2;
+  }
+  mapgrid[xpos][ypos].setElevate(true);
+  floor--;
+}
+
 
 // pair structure
 int BFS(coord currentpos, Tile mapGrid[MAP_SIZE][MAP_SIZE], coord endpos,coord path[MAP_SIZE * MAP_SIZE]) { // auto updates path

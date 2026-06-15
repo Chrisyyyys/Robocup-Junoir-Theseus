@@ -15,8 +15,7 @@ enum TileTypes {
   BLUE  = 1,
   CHECKPOINT =2,
   BLACK = 3,
-  STAIR = 4,
-  OBSTACLE = 5 // obstacle type
+  STAIR = 4
 
 };
 
@@ -83,7 +82,18 @@ struct Tile {
   void setBlue(bool stat){
     bitset.set(12,stat);
   }
-
+  bool getElevate(){
+    return bitset.get(13);
+  }
+  void setElevate(bool e){
+    bitset.set(13,e);
+  }
+  bool getDescend(){
+    return bitset.get(14);
+  }
+  void setDescend(bool d){
+    bitset.set(14,d);
+  }
   //bool wall[4];
   //bool edge[4];
 
