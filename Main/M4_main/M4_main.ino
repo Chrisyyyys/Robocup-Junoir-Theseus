@@ -50,10 +50,10 @@ Adafruit_DCMotor *motorC = AFMS.getMotor(3);
 Adafruit_DCMotor *motorD = AFMS.getMotor(4);
 
 // set up encoder pins
-const int encoderPin_A_A = 2;
-const int encoderPin_A_B = 4; 
-const int encoderPin_B_A = 3;
-const int encoderPin_B_B = 5; 
+const int encoderPin_A_A = 3;
+const int encoderPin_A_B = 5; 
+const int encoderPin_B_A = 2;
+const int encoderPin_B_B = 4; 
 
 //drivetrain class object
 motors drivetrain(encoderPin_A_A,encoderPin_A_B,encoderPin_B_A,encoderPin_B_B);
