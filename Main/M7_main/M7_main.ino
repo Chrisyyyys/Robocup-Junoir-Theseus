@@ -1,17 +1,15 @@
+#include <Arduino.h>
 #include <mbed.h> // access arduino mbed OS
 #include <RPC.h> // RPC
-#include <Wire.h>
 
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BNO055.h>
-#include <utility/imumaths.h>
+
 
 
 #include <ArduinoQueue.h> // queue
 #include <Vector.h> // vector
 #include <array> // array
 #include "timer.h"
-#include "gyro.h"
+
 #include "dispenser.h"
 #include <Stepper.h>
 #define MIN_DIST 120         // mm (tune this)
@@ -24,16 +22,12 @@ float clear;
 
 // set up mux and distance senosrs
 
-// shut down allcall
-#define PCA_ADDR 0x60
-#define MODE1    0x00
-#define ALLCALL_BIT 0x01  // MODE1 bit0
+
 
 // set up color sensor
 
 // set up gyro
-Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
-gyro myGyro;
+
 // wheel cpr
 const double wheel_cpr = 5; // 20/4
 //gear ratio
@@ -220,15 +214,35 @@ void setup(){
   currentDir = NORTH;
   state = SENSE_TILE;
   pauseThread.start(pauseTask); // start pause thread
+  bootM4();
+  delay(1000);
   RPC.begin();
-  delay(2000); // wait for camera to start.
-  
+   
+  //delay(2000); // wait for camera to start.
+  Serial.println("hello world");
   
 }
 int iterator = 0;
 void loop(){
   //Serial.println(RPC.call("measure",1).as<int>());
-  Serial.println("hello world");
+  
+  while (RPC.available()) {
+  Serial.write(RPC.read());
+ }
+
+  Serial.println("before RPC");
+  int alive = RPC.call("m4Alive").as<int>();
+  Serial.println("after RPC");
+
+  if (alive == 888) {
+    Serial.println("M4 alive (888)");
+  } else {
+    Serial.print("M4 returned unexpected value: ");
+    Serial.println(alive);   // 0 here usually means no/garbled response
+  }
+  
+  
+  //Serial.println("hello world");
   /*
   static bool wallF, wallR, wallB, wallL;
   switch (state) {

@@ -29,33 +29,22 @@ void disableAllCall() {
 void init_dist() {
   // put your setup code here, to run once:
   
-  if(!myMux.begin()){
-    Serial.println("can't find the Mux");
-  }
-  else{
-    Serial.println("Mux initialized");
-  }
+  myMux.begin();
  
   for(int i = 0; i<7; i++){
     myMux.setPort(i);
     sensors[i].setAddress(0x30); // conflict with TCS34725 for some reason.
     delay(10);
-    
-    
-    if(!sensors[i].init()){
-    Serial.println("Sensor "+String(i)+" failed to initialize");
+    if(sensors[i].init()){
+      sensors[i].startContinuous(); // start continuous ranging.
     }
-    else{
-      Serial.println("Sensor "+String(i)+" is able to initialize");
-    }
-    sensors[i].startContinuous(); // start continuous ranging.
   }
     
   
   
 
 }
-
+/*
 uint8_t scanI2COnCurrentBus() {
   uint8_t count = 0;
 
@@ -89,6 +78,7 @@ void scanAllPorts() {
     Serial.println();
   }
 }
+*/
 // measure distance
 int measure(int sensor){
   i2cMutex.lock();

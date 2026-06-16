@@ -4,16 +4,7 @@ void init_color(){
   myMux.setPort(TCS_PORT);
   //digitalWrite(POWERPIN,HIGH);
   //tcs.enable();
-  if (tcs.begin()) {
-    Serial.println("Found tcs34725 sensor");
-    
-  } else {
-    Serial.println("No TCS34725 found ... check your connections");
-  
-    
-    
-    //while (1); // halt!
-  }
+  tcs.begin();
   myMux.setPort(TCS_PORT);          
   tcs.setInterrupt(true);  // turn on LED
   float red, green, blue;

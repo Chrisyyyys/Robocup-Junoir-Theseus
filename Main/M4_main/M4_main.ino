@@ -146,23 +146,19 @@ bool turnCompletedSuccessfully(double targetHeading) {
   Serial.println(err);
   return err <= TURN_SUCCESS_TOLERANCE_DEG;
 }
-
+int m4Alive() {
+  return 888;
+}
 void setup(){
-
+  RPC.begin(); // begin rpc
   // init wifi
 
 
   // begin UART communication.
   
-
-  Wire.begin();
-  disableAllCall();
-  myMux.begin();
-  init_dist(); // initialize mux before distance sensors.
-  scanAllPorts();
-  init_color();
-  init_drive();
-  RPC.begin(); // begin rpc
+ 
+  
+  RPC.bind("m4Alive",m4Alive);
   // bind RPC for basic movement
   RPC.bind("fwd",fwdTask);
   RPC.bind("absoluteturn",turnTask);
@@ -186,8 +182,16 @@ void setup(){
   RPC.bind("measure",measure);
   RPC.bind("detectWall",detectWall);
   // Start color thread
-  colorThread.start(colorTask);
-  delay(2000); // wait for camera to start.
+  
+  RPC.println("starting wire");Wire.begin();
+  //disableAllCall();
+  RPC.println("initializing MUX"); myMux.begin();
+  RPC.println("initializing distance sensors");init_dist(); // initialize mux before distance sensors.
+  RPC.println("initializing color sensor"); init_color();
+  RPC.println("initializing drivetrain and gyro"); init_drive();
+  
+  //colorThread.start(colorTask);
+  
   
   
 }
