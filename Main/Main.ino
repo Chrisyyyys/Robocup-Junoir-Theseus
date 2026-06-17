@@ -12,6 +12,10 @@
 
 #include <Stepper.h>
 #include <array> // std::array (Grid type for multi-floor maps)
+#include <deque>
+#include <vector>
+#include <utility>
+
 #include <ArduinoQueue.h> // queue
 #include <Vector.h> // vector
 #include "PID.h"
@@ -219,8 +223,7 @@ void setup(){
   Serial2.begin(115200); // switch to 9600 for reliability
   Serial3.begin(115200);
   //flashLED('S');
-  uint8_t cause = MCUSR;
-  MCUSR = 0;
+  
   Wire.begin();
   disableAllCall();
   myMux.begin();
@@ -387,23 +390,31 @@ void loop(){
       break;
     }
     case RETURN: {
-      pair<int, pair<int, int>> currentpos = {currentFloor,{x_pos,y_pos}}
-      pair<int, pair<int, int>> endpos = <1,<MAP_SIZE/2,MAP_SIZE/2>; // currentFloor initialized at 1.
-      
+      // BFS uses 0-indexed floors: floor 1 → index 0, floor 2 → index 1, floor 3 → index 2
+      std::pair<int, std::pair<int, int>> currentpos = {currentFloor - 1, {x_pos, y_pos}};
+      std::pair<int, std::pair<int, int>> endpos     = {0, {MAP_SIZE/2, MAP_SIZE/2}};
+
       flashLED('H');
       flashLED('U');
       Serial.println("starting bfs");
-      deque<pair<int, pair<int,int>>> path = BFS(currentpos,m1,m2,m3,endpos);
+      deque<pair<int, pair<int,int>>> path = BFS(currentpos, m1, m2, m3, endpos,false);
+      if(path.empty()){
+        Serial.println("strict path failed, retrying with stairs/blue allowed");
+        path = BFS(currentpos, m1, m2, m3, endpos, true);
+      }
+      if(path.empty()){
+        Serial.println("no path to home found, stopping");
+        while(true) drivetrain.fullstop();
+      }
       Serial.println("path calculated");
-      for(int i = 0;i<path.size();i++){
-        // convert the coordinate step into an absolute direction
+      // path[0]=currentpos, path[last]=endpos — iterate forward toward home
+      for(int i = 0; i < (int)path.size() - 1; i++){
         Direction moveDir;
-        if(path[i-1].second.second - path[i].second.second == 0){ // no change in y
-          moveDir = (path[i-1].second.first - path[i].second.first == 1) ? EAST : WEST; // move in x direction
-        }
-        else{
-          moveDir = (path[i-1].second.second - path[i].second.second == 1) ? NORTH : SOUTH;
-        }
+        int dx = path[i+1].second.first  - path[i].second.first;
+        int dy = path[i+1].second.second - path[i].second.second;
+        if(dy == 0) moveDir = (dx == 1) ? EAST : WEST;
+        else        moveDir = (dy == 1) ? NORTH : SOUTH;
+
         plannedTurnDeg = turnNeededDeg(moveDir);
         absoluteturn(plannedTurnDeg);
         delay(200);
@@ -411,6 +422,11 @@ void loop(){
         delay(100);
         currentDir = moveDir;
         fwd(TILE_MM);
+
+        // track floor changes so currentFloor stays in sync
+        int dz = path[i+1].first - path[i].first;
+        if(dz > 0) currentFloor++;
+        else if(dz < 0) currentFloor--;
       }
       flashLED('H');
       while(true){

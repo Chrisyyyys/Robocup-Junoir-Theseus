@@ -373,74 +373,67 @@ int BFS(coord currentpos, Grid& mapGrid, coord endpos, coord path[MAP_SIZE * MAP
 
 }
 */
-deque<pair<int, pair<int,int>>> BFS(pair<int, pair<int, int>> currentpos, Grid& m1, Grid& m2, Grid& m3, pair<int, pair<int, int>> endpos) {
-    // pair<int,pair<int,int>>> are 3d coords?
-    deque<pair<int, pair<int, int>>> queue = {}; //tile q of next form (z, x, y) where z is floor
+// allowStairsAndBlue: if true, STAIR and BLUE tiles are traversable (fallback mode).
+// Returns empty deque if endpos is unreachable under the given constraints.
+std::deque<std::pair<int, pair<int,int>>> BFS(std::pair<int, std::pair<int, int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int, int>> endpos, bool allowStairsAndBlue = false) {
+    std::deque<pair<int, pair<int, int>>> queue = {};
     size_t rows = MAP_SIZE;
     size_t columns = MAP_SIZE;
-    vector<vector<vector<bool>>> visited(3, vector<vector<bool>>(rows, vector<bool>(columns, false))); //visited tiles of form (z, x, y)
-    deque<pair<int, pair<int, int>>> path = {}; //coordinates of form (z, (x,y)) ex. z accessed by path[n].first, x accessed by path[n].second.first
-    vector<vector<vector<pair<int, pair<int, int>>>>> prev(3, vector<vector<pair<int, pair<int, int>>>>(3, vector<pair<int, pair<int, int>>>(MAP_SIZE))); //previous coordnates accessed by prev[x][y].second.first, floor by prev[x][y].first
+    vector<vector<vector<bool>>> visited(3, vector<vector<bool>>(rows, std::vector<bool>(columns, false)));
+    // prev[z][x][y] = the (z,x,y) coord we came from. dims: [3][MAP_SIZE][MAP_SIZE]
+    vector<vector<vector<pair<int, std::pair<int, int>>>>> prev(3, vector<vector<std::pair<int, pair<int, int>>>>(MAP_SIZE, vector<std::pair<int, std::pair<int, int>>>(MAP_SIZE)));
 
     array<array<array<Tile, MAP_SIZE>, MAP_SIZE>, 3> map = { m1, m2, m3 };
     queue.push_back(currentpos);
+    visited[currentpos.first][currentpos.second.first][currentpos.second.second] = true;
 
-    //for 3 floors, lowest should be 0. highest should be 2.
-    //search
     while (queue.size() > 0) {
-        int x = queue[0].second.first; int y = queue[0].second.second; int z = queue[0].first; //get x,y,z from queue
-        
-        
+        int x = queue[0].second.first; int y = queue[0].second.second; int z = queue[0].first;
 
-        for (int i = 0; i < 4; i++) { // cycle through possible directions.
+        for (int i = 0; i < 4; i++) {
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             int nz = z;
-            if (nx < rows && ny < columns && nx >= 0 && ny >= 0 && nz < 3 && nz >= 0) {
-            //add 3d floor change here
-              if (map[nz][nx][ny].getElevate()) {
-                  nz++;
-              }
-              else if (map[nz][nx][ny].getDescend()) {
-                  nz--;
-              }
 
-            
-              if (!visited[nz][nx][ny] && !map[nz][nx][ny].getWall(i)&&map[nz][nx][ny].getDiscovered()&&map[nz][nx][ny].getWall(opposite((Direction)i))&&
-                  map[nz][nx][ny].getType() != BLACK &&
-                  map[nz][nx][ny].getType() != STAIR&&map[nz][nx][ny].getType() != BLUE) {
-                  queue.push_back(pair<int, pair<int,int>>(nz, pair<int,int>(nx, ny)));
-                  visited[nz][nx][ny] = true;
-                  
-                  prev[nz][nx][ny] = pair<int, pair<int,int>>(z, pair<int,int>(x,y));
-                  
-                  
-              }
+            if (nx < (int)rows && ny < (int)columns && nx >= 0 && ny >= 0) {
+                // floor change: check if the neighbor tile is a ramp entry
+                if (map[nz][nx][ny].getElevate() && nz + 1 < 3) nz++;
+                else if (map[nz][nx][ny].getDescend() && nz - 1 >= 0) nz--;
+
+                bool passable = !map[z][x][y].getWall((Direction)i) &&
+                                !map[nz][nx][ny].getWall(opposite((Direction)i)) &&
+                                map[nz][nx][ny].getDiscovered() &&
+                                map[nz][nx][ny].getType() != BLACK;
+                if (!allowStairsAndBlue) {
+                    passable = passable &&
+                               map[nz][nx][ny].getType() != STAIR &&
+                               map[nz][nx][ny].getType() != BLUE;
+                }
+
+                if (!visited[nz][nx][ny] && passable) {
+                    queue.push_back({nz, {nx, ny}});
+                    visited[nz][nx][ny] = true;
+                    prev[nz][nx][ny] = {z, {x, y}};
+                }
             }
         }
         queue.pop_front();
     }
 
-    for (int i = 0; i < visited[0].size(); i++) {
-        for (int j = 0; j < visited[0][0].size(); j++) {
-            Serial.println(visited[0][i][j]);
-        }
-        
+    // endpos unreachable under current constraints — return empty path
+    if (!visited[endpos.first][endpos.second.first][endpos.second.second]) {
+        return {};
     }
 
-    //reconstruct path
+    // reconstruct: walk backward from endpos to currentpos via prev[], push_front
+    // so path[0]=currentpos, path[last]=endpos
+    deque<pair<int, pair<int,int>>> path;
     path.push_front(endpos);
     pair<int, pair<int,int>> curr = prev[endpos.first][endpos.second.first][endpos.second.second];
-
-    while (true) {
-        //cout << curr.first << "," << curr.second << endl;
+    while (curr != currentpos) {
         path.push_front(curr);
         curr = prev[curr.first][curr.second.first][curr.second.second];
-        if (path[0] == currentpos) {
-            break;
-        }
-        
     }
-    //cout << endl << "done search" << endl << endl;
+    path.push_front(currentpos);
     return path;
 }
