@@ -387,22 +387,22 @@ void loop(){
       break;
     }
     case RETURN: {
-      coord currentpos = {x_pos,y_pos};
-      coord endpos = {MAP_SIZE/2,MAP_SIZE/2};
-      static coord path[MAP_SIZE*MAP_SIZE]; // static: avoid a large stack frame
+      pair<int, pair<int, int>> currentpos = <currentFloor,<x_pos,y_pos>>
+      pair<int, pair<int, int>> endpos = <1,<MAP_SIZE/2,MAP_SIZE/2>; // currentFloor initialized at 1.
+      
       flashLED('H');
       flashLED('U');
       Serial.println("starting bfs");
-      int length = BFS(currentpos,mapGrid,endpos,path);
+      deque<pair<int, pair<int,int>>> path = BFS(currentpos,m1,m2,m3,endpos);
       Serial.println("path calculated");
-      for(int i = length - 1;i>0;i--){
+      for(int i = path.size() - 1;i>0;i--){
         // convert the coordinate step into an absolute direction
         Direction moveDir;
-        if(path[i-1].y - path[i].y == 0){
-          moveDir = (path[i-1].x - path[i].x == 1) ? EAST : WEST;
+        if(path[i-1].second.second - path[i].second.second == 0){ // no change in y
+          moveDir = (path[i-1].second.first - path[i].x == 1) ? EAST : WEST; // move in x direction
         }
         else{
-          moveDir = (path[i-1].y - path[i].y == 1) ? NORTH : SOUTH;
+          moveDir = (path[i-1].second.second - path[i].second.second == 1) ? NORTH : SOUTH;
         }
         plannedTurnDeg = turnNeededDeg(moveDir);
         absoluteturn(plannedTurnDeg);

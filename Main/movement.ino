@@ -5,33 +5,7 @@ void init_drive(){
   myGyro.init_Gyro();
 }
 
-// Service a camera victim that the RTOS thread flagged via victimPending.
-// The caller (fwd/absoluteturn) has already paused its PID + timer. This stops
-// the drivetrain, identifies the victim on the wall, dispenses the rescue kit,
-// and labels the correct tile using the encoder position. (claude version 6/16/2026)
-void serviceCameraVictim(){
-  drivetrain.fullstop();
-  if(victimSide == 1){            // left camera (Serial3)
-    if(detectWall(3) == 0){       // RCJ victims are wall-mounted
-      Serial.println("victim at left");
-      clearSerialBuffer1();
-      detectCam1();
-      markVictimAtEncoderPosition(TILE_MM);
-      victimtoggle = true;
-    }
-  }
-  else if(victimSide == 2){       // right camera (Serial2)
-    if(detectWall(1) == 0){
-      Serial.println("victim at right");
-      clearSerialBuffer2();
-      detectCam2();
-      markVictimAtEncoderPosition(TILE_MM);
-      victimtoggle = true;
-    }
-  }
-  isVictim = true;       // at most one victim serviced per move
-  victimPending = false; // re-enable the camera thread
-}
+
 // full stop
 
 void fwd(double dist){ // in mm
