@@ -291,7 +291,6 @@ void elevation(Grid& mapgrid, int xpos, int ypos, Grid& m1, Grid& m2, Grid& m3, 
     m2 = mapgrid;
     mapgrid = m3;
   }
-  mapgrid[xpos][ypos].setDescend(true);
   floor++;
 }
 
@@ -313,9 +312,9 @@ void descend(Grid& mapgrid, int xpos, int ypos, Grid& m1, Grid& m2, Grid& m3, in
     m3 = mapgrid;
     mapgrid = m2;
   }
-  mapgrid[xpos][ypos].setElevate(true);
   floor--;
 }
+
 // old 2d bfs
 // pair structure
 /*
@@ -394,6 +393,9 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             int nz = z;
+
+            //add 3d movement here
+
 
             if (nx < (int)rows && ny < (int)columns && nx >= 0 && ny >= 0) {
                 // floor change: check if the neighbor tile is a ramp entry
