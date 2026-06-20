@@ -80,14 +80,15 @@ char classes[6] = {'H','S','U','R','Y','G'};
 const int steps_per_revolution = 2048;
 Stepper myStepper = Stepper(steps_per_revolution, 8, 9,10,11); 
 // create lcd object
-int EN = 25; int RS = 27; int D4 = 23; int D5 = 53; int D6 = 29; int D7 = 31;
-LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
+int en = 25; int rs = 27; int d4 = 23; int d5 = 53; int d6 = 29; int d7 = 31;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 // map grids (MAP_SIZE and the Grid type are defined in MazeTile.h)
 Grid mapGrid; // active floor's tiles
-Grid m1;      // floor storage ("basement"/floor 1)
-Grid m2;      // floor 2
-Grid m3;      // floor 3
-int currentFloor = 1; // current floor (1..3) for elevation()/descend()
+Grid m1;      // floor storage ("basement"/floor 0)
+Grid m2;      // floor 1
+Grid m3;      // floor 2
+
+int currentFloor = 0; // current floor (0..2) for elevation()/descend()
 // queue
 
 
@@ -189,8 +190,7 @@ void cameraTask(){
           victimSide = 1;
           victimPending = true;
           drivetrain.fullstop();
-          lcdPrint("victim at left");
-          delay(1000);
+          //lcdPrint("victim at left");
           serviceCameraVictim();
           i2cMutex.unlock();
         }
@@ -200,8 +200,7 @@ void cameraTask(){
           victimSide = 2;
           victimPending = true;
           drivetrain.fullstop();
-          lcdPrint("victim at right");
-          delay(1000);
+          //lcdPrint("victim at right");
           serviceCameraVictim();
           i2cMutex.unlock();
         }
@@ -268,12 +267,12 @@ void setup(){
   init_drive();
   //detect();
   //initialize map
-  initializeMap();
+  initializeMap(); // initialize mapgrid
   // every floor starts as a copy of the freshly initialized (empty) grid.
   m1 = mapGrid;
   m2 = mapGrid;
   m3 = mapGrid;
-  currentFloor = 1;
+  currentFloor = 0;
   x_pos=MAP_SIZE/2;
   y_pos=MAP_SIZE/2;
   mapGrid[x_pos][y_pos].setDiscovered(true);
@@ -287,6 +286,7 @@ void setup(){
 
   delay(2000); // wait for camera to start.
   //fwd(300);
+
   
 }
 int iterator = 0;
@@ -379,16 +379,13 @@ void loop(){
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos); // x_pos/y_pos now = new tile
-        if(bluetoggle == true){ // RCJ: stop 5 seconds on the blue tile we entered
-          drivetrain.fullstop();
+        if(bluetoggle == true){
           delay(5000);
-          mapGrid[x_pos][y_pos].setBlue(true); // marks the correct (new) tile
           mapGrid[x_pos][y_pos].setType(BLUE);
         }
-        bluetoggle = false;
       }
       else{
-        bluetoggle = false;
+        
         state = BACKPEDAL; // black tile ahead (marked BLACK by fwd) -> back off
         turnCompletedForMove = false;
         break;
@@ -434,16 +431,21 @@ void loop(){
       break;
     }
     case RETURN: {
-      // BFS uses 0-indexed floors: floor 1 → index 0, floor 2 → index 1, floor 3 → index 2
-      std::pair<int, std::pair<int, int>> currentpos = {currentFloor - 1, {x_pos, y_pos}};
+      // in case of no elevation used, m1,m2,m3 are all blank grids.
+      // let the current floor grid be mapgrid.
+      if(currentFloor == 0)      m1 = mapGrid;
+      else if(currentFloor == 1) m2 = mapGrid;
+      else if(currentFloor == 2) m3 = mapGrid;
+      // currentFloor is already 0-indexed (0..2), matching BFS's floor arrays.
+      std::pair<int, std::pair<int, int>> currentpos = {currentFloor, {x_pos, y_pos}};
       std::pair<int, std::pair<int, int>> endpos     = {0, {MAP_SIZE/2, MAP_SIZE/2}};
 
       lcdPrint("starting bfs");
-      delay(1000);
+      
       Serial.println("starting bfs");
       std::deque<std::pair<int, std::pair<int,int>>> path = BFS(currentpos, m1, m2, m3, endpos, false);
       if(path.empty()){
-        Serial.println("strict path failed, retrying with stairs/blue allowed");
+        lcdPrint("strict path failed, retrying with stairs/blue allowed");
         path = BFS(currentpos, m1, m2, m3, endpos, true);
       }
       if(path.empty()){
@@ -467,10 +469,16 @@ void loop(){
         currentDir = moveDir;
         fwd(TILE_MM);
 
-        // track floor changes so currentFloor stays in sync
+        // track floor changes: update currentFloor and swap the active grid
         int dz = path[i+1].first - path[i].first;
-        if(dz > 0) currentFloor++;
-        else if(dz < 0) currentFloor--;
+        if(dz > 0){
+          currentFloor++;
+          mapGrid = (currentFloor == 1) ? m2 : m3;
+        }
+        else if(dz < 0){
+          currentFloor--;
+          mapGrid = (currentFloor == 0) ? m1 : m2;
+        }
       }
       
       while(true){
@@ -491,5 +499,6 @@ void loop(){
       break;
     }
  }
+ 
  
 }

@@ -26,9 +26,11 @@ int gyro::inverse(int val, bool inv){
   return val;
 }
 int gyro::modulus(int val){
-  if(val<0) return 360 - val;
-  if(val> 180) {val = val - 360;}
-  else{val = val%360;}
+  // normalize to signed [-180, 180] so tilt magnitude is correct for both
+  // positive and negative angles (a -6 deg tilt -> -6, not 366).
+  val = val % 360;
+  if(val > 180) val -= 360;
+  else if(val < -180) val += 360;
   return val;
 }
 double gyro::heading(){

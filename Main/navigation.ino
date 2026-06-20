@@ -284,34 +284,36 @@ void reallocate(Grid& mapgrid, int pos_x = 0, int pos_y = 0) { //input mapgrid, 
 // storage grid (m1/m2/m3) and the active mapgrid is swapped to the floor above.
 void elevation(Grid& mapgrid, int xpos, int ypos, Grid& m1, Grid& m2, Grid& m3, int& floor){
   mapgrid[xpos][ypos].setElevate(true);
-  if(floor == 1){
+  if(floor == 0){
     m1 = mapgrid;
     mapgrid = m2;
-  } else if(floor == 2){
+  } else if(floor == 1){
     m2 = mapgrid;
     mapgrid = m3;
   }
+  mapgrid[xpos][ypos].setDescend(true); // bidirection elevate/descend
   floor++;
 }
 
 // Move down one floor.
 void descend(Grid& mapgrid, int xpos, int ypos, Grid& m1, Grid& m2, Grid& m3, int& floor){
   mapgrid[xpos][ypos].setDescend(true);
-  if(floor == 1){
+  if(floor == 0){
     m1 = m3; //m3 should always be empty if descended twice
     m3 = m2;
     m2 = m1;
     mapgrid = m1;
     floor++;
   }
-  if(floor == 2){
+  if(floor == 1){
     m2 = mapgrid;
     mapgrid = m1;
   }
-  if(floor == 3){
+  if(floor == 2){
     m3 = mapgrid;
     mapgrid = m2;
   }
+  mapgrid[xpos][ypos].setElevate(true);
   floor--;
 }
 
@@ -385,7 +387,6 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
     std::array<std::array<std::array<Tile, MAP_SIZE>, MAP_SIZE>, 3> map = { m1, m2, m3 };
     queue.push_back(currentpos);
     visited[currentpos.first][currentpos.second.first][currentpos.second.second] = true;
-    bool isdesc = false;
     while (queue.size() > 0) {
         int x = queue[0].second.first; int y = queue[0].second.second; int z = queue[0].first;
 
@@ -394,24 +395,13 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
             int ny = y + dir[i][1];
             int nz = z;
 
-            //add 3d movement here
-            if (map[nz][nx][ny].getElevate()) {
-                if(isdesc){
-                  nz--;
-                  isdesc = false;
-                }
-                else{
-                  nz++;
-                }
-            }
-            else if (map[nz][nx][ny].getDescend()) {
-                isdesc = true;
-            }
-
             if (nx < (int)rows && ny < (int)columns && nx >= 0 && ny >= 0) {
-                // floor change: check if the neighbor tile is a ramp entry
-                if (map[nz][nx][ny].getElevate() && nz + 1 < 3) nz++;
-                else if (map[nz][nx][ny].getDescend() && nz - 1 >= 0) nz--;
+                // floor change: a neighbor tile flagged elevate/descend is a ramp
+                // entry. Index map[z][nx][ny] only after the bounds check above,
+                // and clamp nz to the valid floor range [0,2] so map[nz]/visited[nz]
+                // can never go out of bounds.
+                if (map[z][nx][ny].getElevate() && z + 1 < 3) nz = z + 1;
+                else if (map[z][nx][ny].getDescend() && z - 1 >= 0) nz = z - 1;
 
                 bool passable = !map[z][x][y].getWall((Direction)i) &&
                                 !map[nz][nx][ny].getWall(opposite((Direction)i)) &&

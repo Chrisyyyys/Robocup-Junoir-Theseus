@@ -4,8 +4,14 @@
 void lcdPrint(const char* msg) {
   lcd.setCursor(0, 0);
   lcd.print("                ");
+  lcd.print("                ");
   lcd.setCursor(0, 0);
   lcd.print(msg);
+  delay(1000);
+  lcd.setCursor(0, 0);
+  lcd.print("                ");
+  lcd.print("                ");
+  lcd.setCursor(0, 0);
 }
 
 void clearSerialBuffer1() {
@@ -128,7 +134,7 @@ void detectCam1(){ // left camera serial2
   
   char msg[17]; snprintf(msg, sizeof(msg), "victim: %c", res);
   lcdPrint(msg);
-  delay(1000);
+  
   disp.dispenseLeft(res);
   return;
 }
@@ -168,7 +174,7 @@ void detectCam2(){
   }
   char msg[17]; snprintf(msg, sizeof(msg), "victim: %c", res);
   lcdPrint(msg);
-  delay(1000);
+  
   disp.dispenseRight(res);
   return;
 }

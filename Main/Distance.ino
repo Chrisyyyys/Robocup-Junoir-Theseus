@@ -212,9 +212,9 @@ int detectWall(int dir){
 void parallel(){
   const int PARALLEL_TOL_MM = 3;
   const int PARALLEL_SPEED = 90;
-  const unsigned long PARALLEL_TIMEOUT_MS = 700;
+  const unsigned long PARALLEL_TIMEOUT_MS = 500;
   const double MAX_PARALLEL_ROTATION_DEG = 45.0;
-
+  
   int sensorA = -1;
   int sensorB = -1;
   int wallDir;
