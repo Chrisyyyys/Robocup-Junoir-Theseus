@@ -27,7 +27,7 @@
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 1.2f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define SILVER_THRESHOLD 0.8f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
 #define WHITE_THRESHOLD 0.9f
 #define MULTIPLER 1.1 
 float clear; 
@@ -182,11 +182,13 @@ void cameraTask(){
     if(motionActive && !victimPending && !isVictim){
       if(mapGrid[x_pos][y_pos].getVictim() == false){
         if(readSerial1() != -1){        // left camera (Serial4)
-          
           i2cMutex.lock();
           victimSide = 1;
           drivetrain.fullstop();
           victimPending = true;
+          i2cMutex.unlock();
+          rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
+          i2cMutex.lock();
           serviceCameraVictim();
           i2cMutex.unlock();
         }
@@ -195,6 +197,9 @@ void cameraTask(){
           victimSide = 2;
           drivetrain.fullstop();
           victimPending = true;
+          i2cMutex.unlock();
+          rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
+          i2cMutex.lock();
           serviceCameraVictim();
           i2cMutex.unlock();
         }
@@ -276,7 +281,8 @@ void setup(){
   pauseThread.start(pauseTask);
 
   delay(2000); // wait for camera to start.
-  absoluteturn(90);
+  
+  
   //absoluteturn(90);//disp.dispenseLeft('H');
   
 }
@@ -285,7 +291,7 @@ int iterator = 0;
 void loop(){
   //absoluteturn(90);
   //detectCam1();
-  /*
+  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -474,6 +480,7 @@ void loop(){
       
       while(true){
         drivetrain.fullstop();
+        lcdPrint("back to start");
       }
     }
     case PAUSE: {
@@ -490,6 +497,6 @@ void loop(){
       break;
     }
  }
- */
+ 
  
 }

@@ -13,6 +13,7 @@ void fwd(double dist){ // in mm
   double pulses156 = pulses*1.25;
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
+  bool climbed = false; // if climbing occured.
   bool upwards = false;
   int cnt = 0; // tiles traversed while climbing.
   double difference = 0; // centering distance
@@ -101,19 +102,22 @@ void fwd(double dist){ // in mm
       int _encoderCountB = drivetrain.encoderCountB;
       int _encoderCountD = drivetrain.encoderCountD;
       climbtoggle = true; // prevent outer loop from exiting on encoder count
+      climbed = true;
       Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
       if(myGyro.modulus(myGyro.pitch_heading())-init_pitch>20) upwards = true; // distinguish between moving up and moving down.
       //drivetrain.reset_encoderCount(true,true,true);
       while(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch) > 20){
         // PID centering
-        double yaw = myGyro.heading();
+        double yaw = myGyro.heading()-init_yaw;
         if(yaw>180) yaw = yaw-360;
-        //Serial.println(center());
+        if(yaw<-180) yaw+= 360;
+    
         double adjustment = gyroPID.getPID(yaw);
+        
         Serial.println("climbing");
         Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
         // center during climbing
-        drivetrain.drive(150-adjustment,150-adjustment,150+adjustment,150+adjustment);
+        drivetrain.drive(150+adjustment,150+adjustment,150-adjustment,150-adjustment);
         //Serial.println((drivetrain.encoderCountD+drivetrain.encoderCountA+drivetrain.encoderCountB)/3);
         if((drivetrain.encoderCountD+drivetrain.encoderCountA+drivetrain.encoderCountB)/3 >= pulses/cos(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch)*(M_PI/180))){
           Serial.println("1 section of the ramp climbed");
@@ -134,7 +138,7 @@ void fwd(double dist){ // in mm
   }
   Serial.println("stop- end of fwd");
   // sometimes it barely makes it over the slope
-  if(climbtoggle == true){
+  if(climbed == true){
     for(int i = 0; i<cnt;i++){
       Serial.println("adding ramp to map");
       markEdgeBothWays(x_pos, y_pos, currentDir);
@@ -189,7 +193,7 @@ void absoluteturn(double angle){
       if(victimPending){ // service camera victim mid-turn 
         myPID.pausePID(1); myTimer.pause(1);
         while(victimPending==true){
-          rtos::ThisThread::sleep_for(std::chrono::milliseconds(1))
+          rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
         }
         myPID.pausePID(2); myTimer.pause(2);
       }

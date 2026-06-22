@@ -49,6 +49,7 @@ int read_color(){
     
     return -1; // black
   }
+  if((float)c/clear>WHITE_THRESHOLD) return 0;
   if((float)c/clear>SILVER_THRESHOLD){
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
@@ -57,7 +58,7 @@ int read_color(){
     
     return 3; // SILVER — prevent fall-through into blue/red checks
   }
-  if((float)c/clear>WHITE_THRESHOLD) return 0;
+  
   if(b>g+10&&b>r+10) return 1; //blue
     
   if(r>g+10&&r>b+10) return 2;

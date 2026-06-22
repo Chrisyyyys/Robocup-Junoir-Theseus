@@ -139,7 +139,7 @@ Direction pickNextDirection() {
     return mapGrid[nx][ny].getType() == BLUE || mapGrid[nx][ny].getBlue();
   };
   auto blockedForTravel = [&](int nx, int ny){
-    return mapGrid[nx][ny].getType() == BLACK || mapGrid[nx][ny].getType() == STAIR || isBlueTile(nx, ny);
+    return mapGrid[nx][ny].getType() == BLACK || isBlueTile(nx, ny);
   };
   auto isBlackTile = [&](int nx, int ny){
     return mapGrid[nx][ny].getType() == BLACK;
@@ -408,9 +408,7 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
                                 map[nz][nx][ny].getDiscovered() &&
                                 map[nz][nx][ny].getType() != BLACK;
                 if (!allowStairsAndBlue) {
-                    passable = passable &&
-                               map[nz][nx][ny].getType() != STAIR &&
-                               map[nz][nx][ny].getType() != BLUE;
+                    passable = passable && map[nz][nx][ny].getType() != BLUE;
                 }
 
                 if (!visited[nz][nx][ny] && passable) {

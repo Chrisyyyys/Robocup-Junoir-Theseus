@@ -141,7 +141,7 @@ void detectCam2(){
 // and labels the correct tile using the encoder position. (claude version 6/16/2026)
 // serviceCameraVictim() is outside to prevent I2C conflict with centered.
 void serviceCameraVictim(){
-  drivetrain.fullstop();
+  
   if(victimSide == 1){            // left camera (Serial3)
     if(detectWall(3) == 0){       // RCJ victims are wall-mounted
       Serial.println("victim at left");
