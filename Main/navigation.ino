@@ -34,7 +34,7 @@ void victimTileFromEncoder(int distanceMm, int encoderCount, int &victimX, int &
 }
 // mark victim of tile based on encoder position (single-core: read encoder directly)
 void markVictimAtEncoderPosition(int distanceMm) {
-  int encoderCount = drivetrain.encoderCountA;
+  int encoderCount = (drivetrain.encoderCountA+drivetrain.encoderCountB+dirvetrain.encoderCountD)/3;
   int victimX, victimY;
   victimTileFromEncoder(distanceMm, encoderCount, victimX, victimY);
   if(!inBounds(victimX, victimY)) return;

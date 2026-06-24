@@ -54,7 +54,7 @@ int readSerial2(){ //right
   }
   return classifyCamByte(sample);
 }
-void detectCam1(){ // left camera serial4
+bool detectCam1(){ // left camera serial4
    // read buffer
   // if there is content, take 5 samples and take the most common letter.
   int samples[5];
@@ -64,7 +64,7 @@ void detectCam1(){ // left camera serial4
   char output;
   timer myTimer;
   while(n<5){
-    if(myTimer.getTime() > 4*1000000) return;
+    if(myTimer.getTime() > 4*1000000) return false;
     
     int value = readSerial1();
     
@@ -93,9 +93,9 @@ void detectCam1(){ // left camera serial4
   lcdPrint(msg);
   
   disp.dispenseLeft(res);
-  return;
+  return true;
 }
-void detectCam2(){
+bool detectCam2(){
   // read buffer
   // if there is content, take 5 samples and take the most common letter.
   int samples[5];
@@ -105,7 +105,7 @@ void detectCam2(){
   char output;
   timer myTimer;
   while(n<5){
-    if(myTimer.getTime() > 4*1000000) return;
+    if(myTimer.getTime() > 4*1000000) return false;
     
     int value = readSerial2();
 
@@ -133,7 +133,7 @@ void detectCam2(){
   lcdPrint(msg);
   
   disp.dispenseRight(res);
-  return;
+  return true;
 }
 // Service a camera victim that the RTOS thread flagged via victimPending.
 // The caller (fwd/absoluteturn) has already paused its PID + timer. This stops
@@ -146,8 +146,7 @@ void serviceCameraVictim(){
     if(detectWall(3) == 0){       // RCJ victims are wall-mounted
       Serial.println("victim at left");
       clearSerialBuffer1();
-      detectCam1();
-      markVictimAtEncoderPosition(TILE_MM);
+      if(detectCam1()==true) markVictimAtEncoderPosition(TILE_MM);
       victimtoggle = true;
     }
   }
@@ -155,8 +154,8 @@ void serviceCameraVictim(){
     if(detectWall(1) == 0){
       Serial.println("victim at right");
       clearSerialBuffer2();
-      detectCam2();
-      markVictimAtEncoderPosition(TILE_MM);
+      if(detectCam2()==true) markVictimAtEncoderPosition(TILE_MM);
+      
       victimtoggle = true;
     }
   }

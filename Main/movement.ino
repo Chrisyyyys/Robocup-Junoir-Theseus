@@ -161,7 +161,7 @@ void fwd(double dist){ // in mm
   motionActive = false; // camera thread idles until the next move
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true,true);
-
+  victimtoggle = false;
 }
 // absolute turning
 
@@ -233,8 +233,7 @@ void absoluteturn(double angle){
       drivetrain.turnleft(constrain(MOTORSPEED,20,150));
     }
   }
-  
-  if(victimtoggle == true) mapGrid[x_pos][y_pos].setVictim(true);
+  victimtoggle = false;
   Serial.println("finished turning");
   motionActive = false; // camera thread idles until the next move
   drivetrain.fullstop();

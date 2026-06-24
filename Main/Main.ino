@@ -183,7 +183,7 @@ void cameraTask(){
 
 
     if(motionActive && !victimPending && !isVictim){
-      if(mapGrid[x_pos][y_pos].getVictim() == false){
+      if(victimtoggle=false){
         if(readSerial1() != -1){        // left camera (Serial4)
           i2cMutex.lock();
           victimSide = 1;
@@ -299,7 +299,7 @@ void loop(){
   switch (state) {
     case SENSE_TILE: {
       // reset per-tile toggles
-      blacktoggle = false; bluetoggle = false;
+      blacktoggle = false; bluetoggle = false; victimtoggle = false;
       // Read for walls
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
@@ -321,18 +321,16 @@ void loop(){
       // present on that side before we identify/dispense.
       
       Tile &t = mapGrid[x_pos][y_pos];
-      if(t.getVictim() == false){
+      if(t.getVictim() == false){ // no victim on tile
         if(readSerial1() != -1 && detectWall(3) == 0){       // left camera (Serial3)
           Serial.println("victim at left");
           clearSerialBuffer1();
-          detectCam1();
-          victimtoggle = true;
+          if(detectCam1()==true) victimtoggle = true;
         }
         else if(readSerial2() != -1 && detectWall(1) == 0){  // right camera (Serial2)
           Serial.println("victim at right");
           clearSerialBuffer2();
-          detectCam2();
-          victimtoggle = true;
+          if(detectCam2()==true) victimtoggle = true;
         }
         // a victim discovered for this tile -> record it on the tile datatype.
         if(victimtoggle == true) t.setVictim(true);
