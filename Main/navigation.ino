@@ -34,7 +34,7 @@ void victimTileFromEncoder(int distanceMm, int encoderCount, int &victimX, int &
 }
 // mark victim of tile based on encoder position (single-core: read encoder directly)
 void markVictimAtEncoderPosition(int distanceMm) {
-  int encoderCount = (drivetrain.encoderCountA+drivetrain.encoderCountB+dirvetrain.encoderCountD)/3;
+  int encoderCount = (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3;
   int victimX, victimY;
   victimTileFromEncoder(distanceMm, encoderCount, victimX, victimY);
   if(!inBounds(victimX, victimY)) return;
@@ -380,66 +380,85 @@ int BFS(coord currentpos, Grid& mapGrid, coord endpos, coord path[MAP_SIZE * MAP
 
 }
 */
+// Compact BFS node. uint8_t is safe because MAP_SIZE (40) and floors (3) both
+// fit easily; keeps the static scratch arrays small.
+struct BfsNode { uint8_t z, x, y; };
+
 // allowBlue: if true, BLUE tiles are traversable (fallback mode).
 // Returns empty deque if endpos is unreachable under the given constraints.
+//
+// Memory note: this used to copy all three floor grids into a ~37.5 KB local
+// stack array and allocate ~60 KB of nested std::vector on the heap *per call*,
+// which hard-faulted / fragmented the Giga's D1 SRAM. Now the grids are indexed
+// through pointers (no copy) and all scratch lives in fixed static .bss arrays
+// reserved once at link time (visited ~4.7 KB, prev ~14 KB, queue ~14 KB). The
+// only per-call heap use is the returned path, which is just the route length.
 std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int, int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int, int>> endpos, bool allowBlue = false) {
-    std::deque<std::pair<int, std::pair<int, int>>> queue;
-    size_t rows = MAP_SIZE;
-    size_t columns = MAP_SIZE;
-    std::vector<std::vector<std::vector<bool>>> visited(3, std::vector<std::vector<bool>>(rows, std::vector<bool>(columns, false)));
-    // prev[z][x][y] = the (z,x,y) coord we came from. dims: [3][MAP_SIZE][MAP_SIZE]
-    std::vector<std::vector<std::vector<std::pair<int, std::pair<int, int>>>>> prev(3, std::vector<std::vector<std::pair<int, std::pair<int, int>>>>(MAP_SIZE, std::vector<std::pair<int, std::pair<int, int>>>(MAP_SIZE)));
+    Grid* map[3] = { &m1, &m2, &m3 };  // index, don't copy
 
-    std::array<std::array<std::array<Tile, MAP_SIZE>, MAP_SIZE>, 3> map = { m1, m2, m3 };
-    queue.push_back(currentpos);
-    visited[currentpos.first][currentpos.second.first][currentpos.second.second] = true;
-    while (queue.size() > 0) {
-        int x = queue[0].second.first; int y = queue[0].second.second; int z = queue[0].first;
+    static bool    visited[3][MAP_SIZE][MAP_SIZE];
+    static BfsNode prev[3][MAP_SIZE][MAP_SIZE];
+    static BfsNode queue[3 * MAP_SIZE * MAP_SIZE]; // each node enqueued once -> never overflows
+    memset(visited, 0, sizeof(visited));
+    int head = 0, tail = 0;
+
+    BfsNode start = { (uint8_t)currentpos.first, (uint8_t)currentpos.second.first, (uint8_t)currentpos.second.second };
+    int ez = endpos.first, ex = endpos.second.first, ey = endpos.second.second;
+
+    // already at the goal: return a trivial path. Guards the reconstruction loop
+    // below, whose prev[start] is self-referential and would spin forever.
+    if (start.z == ez && start.x == ex && start.y == ey) {
+        return { currentpos };
+    }
+
+    queue[tail++] = start;
+    visited[start.z][start.x][start.y] = true;
+    while (head < tail) {
+        BfsNode cur = queue[head++];
+        int x = cur.x, y = cur.y, z = cur.z;
 
         for (int i = 0; i < 4; i++) {
             int nx = x + dir[i][0];
             int ny = y + dir[i][1];
             int nz = z;
 
-            if (nx < (int)rows && ny < (int)columns && nx >= 0 && ny >= 0) {
+            if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE) {
                 // floor change: a neighbor tile flagged elevate/descend is a ramp
-                // entry. Index map[z][nx][ny] only after the bounds check above,
+                // entry. Index (*map[z])[nx][ny] only after the bounds check above,
                 // and clamp nz to the valid floor range [0,2] so map[nz]/visited[nz]
                 // can never go out of bounds.
-                if (map[z][nx][ny].getElevate() && z + 1 < 3) nz = z + 1;
-                else if (map[z][nx][ny].getDescend() && z - 1 >= 0) nz = z - 1;
+                if ((*map[z])[nx][ny].getElevate() && z + 1 < 3) nz = z + 1;
+                else if ((*map[z])[nx][ny].getDescend() && z - 1 >= 0) nz = z - 1;
 
-                bool passable = !map[z][x][y].getWall((Direction)i) &&
-                                !map[nz][nx][ny].getWall(opposite((Direction)i)) &&
-                                map[nz][nx][ny].getDiscovered() &&
-                                map[nz][nx][ny].getType() != BLACK;
+                bool passable = !(*map[z])[x][y].getWall((Direction)i) &&
+                                !(*map[nz])[nx][ny].getWall(opposite((Direction)i)) &&
+                                (*map[nz])[nx][ny].getDiscovered() &&
+                                (*map[nz])[nx][ny].getType() != BLACK;
                 if (!allowBlue) {
-                    passable = passable && map[nz][nx][ny].getType() != BLUE;
+                    passable = passable && (*map[nz])[nx][ny].getType() != BLUE;
                 }
 
                 if (!visited[nz][nx][ny] && passable) {
-                    queue.push_back({nz, {nx, ny}});
                     visited[nz][nx][ny] = true;
-                    prev[nz][nx][ny] = {z, {x, y}};
+                    prev[nz][nx][ny] = cur;
+                    queue[tail++] = { (uint8_t)nz, (uint8_t)nx, (uint8_t)ny };
                 }
             }
         }
-        queue.pop_front();
     }
 
     // endpos unreachable under current constraints — return empty path
-    if (!visited[endpos.first][endpos.second.first][endpos.second.second]) {
+    if (!visited[ez][ex][ey]) {
         return {};
     }
 
-    // reconstruct: walk backward from endpos to currentpos via prev[], push_front
+    // reconstruct: walk backward from endpos to start via prev[], push_front
     // so path[0]=currentpos, path[last]=endpos
     std::deque<std::pair<int, std::pair<int,int>>> path;
-    path.push_front(endpos);
-    std::pair<int, std::pair<int,int>> curr = prev[endpos.first][endpos.second.first][endpos.second.second];
-    while (curr != currentpos) {
-        path.push_front(curr);
-        curr = prev[curr.first][curr.second.first][curr.second.second];
+    BfsNode curr = { (uint8_t)ez, (uint8_t)ex, (uint8_t)ey };
+    while (!(curr.z == start.z && curr.x == start.x && curr.y == start.y)) {
+        path.push_front({ curr.z, { curr.x, curr.y } });
+        curr = prev[curr.z][curr.x][curr.y];
     }
     path.push_front(currentpos);
     return path;

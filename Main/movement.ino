@@ -14,7 +14,9 @@ void fwd(double dist){ // in mm
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
   bool climbed = false; // if climbing occured.
-  bool upwards = false;
+  bool upwards = false; // up/ down for elevation
+  botchedleft = false;
+  botchedright = false;
   int cnt = 0; // tiles traversed while climbing.
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
@@ -39,6 +41,7 @@ void fwd(double dist){ // in mm
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
     // timer, identify + dispense, then resume. (claude version 6/16/2026)
     if(victimPending){
+      drivetrain.fullstop(); // does not overide the thread
       myPID.pausePID(1);
       gyroPID.pausePID(1);
       Scale_PID.pausePID(1);
@@ -89,6 +92,10 @@ void fwd(double dist){ // in mm
     
     if((front_left_current<=50&&front_left_current!=-1)||(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
+      // if the robot doesn't make it halfway across the tile, fwd failed.
+      if((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=0.5*pulses*1.1) botchedfwd = true;
+      if(front_left_current<=50&&front_left_current!=-1) botchedleft = true;
+      if(front_right_current<=50&&front_right_current!=-1) botchedright = true;
       drivetrain.fullstop();
       delay(50);
       break;
@@ -160,7 +167,7 @@ void fwd(double dist){ // in mm
   
   motionActive = false; // camera thread idles until the next move
   drivetrain.fullstop();
-  drivetrain.reset_encoderCount(true,true,true);
+  if(botchedfwd == false) drivetrain.reset_encoderCount(true,true,true);
   victimtoggle = false;
 }
 // absolute turning
@@ -190,6 +197,7 @@ void absoluteturn(double angle){
     while(true){
       if(Pausemaze==true) {drivetrain.fullstop(); break;}
       if(victimPending){ // service camera victim mid-turn 
+        drivetrain.fullstop();
         myPID.pausePID(1); myTimer.pause(1);
         while(victimPending==true){
           rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
@@ -215,6 +223,7 @@ void absoluteturn(double angle){
     while(true){
       if(Pausemaze==true) {drivetrain.fullstop(); break;}
       if(victimPending){ // service camera victim mid-turn (claude version 6/16/2026)
+        drivetrain.fullstop();
         myPID.pausePID(1); myTimer.pause(1);
         while(victimPending==true){
           rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));

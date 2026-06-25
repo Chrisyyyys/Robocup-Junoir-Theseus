@@ -27,7 +27,7 @@
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.8f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define SILVER_THRESHOLD 0.75f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
 #define WHITE_THRESHOLD 0.9f
 #define MULTIPLER 1.1 
 float clear; 
@@ -84,7 +84,7 @@ int en = 25; int rs = 27; int d4 = 23; int d5 = 53; int d6 = 29; int d7 = 31;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 // map grids 
 // MAP_SIZE and grid are defined here
-const int MAP_SIZE = 20;
+const int MAP_SIZE = 40;
 using Grid = std::array<std::array<Tile, MAP_SIZE>, MAP_SIZE>;
 Grid mapGrid; // active floor's tiles
 Grid m1;      // floor storage ("basement"/floor 0)
@@ -137,6 +137,10 @@ timer mazeTime;
 bool blacktoggle = false;
 bool bluetoggle = false;
 bool stairtoggle = false;
+// botched forward toggle
+bool botchedfwd = false;
+bool botchedleft = false;
+bool botchedright = false;
 // victim toggles
 bool victimtoggle = false;
 bool victimAtCurrent = false;
@@ -181,9 +185,10 @@ rtos::Mutex lcdMutex; // lcd mutex to prevent conflict
 void cameraTask(){
   while(true){
 
-
+    int nx = x_pos; int ny=y_pos;
     if(motionActive && !victimPending && !isVictim){
-      if(victimtoggle=false){
+      victimTileFromEncoder(TILE_MM,(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3,nx,ny);
+      if(mapGrid[nx][ny].getVictim() == false){
         if(readSerial1() != -1){        // left camera (Serial4)
           i2cMutex.lock();
           victimSide = 1;
@@ -210,7 +215,7 @@ void cameraTask(){
     }
 
 
-    rtos::ThisThread::sleep_for(std::chrono::milliseconds(5));
+    rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
   }
 }
 
@@ -285,21 +290,15 @@ void setup(){
 
   delay(2000); // wait for camera to start.
   
-  
-  //absoluteturn(90);//disp.dispenseLeft('H');
-  
 }
 int iterator = 0;
 
 void loop(){
-  //absoluteturn(90);
-  //detectCam1();
-  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
       // reset per-tile toggles
-      blacktoggle = false; bluetoggle = false; victimtoggle = false;
+      blacktoggle = false; bluetoggle = false; victimtoggle = false; botchedfwd = false;
       // Read for walls
       readWallsRel(wallF, wallR, wallB, wallL);
       delay(500);
@@ -372,7 +371,10 @@ void loop(){
       //    (advancing x_pos/y_pos for any climbed tiles) and services any
       //    camera victim reported by the RTOS thread during the move.
       fwd(TILE_MM);
-
+      if(botchedfwd==true){ // botched forward recovery
+        state = BOTCHED_FWD_RECOVERY;
+        break;
+      }
       // 3) update map + robot position only on a successful (non-black) move
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
@@ -401,7 +403,7 @@ void loop(){
       if(Pausemaze == true) state = PAUSE;
       //if(mazeTime.getTime() >= 1000000*60*6) state = RETURN;
       //if(medkits <= 0) state = RETURN;
-      if(iterator >= 15) state = RETURN;
+      if(iterator >= 25) state = RETURN;
       break;
     }
     case BACKPEDAL: {
@@ -425,6 +427,33 @@ void loop(){
       currentDir = snappedDir;
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
+      state = EXECUTE_MOVE;
+      break;
+    }
+    case BOTCHED_FWD_RECOVERY: {
+      _encoderCountA = drivetrain.encoderCountA;
+      _encoderCountB = drivetrain.encoderCountB;
+      _encoderCountD = drivetrain.encoderCountD;
+      if(botchedleft == true){
+          drivetrain.turnleft(150);
+          delay(200);
+        }
+      else{
+        drivetrain.turnright(150);
+        delay(200);
+      }
+      drivetrain.set_encoderCountA(_encoderCountA);
+      drivetrain.set_encoderCountB(_encoderCountB);
+      drivetrain.set_encoderCountD(_encoderCountD);
+      while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
+        drivetrain.backward(150);
+      }
+      drivetrain.reset_encoderCount(true,true,true);
+      delay(100);
+      parallel();
+      delay(100);
+      botchefwd=false;
+      
       state = EXECUTE_MOVE;
       break;
     }
