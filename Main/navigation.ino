@@ -40,7 +40,7 @@ void markVictimAtEncoderPosition(int distanceMm) {
   if(!inBounds(victimX, victimY)) return;
 
   mapGrid[victimX][victimY].setVictim(true);
-  mapGrid[victimX][victimY].setDiscovered(true);
+  //mapGrid[victimX][victimY].setDiscovered(true);
 
   Serial.print("marked victim at tile x=");
   Serial.print(victimX);

@@ -155,7 +155,6 @@ void serviceCameraVictim(){
       Serial.println("victim at right");
       clearSerialBuffer2();
       if(detectCam2()==true) markVictimAtEncoderPosition(TILE_MM);
-      
       victimtoggle = true;
     }
   }

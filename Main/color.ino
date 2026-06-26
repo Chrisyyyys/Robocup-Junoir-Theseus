@@ -42,7 +42,7 @@ int read_color(){
   Serial.print(b);
   Serial.print(" ");
   */
-  Serial.println(c/clear);
+  //Serial.println(c/clear);
   
   if((float)c/clear<BLACK_THRESHOLD){
     
@@ -53,9 +53,14 @@ int read_color(){
   if((float)c/clear>SILVER_THRESHOLD){
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
+    Serial.print("silver at ");
+    Serial.print(nx);
+    Serial.print(", y=");
+    Serial.print(ny);
     mapGrid[nx][ny].setType(CHECKPOINT);
     x_checkpoint = nx; y_checkpoint = ny;
-    
+    floor_checkpoint = currentFloor; // remember which floor this checkpoint is on
+
     return 3; // SILVER — prevent fall-through into blue/red checks
   }
   

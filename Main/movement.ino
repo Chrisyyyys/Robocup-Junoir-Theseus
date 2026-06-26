@@ -15,28 +15,27 @@ void fwd(double dist){ // in mm
   bool climbtoggle = false; // toggle for climbing
   bool climbed = false; // if climbing occured.
   bool upwards = false; // up/ down for elevation
-  botchedleft = false;
-  botchedright = false;
   int cnt = 0; // tiles traversed while climbing.
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
-  double init_heading = myGyro.heading();
   PID myPID(0.30,0,0.2); // pid for centering
-  PID gyroPID(3,0,0.1);
+  PID gyroPID(3.5,0,0.1);
   PID Scale_PID(0.006,0,0.0008); // pid for encoder 0.0008
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
-  motionActive = true;
+  obstacleright = false;
+  obstacleleft = false;
+  fwdActive = true;
   isVictim = false;
   victimPending = false;
   int init_pitch = myGyro.modulus((int)myGyro.pitch_heading());
-  int init_yaw = myGyro.heading();
+  int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
   int front_left_current=measure(7); int front_right_current=measure(1);
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
   while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.1)&&black!=true){
-    Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
+    //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     if(Pausemaze==true) {drivetrain.fullstop(); break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
     // timer, identify + dispense, then resume. (claude version 6/16/2026)
@@ -93,14 +92,23 @@ void fwd(double dist){ // in mm
     if((front_left_current<=50&&front_left_current!=-1)||(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
       // if the robot doesn't make it halfway across the tile, fwd failed.
-      if((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=0.5*pulses*1.1) botchedfwd = true;
-      if(front_left_current<=50&&front_left_current!=-1) botchedleft = true;
-      if(front_right_current<=50&&front_right_current!=-1) botchedright = true;
+      
       drivetrain.fullstop();
       delay(50);
       break;
     }
-    
+    else if(front_left_current<=50&&front_left_current!=-1&&!(front_right_current<=50&&front_right_current!=-1)){
+      obstacleavoidance(1);
+      drivetrain.fullstop();
+      delay(50);
+      break;
+    }
+    else if(front_right_current<=50&&front_right_current!=-1&&!(front_left_current<=50&&front_left_current!=-1)){
+      obstacleavoidance(0);
+      drivetrain.fullstop();
+      delay(50);
+      break;
+    }
     // check pitch: if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
 
      if(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch) > 20){
@@ -165,9 +173,9 @@ void fwd(double dist){ // in mm
     delay(300);
   }
   
-  motionActive = false; // camera thread idles until the next move
+  fwdActive = false; // camera thread idles until the next move
   drivetrain.fullstop();
-  if(botchedfwd == false) drivetrain.reset_encoderCount(true,true,true);
+  //if(botchedfwd == false) drivetrain.reset_encoderCount(true,true,true);
   victimtoggle = false;
 }
 // absolute turning
@@ -180,7 +188,7 @@ void absoluteturn(double angle){
   bool fasterway = false;
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   // allow the camera RTOS thread to flag victims during the turn
-  motionActive = true;
+  turnActive = true;
   isVictim = false;
   victimPending = false;
   if(abs(angle-current_angle)> abs(angle-(360-current_angle))){
@@ -244,7 +252,7 @@ void absoluteturn(double angle){
   }
   victimtoggle = false;
   Serial.println("finished turning");
-  motionActive = false; // camera thread idles until the next move
+  turnActive = false; // camera thread idles until the next move
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true,true); // reset encoder counters.
 }

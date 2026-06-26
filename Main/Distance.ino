@@ -167,7 +167,7 @@ int detectWall(int dir){
   if(dir == 0){ // check if there is a wall at north
     int a = measure(1);
     int b = measure(7);
-    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
+    if((a<MIN_DIST&&a!=-1&&a!=8191)&&(b<MIN_DIST&&b!=-1&&b!=8191)){
       return 0; // there is a wall.
     }
     else{
@@ -177,7 +177,7 @@ int detectWall(int dir){
   if(dir == 1){
     int a = measure(2);
     int b = measure(3);
-    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
+    if((a<MIN_DIST&&a!=-1&&a!=8191)&&(b<MIN_DIST&&b!=-1&&b!=8191)){
       return 0;
     }
     else{
@@ -197,7 +197,7 @@ int detectWall(int dir){
     int a = measure(5);
     int b = measure(6);
     
-    if((a<MIN_DIST&&a!=-1&&a!=8191)||(b<MIN_DIST&&b!=-1&&b!=8191)){
+    if((a<MIN_DIST&&a!=-1&&a!=8191)&&(b<MIN_DIST&&b!=-1&&b!=8191)){
       return 0;
     }
     else{
@@ -297,8 +297,9 @@ int center(){
   else return 0;
 }
 
-int leftright = 0;
+
 void obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
+  int _;
   while(true){
     switch (steps){
       case TURN:{
@@ -309,6 +310,7 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
             motorD->run(BACKWARD);
             drivetrain.drive(255,255,255,255);
           }
+          _ = measure(1);
         }
         else if(leftright == 0){ // obstacle at right
           while(measure(1)<MIN_DIST){
@@ -316,7 +318,7 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
             motorC->run(BACKWARD);
             drivetrain.drive(255,255,255,255);
           }
-          
+          _ = measure(7);
         }
         drivetrain.fullstop();
         delay(200);
@@ -335,13 +337,10 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
             a=measure(2); b = measure(3);
             if(a<=30) break;
             Serial.println("paralleling step");
-            double increment = pid.getPID(abs(a-b)); // get close to the edge as possible.
-            drivetrain.drive(constrain(100-increment,50,170),constrain(100-increment,50,170),constrain(100+increment,50,170),constrain(100+increment,50,170));
+            double increment = pid.getPID(a-b); // signed error: positive turns one way, negative the other
+            drivetrain.drive(constrain(100+increment,50,170),constrain(100+increment,50,170),constrain(100-increment,50,170),constrain(100-increment,50,170));
+            Serial.println(a-b);
             
-            if(measure(6)<=35&&a<=35){
-              steps = WIGGLE;
-              goto end;
-            }
             
             if(abs(b-a)<=15){
               //fwd
@@ -354,14 +353,19 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
           
         }
         else if(leftright == 0){
-          while(measure(6)>=35){
-            double increment = pid.getPID(abs(measure(6)-measure(5))); // get close to the edge as possible.
+          while(true){
+            int a = measure(6); int b = measure(5);
+            double increment = pid.getPID(a-b); // signed error: positive turns one way, negative the other
             drivetrain.drive(constrain(100-increment,50,170),constrain(100-increment,50,170),constrain(100+increment,50,170),constrain(100+increment,50,170));
-            if(measure(6)<=35&&measure(2)<=35){
-              steps = WIGGLE;
+            if(a<=30) break;
+            if(abs(b-a)<=15){
+              //fwd
+              drivetrain.fullstop();
+              delay(200);
+              steps = FWD;
               goto end;
             }
-            if(abs(measure(6)-measure(5))<=10){
+            if(abs(a-b)<=15){
               drivetrain.fullstop();
               delay(200);
               steps = FWD;
@@ -411,7 +415,8 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
         parallel();
         drivetrain.reset_encoderCount(true,true,true);
         delay(200);
-        fwd(300);
+        
+        fwd((300-(_-measure(1))<0) ? 0:300-(_-measure(1))); // subtract already travelled distance.
         return;
       }
       case WIGGLE:{

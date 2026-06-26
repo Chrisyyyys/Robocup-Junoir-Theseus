@@ -27,8 +27,8 @@
 #define MIN_DIST 120         // mm (tune this)
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.75f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
-#define WHITE_THRESHOLD 0.9f
+#define SILVER_THRESHOLD 0.7f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define WHITE_THRESHOLD 0.8f
 #define MULTIPLER 1.1 
 float clear; 
 
@@ -103,6 +103,7 @@ enum RobotState {
   VICTIM_DETECT,
   EXECUTE_MOVE,
   BOTCHED_TURN_RECOVERY,
+  BOTCHED_FWD_RECOVERY,
   BACKPEDAL,
   PAUSE,
   RETURN
@@ -137,10 +138,9 @@ timer mazeTime;
 bool blacktoggle = false;
 bool bluetoggle = false;
 bool stairtoggle = false;
-// botched forward toggle
-bool botchedfwd = false;
-bool botchedleft = false;
-bool botchedright = false;
+// obstacle toggle
+bool obstacleright = false;
+bool obstacleleft = false;
 // victim toggles
 bool victimtoggle = false;
 bool victimAtCurrent = false;
@@ -155,6 +155,7 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 const int logicswitch = 22;
 volatile bool Pausemaze = false; // set by pauseThread, read by loop()
 int x_checkpoint = MAP_SIZE/2, y_checkpoint = MAP_SIZE/2;
+int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
 bool tilecheck = false;
 
 // Forward declaration: Arduino can't auto-prototype template return types.
@@ -174,7 +175,8 @@ double headingErrorDeg(double targetDeg, double actualDeg) {
 // the robot is moving, the thread raises victimPending; fwd()/absoluteturn()
 // then stop the drivetrain, pause their PID + timer, run detectCam(), and use
 // markVictimAtEncoderPosition() to label the correct tile before resuming.
-volatile bool motionActive = false; // true only while inside fwd()/absoluteturn()
+volatile bool fwdActive = false; // true only while inside fwd()
+volatile bool turnActive = false;
 volatile bool victimPending = false; // a camera reported -> movement must service it
 volatile int  victimSide = 0;        // 1 = left (Serial3), 2 = right (Serial2)
 volatile bool isVictim = false;      // a victim already handled during current move
@@ -184,40 +186,52 @@ rtos::Mutex i2cMutex;
 rtos::Mutex lcdMutex; // lcd mutex to prevent conflict
 void cameraTask(){
   while(true){
-
+    int encoderCount = (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3;
     int nx = x_pos; int ny=y_pos;
-    if(motionActive && !victimPending && !isVictim){
-      victimTileFromEncoder(TILE_MM,(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3,nx,ny);
-      if(mapGrid[nx][ny].getVictim() == false){
+    if((fwdActive||turnActive) && !victimPending && !isVictim){
+      
+      //if(encoderCount>=0.3*pulsesForDistanceMm(TILE_MM)||encoderCount<=0.7*pulsesForDistanceMm(TILE_MM)){
         if(readSerial1() != -1){        // left camera (Serial4)
-          i2cMutex.lock();
-          victimSide = 1;
-          drivetrain.fullstop();
-          victimPending = true;
-          i2cMutex.unlock();
-          rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
-          i2cMutex.lock();
-          serviceCameraVictim();
-          i2cMutex.unlock();
+          if(fwdActive) victimTileFromEncoder(TILE_MM,encoderCount,nx,ny);
+          Serial.println("nx, ny");
+          Serial.println(nx);
+          Serial.println(ny);
+          Serial.println(mapGrid[nx][ny].getVictim());
+          if(mapGrid[nx][ny].getVictim() == false){
+            i2cMutex.lock();
+            victimSide = 1;
+            drivetrain.fullstop();
+            victimPending = true;
+            i2cMutex.unlock();
+            rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
+            i2cMutex.lock();
+            serviceCameraVictim();
+            i2cMutex.unlock();
+          }
         }
         else if(readSerial2() != -1){   // right camera (Serial3)
-          i2cMutex.lock();
-          victimSide = 2;
-          drivetrain.fullstop();
-          victimPending = true;
-          i2cMutex.unlock();
-          rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
-          i2cMutex.lock();
-          serviceCameraVictim();
-          i2cMutex.unlock();
+          if(fwdActive) victimTileFromEncoder(TILE_MM,encoderCount,nx,ny);
+          Serial.println("nx, ny");
+          Serial.println(nx);
+          Serial.println(ny);
+          Serial.println(mapGrid[nx][ny].getVictim());
+          if(mapGrid[nx][ny].getVictim() == false){
+            i2cMutex.lock();
+            victimSide = 2;
+            drivetrain.fullstop();
+            victimPending = true;
+            i2cMutex.unlock();
+            rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
+            i2cMutex.lock();
+            serviceCameraVictim();
+            i2cMutex.unlock();
+          }
         }
       }
-    }
-
-
     rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
   }
 }
+
 
 // pause maze thread: watches the logic switch and requests a stop.
 rtos::Thread pauseThread;
@@ -287,13 +301,18 @@ void setup(){
   cameraThread.start(cameraTask);
   cameraThread.set_priority(osPriorityAboveNormal);
   pauseThread.start(pauseTask);
-
+  Serial.println("starting");
   delay(2000); // wait for camera to start.
   
 }
 int iterator = 0;
 
 void loop(){
+  obstacleavoidance(1);
+  /*
+  //lcdPrint("working");
+  //delay(500);
+  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -314,10 +333,9 @@ void loop(){
       break;
     }
     case VICTIM_DETECT: {
-      // The robot is stationary here, so the camera thread is idle (motionActive
-      // == false) and this is the only context touching the camera UARTs.
-      // Poll both cameras; RCJ victims are wall-mounted, so a wall must be
-      // present on that side before we identify/dispense.
+      
+      // Unused and I think this conflicts with cameraTask reading getVictim.
+      //Serial.println("victim detect");
       
       Tile &t = mapGrid[x_pos][y_pos];
       if(t.getVictim() == false){ // no victim on tile
@@ -342,6 +360,7 @@ void loop(){
       break;
     }
     case PLAN_NEXT: {
+      Serial.println("plan next");
       plannedMoveDir = pickNextDirection();
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
@@ -408,6 +427,7 @@ void loop(){
     }
     case BACKPEDAL: {
       plannedMoveDir = pickNextDirection();
+      Serial.println("next direction picked");
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
       state = EXECUTE_MOVE;
@@ -430,33 +450,6 @@ void loop(){
       state = EXECUTE_MOVE;
       break;
     }
-    case BOTCHED_FWD_RECOVERY: {
-      _encoderCountA = drivetrain.encoderCountA;
-      _encoderCountB = drivetrain.encoderCountB;
-      _encoderCountD = drivetrain.encoderCountD;
-      if(botchedleft == true){
-          drivetrain.turnleft(150);
-          delay(200);
-        }
-      else{
-        drivetrain.turnright(150);
-        delay(200);
-      }
-      drivetrain.set_encoderCountA(_encoderCountA);
-      drivetrain.set_encoderCountB(_encoderCountB);
-      drivetrain.set_encoderCountD(_encoderCountD);
-      while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
-        drivetrain.backward(150);
-      }
-      drivetrain.reset_encoderCount(true,true,true);
-      delay(100);
-      parallel();
-      delay(100);
-      botchefwd=false;
-      
-      state = EXECUTE_MOVE;
-      break;
-    }
     case RETURN: {
       // in case of no elevation used, m1,m2,m3 are all blank grids.
       // let the current floor grid be mapgrid.
@@ -472,7 +465,7 @@ void loop(){
       Serial.println("starting bfs");
       std::deque<std::pair<int, std::pair<int,int>>> path = BFS(currentpos, m1, m2, m3, endpos, false);
       if(path.empty()){
-        lcdPrint("strict path failed, retrying with stairs/blue allowed");
+        lcdPrint("blue allowed");
         path = BFS(currentpos, m1, m2, m3, endpos, true);
       }
       if(path.empty()){
@@ -516,17 +509,34 @@ void loop(){
     case PAUSE: {
       drivetrain.fullstop();
       delay(200);
-      x_pos = x_checkpoint; y_pos = y_checkpoint; // resume from last checkpoint
       if(digitalRead(logicswitch)==LOW){
         Pausemaze = false;
+        // Restore the checkpoint's FLOOR as well as its tile. Save the grid we
+        // were working on back into its floor slot (m1=floor0, m2=floor1,
+        // m3=floor2), then load the checkpoint floor's grid as the active grid
+        // so victim flags / walls are looked up on the correct floor. (Without
+        // this, resuming after a ramp left mapGrid pointing at the wrong floor.)
+        if(currentFloor == 0)      m1 = mapGrid;
+        else if(currentFloor == 1) m2 = mapGrid;
+        else if(currentFloor == 2) m3 = mapGrid;
+        currentFloor = floor_checkpoint;
+        if(currentFloor == 0)      mapGrid = m1;
+        else if(currentFloor == 1) mapGrid = m2;
+        else if(currentFloor == 2) mapGrid = m3;
+        x_pos = x_checkpoint; y_pos = y_checkpoint; // resume from last checkpoint
         Direction snapped = (Direction)myGyro.headingToCardinal(myGyro.heading()); // snap to cardinal
         absoluteturn(turnNeededDeg(snapped));
         currentDir = snapped;
+        
+        Serial.println("checkpoint coordinates");
+        Serial.println(x_checkpoint);
+        Serial.println(y_checkpoint);
+        Serial.println(currentDir);
         state = PLAN_NEXT;
       }
       break;
     }
  }
- 
+ */
  
 }
