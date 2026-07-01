@@ -265,4 +265,41 @@ void absoluteturn(double angle){
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true,true); // reset encoder counters.
 }
+
+// Corrects left-right position within the tile by turning the robot a small
+// amount before the next forward drive, so fwd()'s heading-hold behavior
+// (it locks onto whatever heading it starts at) carries the robot diagonally
+// back toward center over the course of the tile. Must run AFTER
+// turnCompletedSuccessfully() has validated the cardinal turn, so this
+// intentional small heading offset isn't mistaken for a botched turn.
+void lateralCorrect(){
+  int wallDir;
+  if(detectWall(1) == 0) wallDir = 1;      // right wall
+  else if(detectWall(3) == 0) wallDir = 3; // left wall
+  else return;                              // no wall to measure against
+
+  int a, b;
+  if(wallDir == 1){ a = measure(2); b = measure(3); }
+  else{ a = measure(6); b = measure(5); }
+  if(a == -1 || b == -1) return;
+
+  double gap = (a + b) / 2.0;
+  double offset = gap - TARGET_SIDE_GAP_MM; // +ve => too far from this wall
+
+  if(abs(offset) > MAX_LATERAL_OFFSET_MM) return; // unreliable reading
+  if(abs(offset) <= LATERAL_TOL_MM) return;        // already close enough
+
+  double thetaDeg = asin(constrain(offset / TILE_MM, -1.0, 1.0)) * 180.0 / PI;
+  thetaDeg *= LATERAL_CORRECTION_GAIN; // compensates for fwd() pulling the heading back toward cardinal
+  if(wallDir == 3) thetaDeg = -thetaDeg; // left wall: flip sign
+
+  double newHeading = myGyro.heading() + thetaDeg;
+  if(newHeading >= 360) newHeading -= 360;
+  if(newHeading < 0) newHeading += 360;
+
+  Serial.print("lateralCorrect: offset="); Serial.print(offset);
+  Serial.print(" theta="); Serial.println(thetaDeg);
+  absoluteturn(newHeading);
+}
+
 // full stop function
