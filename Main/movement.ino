@@ -298,8 +298,15 @@ void lateralCorrect(){
   if(wallDir == 3) thetaDeg = -thetaDeg; // left wall: flip sign
 
   double newHeading = myGyro.heading() + thetaDeg;
-  if(newHeading >= 360) newHeading -= 360;
-  if(newHeading < 0) newHeading += 360;
+  // absoluteturn()'s wraparound ("fasterway") handling picks the wrong turn
+  // direction/distance for targets that cross the 0/360 boundary. Rather than
+  // wrap newHeading back into [0,360) and risk that buggy path, skip the
+  // correction this tile if it would cross the boundary — it'll be retried
+  // next tile once the heading has drifted away from the boundary.
+  if(newHeading < 0 || newHeading >= 360){
+    Serial.println("lateralCorrect: skipping, correction crosses 0/360 boundary");
+    return;
+  }
 
   Serial.print("lateralCorrect: offset="); Serial.print(offset);
   Serial.print(" theta="); Serial.println(thetaDeg);
