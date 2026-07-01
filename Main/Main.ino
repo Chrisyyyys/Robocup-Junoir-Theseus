@@ -30,6 +30,11 @@
 #define TARGET_GAP_MM (((double)TILE_MM - ROBOT_LENGTH_MM) / 2.0) // mm, ideal front/back clearance when centered (52.5)
 #define CENTER_TOL_MM 10                                          // mm, front-back centering tolerance
 #define MAX_CENTER_CORRECTION_MM 300.0                            // mm, one tile — offset this large means an unreliable reading or the robot isn't really in-tile; skip/abort centering
+#define ROBOT_WIDTH_MM 140                                          // mm, robot left-right width
+#define TARGET_SIDE_GAP_MM (((double)TILE_MM - ROBOT_WIDTH_MM) / 2.0) // mm, ideal side-wall clearance when centered (80)
+#define LATERAL_TOL_MM 15                                            // mm, lateral correction tolerance (looser than CENTER_TOL_MM)
+#define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
+#define LATERAL_CORRECTION_GAIN 1.0                                  // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
 #define SILVER_THRESHOLD 0.90f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
 #define WHITE_THRESHOLD 0.99f
@@ -397,6 +402,11 @@ void loop(){
         currentDir = plannedMoveDir;
         turnCompletedForMove = true;
       }
+
+      // Nudge heading to correct lateral (left-right) position before
+      // driving the tile — runs after turn validation so it's never
+      // mistaken for a botched turn.
+      lateralCorrect();
 
       // 2) drive one tile. fwd() sets blacktoggle/bluetoggle, handles ramps
       //    (advancing x_pos/y_pos for any climbed tiles) and services any
