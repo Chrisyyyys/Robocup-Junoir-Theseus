@@ -375,6 +375,7 @@ int center(){
 
 
 void obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
+  Serial.println("obstacle avoidance");
   int _;
   while(true){
     switch (steps){

@@ -88,15 +88,18 @@ void fwd(double dist){ // in mm
       black = true;
     }
     // PID centering
-    //difference = center();
-
-    //Serial.println(center());
-    //double adjustment = myPID.getPID(difference);
-    double yaw = myGyro.heading()-init_yaw;
-    if(yaw>180) yaw = yaw-360;
-    if(yaw<-180) yaw+= 360;
-
-    double adjustment = gyroPID.getPID(yaw);
+    int wall_left = measure(2);
+    int wall_right = measure(6);
+    double adjustment;
+    if(wall_left<MIN_DIST && wall_left!=-1 && wall_right<MIN_DIST && wall_right!=-1){
+      adjustment = center_PID.getPID(wall_left-wall_right);
+    }
+    else{
+      double yaw = myGyro.heading()-init_yaw;
+      if(yaw>180) yaw = yaw-360;
+      if(yaw<-180) yaw+= 360;
+      adjustment = gyroPID.getPID(yaw);
+    }
     
     double Scale = Scale_PID.getPID(pulses*1.15-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     
@@ -284,6 +287,7 @@ void lateralCorrect(){
   if(a == -1 || b == -1) return;
 
   double gap = (a + b) / 2.0;
+  
   double offset = gap - TARGET_SIDE_GAP_MM; // +ve => too far from this wall
 
   if(abs(offset) > MAX_LATERAL_OFFSET_MM) return; // unreliable reading

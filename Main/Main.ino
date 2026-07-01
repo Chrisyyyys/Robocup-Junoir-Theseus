@@ -24,6 +24,7 @@
 #include "gyro.h"
 #include "dispenser.h"
 #include "motors.h"
+// movement constants
 #define MIN_DIST 150         // mm (tune this)
 #define OBSTACLE_DIST 90
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
@@ -35,10 +36,10 @@
 #define TARGET_SIDE_GAP_MM (((double)TILE_MM - ROBOT_WIDTH_MM) / 2.0) // mm, ideal side-wall clearance when centered (80)
 #define LATERAL_TOL_MM 15                                            // mm, lateral correction tolerance (looser than CENTER_TOL_MM)
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
-#define LATERAL_CORRECTION_GAIN 1.0                                  // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
+#define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.8f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
-#define WHITE_THRESHOLD 0.7f
+#define SILVER_THRESHOLD 0.7f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define WHITE_THRESHOLD 0.8f
 #define MULTIPLER 1.1 
 float clear; 
 
