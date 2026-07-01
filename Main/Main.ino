@@ -25,14 +25,15 @@
 #include "dispenser.h"
 #include "motors.h"
 #define MIN_DIST 150         // mm (tune this)
+#define OBSTACLE_DIST 90
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define ROBOT_LENGTH_MM 195                                      // mm, robot front-to-back length
 #define TARGET_GAP_MM (((double)TILE_MM - ROBOT_LENGTH_MM) / 2.0) // mm, ideal front/back clearance when centered (52.5)
 #define CENTER_TOL_MM 10                                          // mm, front-back centering tolerance
 #define MAX_CENTER_CORRECTION_MM 300.0                            // mm, one tile — offset this large means an unreliable reading or the robot isn't really in-tile; skip/abort centering
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.90f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
-#define WHITE_THRESHOLD 0.99f
+#define SILVER_THRESHOLD 0.8f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define WHITE_THRESHOLD 0.7f
 #define MULTIPLER 1.1 
 float clear; 
 
@@ -326,13 +327,16 @@ void loop(){
   //lcdPrint("working");
   //delay(500);
   
+  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
       // reset per-tile toggles
       blacktoggle = false; bluetoggle = false; victimtoggle = false;
       // Read for walls
+      Serial.println("reading walls");
       readWallsRel(wallF, wallR, wallB, wallL);
+
       delay(200);
       state = UPDATE_MAP; // next state.
       // Auto-trigger front-back centering: only when a front wall is
@@ -352,12 +356,14 @@ void loop(){
       break;
     }
     case CENTERING: {
+      Serial.println("front/back centering in tile");
       centerFrontBack();
       state = UPDATE_MAP;
       if(Pausemaze == true) state = PAUSE;
       break;
     }
     case UPDATE_MAP: {
+      Serial.println("updating tile");
       writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
       updateFullyExploredAt(x_pos, y_pos);
       state = VICTIM_DETECT; // poll cameras while stopped before planning.
@@ -366,7 +372,7 @@ void loop(){
     }
     case VICTIM_DETECT: {
       
-      
+      Serial.println("victim detect");
       state = PLAN_NEXT;
       if(Pausemaze == true) state = PAUSE;
       break;
@@ -512,7 +518,10 @@ void loop(){
       
       while(true){
         drivetrain.fullstop();
-        lcdPrint("back to start");
+        for(int i = 0;i<10;i++){
+          lcdPrint("back to start");
+          delay(1000);
+        }
       }
     }
     case PAUSE: {

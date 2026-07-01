@@ -10,7 +10,6 @@ void init_drive(){
 
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
-  double pulses156 = pulses*1.25;
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
   bool climbed = false; // if climbing occured.
@@ -18,9 +17,10 @@ void fwd(double dist){ // in mm
   int cnt = 0; // tiles traversed while climbing.
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
-  PID climbPID(10,0,0.1); // pid for centering
-  PID gyroPID(6,0,0.05);
-  PID Scale_PID(0.014,0,0.0008); // pid for encoder 0.0008
+  PID climbPID(10,0,0.1); // pid for centering on ramp
+  PID center_PID(0.30,0,0.2);
+  PID gyroPID(8,0,0.05);
+  PID Scale_PID(0.010,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
   obstacleright = false;
@@ -30,28 +30,30 @@ void fwd(double dist){ // in mm
   victimPending = false;
   int init_pitch = myGyro.modulus((int)myGyro.pitch_heading());
   int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
+  Serial.println("init_yaw");
+  Serial.println(init_yaw);
   int front_left_current=measure(7); int front_right_current=measure(1);
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
   int front_left = measure(7);int front_right = measure(1);
-  if(front_left<=MIN_DIST&&front_left!=-1&&!(front_right<=MIN_DIST&&front_right!=-1)){
+  if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
       obstacleavoidance(1);
       drivetrain.fullstop();
       delay(50);
       return;
     }
-    else if(front_right<=MIN_DIST&&front_right!=-1&&!(front_left<=MIN_DIST&&front_left!=-1)){
+    else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&!(front_left<=OBSTACLE_DIST&&front_left!=-1)){
       obstacleavoidance(0);
       drivetrain.fullstop();
       delay(50);
       return;
     }
-  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.2)&&black!=true){
+  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.15)&&black!=true){
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     if(Pausemaze==true) {drivetrain.fullstop(); break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
-    // timer, identify + dispense, then resume. (claude version 6/16/2026)
+    
     if(victimPending){
       drivetrain.fullstop(); // does not overide the thread
       climbPID.pausePID(1);
@@ -87,15 +89,16 @@ void fwd(double dist){ // in mm
     }
     // PID centering
     //difference = center();
-    
+
     //Serial.println(center());
     //double adjustment = myPID.getPID(difference);
     double yaw = myGyro.heading()-init_yaw;
     if(yaw>180) yaw = yaw-360;
     if(yaw<-180) yaw+= 360;
-    
+
     double adjustment = gyroPID.getPID(yaw);
-    double Scale = Scale_PID.getPID(pulses-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
+    
+    double Scale = Scale_PID.getPID(pulses*1.15-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     
     // emergency stop
     
@@ -112,7 +115,6 @@ void fwd(double dist){ // in mm
     }
     
     // check pitch: if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
-    Serial.println(adjustment);
     if(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch) > 20){
       Serial.println("climbing");
       int _encoderCountA = drivetrain.encoderCountA; // save values before ramp
@@ -175,6 +177,9 @@ void fwd(double dist){ // in mm
     Serial.println("compensating");
     drivetrain.fw(200);
     delay(300);
+    drivetrain.fullstop();
+    delay(200);
+    absoluteturn(turnNeededDeg(currentDir)); // snap direction.
   }
   
   fwdActive = false; // camera thread idles until the next move
