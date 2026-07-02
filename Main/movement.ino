@@ -30,6 +30,16 @@ void fwd(double dist){ // in mm
   int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
   Serial.println("init_yaw");
   Serial.println(init_yaw);
+  // [DIAG] round-1 sideswipe instrumentation: show whether init_yaw matches actual heading
+  double _entry_hdg = myGyro.heading();
+  Serial.print("[FWD] entry hdg=");
+  Serial.print(_entry_hdg, 1);
+  Serial.print(" init_yaw=");
+  Serial.print(init_yaw);
+  Serial.print(" offset=");
+  Serial.println(_entry_hdg - init_yaw, 1);
+  const char* fwdExit = "normal";
+  int _fwd_tick = 0;
   int front_left_current=measure(7); int front_right_current=measure(1);
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
@@ -55,6 +65,7 @@ void fwd(double dist){ // in mm
         }
       }
       drivetrain.fullstop();
+      Serial.println("[FWD] exit=obstacle-left");
       return;
     }
     else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&!(front_left<=OBSTACLE_DIST&&front_left!=-1)){
@@ -76,6 +87,7 @@ void fwd(double dist){ // in mm
       }
       drivetrain.fullstop();
       obstacle = true;
+      Serial.println("[FWD] exit=obstacle-right");
       return;
     }
   while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.12)&&black!=true){
@@ -117,14 +129,16 @@ void fwd(double dist){ // in mm
       black = true;
     }
     // PID centering
-    
+
     double adjustment;
     // only use distance sensor to center when there are walls on both sides.
-    
+
       // error sign must match the gyro branch: positive adjustment steers the
       // robot the same way for both. wall_right-wall_left is >0 when the robot
       // is closer to the left wall, which correctly steers it back toward center.
-    adjustment = center_PID.getPID(center());
+    // [DIAG] capture the error fed to PID so it can be logged below
+    double _diag_pid_err = center();
+    adjustment = center_PID.getPID(_diag_pid_err);
     /*
     else{
       double yaw = myGyro.heading()-init_yaw;
@@ -143,7 +157,11 @@ void fwd(double dist){ // in mm
     if((front_left_current<=50&&front_left_current!=-1)&&(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
       // if the robot doesn't make it halfway across the tile, fwd failed.
-      
+      Serial.print("[FWD] emergency-stop fl=");
+      Serial.print(front_left_current);
+      Serial.print(" fr=");
+      Serial.println(front_right_current);
+      fwdExit = "emergency-front";
       drivetrain.fullstop();
       delay(50);
       break;
@@ -189,9 +207,37 @@ void fwd(double dist){ // in mm
     }
     
     
+    // [DIAG] throttled per-loop trace (every 5 ticks) — CSV so it can be graphed.
+    // wl/wr are re-read here only in the trace block, so the control path is
+    // untouched. Fields: t_ms, wl, wr, err, adj, encAvg, fl, fr
+    _fwd_tick++;
+    if((_fwd_tick % 5) == 0){
+      int _diag_wl = measure(2);
+      int _diag_wr = measure(6);
+      int _enc_avg = (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3;
+      Serial.print("[FWD] t=");
+      Serial.print(millis());
+      Serial.print(" wl=");
+      Serial.print(_diag_wl);
+      Serial.print(" wr=");
+      Serial.print(_diag_wr);
+      Serial.print(" err=");
+      Serial.print(_diag_pid_err, 1);
+      Serial.print(" adj=");
+      Serial.print(adjustment, 1);
+      Serial.print(" enc=");
+      Serial.print(_enc_avg);
+      Serial.print(" fl=");
+      Serial.print(front_left_current);
+      Serial.print(" fr=");
+      Serial.println(front_right_current);
+    }
+
     drivetrain.drive(constrain(Scale*(150+adjustment),20,150),constrain(Scale*(150+adjustment),20,150)*1.25,constrain(Scale*(150-adjustment),20,150)*1.25,constrain(Scale*(150-adjustment),20,150));
     //drivetrain.drive(150+adjustment,(150+adjustment)*1.25,(150-adjustment)*1.25,150+adjustment);
   }
+  Serial.print("[FWD] exit=");
+  Serial.println(fwdExit);
   Serial.println("stop- end of fwd");
   // sometimes it barely makes it over the slope
   if(climbed == true){
