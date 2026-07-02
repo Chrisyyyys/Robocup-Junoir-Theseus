@@ -36,8 +36,8 @@
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
 #define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.9f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
-#define WHITE_THRESHOLD 0.95f
+#define SILVER_THRESHOLD 3000 // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define WHITE_THRESHOLD 0.9f
 #define MULTIPLER 1.1 
 float clear; 
 
@@ -325,9 +325,7 @@ void loop(){
     Serial.println(measure(i));
     delay(500);
   }
-  
   */
-  read_color();
   //read_color();
 
   //lcdPrint("working");
@@ -423,13 +421,13 @@ void loop(){
           mapGrid[x_pos][y_pos].setType(BLUE);
         }
         
-        if(obstacle == true){
-          set obstacle type
-          make sure to prevent return to the tile with obstacle in the future.
-          int nx = x_pos; int ny = y_pos;
-          stepForward(currentDir, nx, ny);
-          mapGrid[x_pos][y_pos].setObstacle(currentDir, true); // connected
-          mapGrid[nx][ny].setObstacle(opposite(currentDir), true); // update both sides.
+        //if(obstacle == true){
+          // set obstacle type
+          // make sure to prevent return to the tile with obstacle in the future.
+          //int nx = x_pos; int ny = y_pos;
+          //stepForward(currentDir, nx, ny);
+          //mapGrid[x_pos][y_pos].setObstacle(currentDir, true); // connected
+          //mapGrid[nx][ny].setObstacle(opposite(currentDir), true); // update both sides.
         //}
         
       }
