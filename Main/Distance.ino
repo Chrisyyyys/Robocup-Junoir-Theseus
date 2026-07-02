@@ -296,7 +296,7 @@ void parallel(){
 // centering is not implemented yet. parallel() runs first so the robot is
 // squared to a side wall before the front reading is trusted.
 void centerFrontBack(){
-  const int CENTERING_SPEED = 90;                   // mirrors PARALLEL_SPEED
+  const int CENTERING_SPEED = 70;                   // mirrors PARALLEL_SPEED
   const unsigned long CENTERING_TIMEOUT_MS = 2000;
   // MAX_CENTER_CORRECTION_MM is a file-scope #define (Main.ino), shared with
   // the SENSE_TILE trigger gate — redundant safety abort in case conditions
