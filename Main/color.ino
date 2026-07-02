@@ -38,15 +38,17 @@ int read_color(){
   Serial.print(" ");
   Serial.print(b);
   Serial.print(" ");
+  Serial.print((float)c/clear);
+  Serial.println(" ");
   */
-  //Serial.println((float)c/clear);
+  
   
   if((float)c/clear<BLACK_THRESHOLD){
     
     
     return -1; // black
   }
-  /*
+  
   if(c>SILVER_THRESHOLD){ // silver reflects more absolute light
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
@@ -60,7 +62,7 @@ int read_color(){
 
     return 3; 
   }
-  */
+  
   if((float)c/clear>WHITE_THRESHOLD) return 0;
   
   

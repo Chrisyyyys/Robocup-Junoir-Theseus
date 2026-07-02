@@ -16,7 +16,7 @@ void fwd(double dist){ // in mm
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   PID climbPID(10,0,0.1); // pid for centering on ramp
   PID center_PID(0.30,0,0.2);
-  PID gyroPID(20,0.01,0.03);
+  PID gyroPID(40,0.001,0.03);
   PID Scale_PID(0.007,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
@@ -126,24 +126,38 @@ void fwd(double dist){ // in mm
       black = true;
     }
     // PID centering
-    // Heading-hold only (side-wall centering is disabled). gyroPID drives the
-    // yaw error back to init_yaw. ki term is here to cancel a steady-state
-    // mechanical bias (drivetrain always pulls to one side).
+
     double adjustment;
+
+    // only use distance sensor to center when there are walls on both sides.
+
+      // error sign must match the gyro branch: positive adjustment steers the
+      // robot the same way for both. wall_right-wall_left is >0 when the robot
+      // is closer to the left wall, which correctly steers it back toward center.
+    // [DIAG] capture the error fed to PID so it can be logged below
+    //double _diag_pid_err = center();
+    //adjustment = center_PID.getPID(_diag_pid_err);
     double yaw = myGyro.heading()-init_yaw;
     if(yaw>180) yaw = yaw-360;
     if(yaw<-180) yaw+= 360;
     double _diag_pid_err = yaw;
     adjustment = gyroPID.getPID(_diag_pid_err);
-    // [DRIFT] feedforward drift bias: the drivetrain has a persistent mechanical
-    // pull to the left. The drive() line below adds +adjustment to motors A,C
-    // (left side) and subtracts it from B,D (right side), so adding a positive
-    // constant here permanently biases the robot to steer slightly right,
-    // cancelling the drift BEFORE the PID has to react to it. If tuning shows
-    // the robot now drifts right instead, reduce this value; if it still drifts
-    // left, increase it. If the drift direction were reversed, flip the sign.
-    const double DRIFT_BIAS = 5.0;
-    adjustment += DRIFT_BIAS;
+    /*
+=======
+    if(wall_left<MIN_DIST && wall_left!=-1 && wall_right<MIN_DIST && wall_right!=-1){
+      // Same sign as gyro correction.
+      // wall_right - wall_left is > 0 when the robot is closer to the left wall.
+      // -> steers back to center.
+      adjustment = center_PID.getPID(center());
+    }
+>>>>>>> Stashed changes
+    else{
+      double yaw = myGyro.heading()-init_yaw;
+      if(yaw>180) yaw = yaw-360;
+      if(yaw<-180) yaw+= 360;
+      adjustment = gyroPID.getPID(yaw);
+    }
+    */
     double Scale = Scale_PID.getPID(pulses*1.12-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     
     // emergency stop
