@@ -65,6 +65,7 @@ void initializeMap() {
       for (int d = 0; d < 4; d++) {
         mapGrid[x][y].setWall(d, false);
         mapGrid[x][y].setEdge(d, false);
+        mapGrid[x][y].setObstacle(d, false);
       }
       mapGrid[x][y].setType(BLANK);
     }
@@ -137,7 +138,7 @@ Direction pickNextDirection() {
   auto open  = [&](Direction d){ return t.getWall(d) == false; };
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
   auto isBlueTile = [&](int nx, int ny){
-    return mapGrid[nx][ny].getType() == BLUE || mapGrid[nx][ny].getBlue();
+    return mapGrid[nx][ny].getType() == BLUE;
   };
   auto blockedForTravel = [&](int nx, int ny){
     return mapGrid[nx][ny].getType() == BLACK || isBlueTile(nx, ny);
@@ -198,6 +199,7 @@ void initTile(int x, int y, Grid& map) {
     for (int d = 0; d < 4; d++) {
         map[x][y].setWall(d, false);
         map[x][y].setEdge(d, false);
+        map[x][y].setObstacle(d, false);
     }
     map[x][y].setType(BLANK);
 }
