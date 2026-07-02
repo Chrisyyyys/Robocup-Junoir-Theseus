@@ -315,7 +315,7 @@ void centerFrontBack(){
   }
 
   double frontGap = (front1 + front7) / 2.0;
-  double offset = frontGap - TARGET_GAP_MM; // +ve => too far from front wall, drive forward; -ve => drive backward
+  double offset = frontGap - TARGET_GAP_MM; // +ve => too far from ront wall, drive forward; -ve => drive backward
 
   if(abs(offset) >= MAX_CENTER_CORRECTION_MM){
     Serial.println("centerFrontBack: offset exceeds sanity cap, aborting");
@@ -366,33 +366,38 @@ void centerFrontBack(){
 int center(){
   int a = measure(2);
   int b = measure(6);
-  if(a<MIN_DIST && a != -1 && b<MIN_DIST && b != -1) return (a-b);
+  if(a<MIN_DIST && a != -1 && b<MIN_DIST && b != -1) return (b-a);
   else return 0;
 }
 
 
-void obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
+int obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
+// return distance to wall at front
   Serial.println("obstacle avoidance");
   int _;
   while(true){
     switch (steps){
       case TURN:{
         if(leftright == 1){ // obstacle at left
+          _ = measure(1);
+          _ = (_!=-1&&_!=8191) ? _ : -1;
           Serial.println("turn step");
           while(measure(7) < MIN_DIST){
             motorB->run(BACKWARD);
             motorD->run(BACKWARD);
             drivetrain.drive(255,255,255,255);
           }
-          _ = measure(1);
+          
         }
         else if(leftright == 0){ // obstacle at right
+          _ = measure(7);
+          _ = (_!=-1&&_!=8191) ? _ : -1;
           while(measure(1)<MIN_DIST){
             motorA->run(BACKWARD);
             motorC->run(BACKWARD);
             drivetrain.drive(255,255,255,255);
           }
-          _ = measure(7);
+          
         }
         drivetrain.fullstop();
         delay(200);
@@ -486,7 +491,7 @@ void obstacleavoidance(int leftright){ // leftright determines to manuver left o
         
         fwd((300-(_-measure(1))<0) ? 0:300-(_-measure(1))); // subtract already travelled distance.
         steps = TURN;
-        return;
+        return _;
       }
       case WIGGLE:{
         PID pid(8,0,0.1);

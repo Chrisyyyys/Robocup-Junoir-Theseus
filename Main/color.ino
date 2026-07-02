@@ -39,15 +39,15 @@ int read_color(){
   Serial.print(b);
   Serial.print(" ");
   */
-  
+  Serial.println(c);
   
   if((float)c/clear<BLACK_THRESHOLD){
     
     
     return -1; // black
   }
-  if((float)c/clear>WHITE_THRESHOLD) return 0;
-  if((float)c/clear>SILVER_THRESHOLD){
+  /*
+  if(c>SILVER_THRESHOLD){ // silver reflects more absolute light
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
     Serial.print("silver at ");
@@ -58,8 +58,11 @@ int read_color(){
     x_checkpoint = nx; y_checkpoint = ny;
     floor_checkpoint = currentFloor; // remember which floor this checkpoint is on
 
-    return 3; // SILVER — prevent fall-through into blue/red checks
+    return 3; 
   }
+  */
+  if((float)c/clear>WHITE_THRESHOLD) return 0;
+  
   
   if(b>g+10&&b>r+10) return 1; //blue
     

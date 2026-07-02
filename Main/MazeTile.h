@@ -24,9 +24,10 @@ struct Tile {
 
   
   private:
-  //first 4 bit is wall, last 4 bit is edge
+  //bits 0-3 wall, 4-7 edge, 8 discovered, 9 fully, 10 victim, 11 visited,
+  //12 elevate, 13 descend, 16-19 obstacle (one bit per direction)
   //set amount of bits
-  Bitset<16> bitset;
+  Bitset<20> bitset;
   TileTypes tileType;
   public:
   //get and set functions
@@ -38,6 +39,7 @@ struct Tile {
     bitset.set(dir, stat);
   }
   //+4 is index to the target bit
+  // 4 bits for 16 possible tiletypes
   bool getEdge(unsigned dir){
     return bitset.get(dir+4);
   }
@@ -75,24 +77,25 @@ struct Tile {
   void setVisited(bool stat){
     bitset.set(11,stat);
   }
-  bool getBlue(){
-    return bitset.get(12);
-  }
-  void setBlue(bool stat){
-    bitset.set(12,stat);
-  }
   // multi-floor elevation flags 
   bool getElevate(){
-    return bitset.get(13);
+    return bitset.get(12);
   }
   void setElevate(bool e){
-    bitset.set(13,e);
+    bitset.set(12,e);
   }
   bool getDescend(){
-    return bitset.get(14);
+    return bitset.get(13);
   }
   void setDescend(bool d){
-    bitset.set(14,d);
+    bitset.set(13,d);
+  }
+  // obstacle presence, one bit per direction (0=N,1=E,2=S,3=W), stored at 16-19
+  bool getObstacle(unsigned dir){
+    return bitset.get(dir+16);
+  }
+  void setObstacle(unsigned dir,bool stat){
+    bitset.set(dir+16, stat);
   }
 
   //bool wall[4];

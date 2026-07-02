@@ -36,8 +36,8 @@
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
 #define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.7f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
-#define WHITE_THRESHOLD 0.8f
+#define SILVER_THRESHOLD 3000 // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define WHITE_THRESHOLD 0.9f
 #define MULTIPLER 1.1 
 float clear; 
 
@@ -101,7 +101,7 @@ Grid m2;      // floor 1
 Grid m3;      // floor 2
 
 int currentFloor = 0; // current floor (0..2) for elevation()/descend()
-
+int LEDPIN = 51;
 
 
 //states that the robot will be in
@@ -149,8 +149,7 @@ bool blacktoggle = false;
 bool bluetoggle = false;
 bool stairtoggle = false;
 // obstacle toggle
-bool obstacleright = false;
-bool obstacleleft = false;
+bool obstacle = false;
 // victim toggles
 bool victimtoggle = false;
 bool victimAtCurrent = false;
@@ -279,6 +278,7 @@ void setup(){
   pinMode(gpio2, INPUT);
   // initialize logic switch pin
   pinMode(logicswitch, INPUT);
+  pinMode(LEDPIN,OUTPUT);
   // begin UART communication.
   Serial.begin(115200);
   Serial3.begin(115200); // switch to 9600 for reliability
@@ -326,7 +326,7 @@ void loop(){
     delay(500);
   }
   */
-  //Serial.println(read_color());
+  //read_color();
 
   //lcdPrint("working");
   //delay(500);
@@ -336,7 +336,7 @@ void loop(){
   switch (state) {
     case SENSE_TILE: {
       // reset per-tile toggles
-      blacktoggle = false; bluetoggle = false; victimtoggle = false;
+      blacktoggle = false; bluetoggle = false; victimtoggle = false; obstacle = false;
       // Read for walls
       Serial.println("reading walls");
       readWallsRel(wallF, wallR, wallB, wallL);
@@ -411,7 +411,7 @@ void loop(){
       // Nudge heading to correct lateral (left-right) position before
       // driving the tile, runs after turn validation so it's never
       // mistaken for a botched turn.
-      lateralCorrect();
+      //lateralCorrect();
 
       // 2) drive one tile. fwd() sets blacktoggle/bluetoggle, handles ramps
       //    (advancing x_pos/y_pos for any climbed tiles) and services any
@@ -426,6 +426,15 @@ void loop(){
           delay(5000);
           mapGrid[x_pos][y_pos].setType(BLUE);
         }
+        /*
+        if(obstacle == true){
+          // set obstacle type
+          int nx = x, int ny = y;
+          stepForward(currentDir, nx, ny);
+          mapGrid[x][y].setObstacle(currentDir, true); // connected
+          mapGrid[nx][ny].setObstacle(opposite(currentDir), true); // update both sides.
+        }
+        */
       }
       else{
         
@@ -527,9 +536,12 @@ void loop(){
       
       while(true){
         drivetrain.fullstop();
+        lcdPrint("back to start");
         for(int i = 0;i<10;i++){
-          lcdPrint("back to start");
-          delay(1000);
+          digitalWrite(LEDPIN,HIGH);
+          delay(500);
+          digitalWrite(LEDPIN,LOW);
+          delay(500);
         }
       }
     }

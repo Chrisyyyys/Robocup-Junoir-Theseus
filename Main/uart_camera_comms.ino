@@ -88,7 +88,10 @@ bool detectCam1(){ // left camera serial4
       res = classes[i];
     }
   }
-  
+  digitalWrite(LEDPIN,HIGH);
+  delay(500);
+  digitalWrite(LEDPIN,LOW);
+  delay(500);
   char msg[17]; snprintf(msg, sizeof(msg), "victim: %c", res);
   lcdPrint(msg);
   
@@ -129,6 +132,10 @@ bool detectCam2(){
       res = classes[i];
     }
   }
+  digitalWrite(LEDPIN,HIGH);
+  delay(500);
+  digitalWrite(LEDPIN,LOW);
+  delay(500);
   char msg[17]; snprintf(msg, sizeof(msg), "victim: %c", res);
   lcdPrint(msg);
   
