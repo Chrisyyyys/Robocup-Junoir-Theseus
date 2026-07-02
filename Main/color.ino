@@ -31,7 +31,7 @@ int read_color(){
 
   tcs.getRawData(&r, &g, &b, &c);
   i2cMutex.unlock();
-  /*
+  
   Serial.print(r);
   Serial.print(" ");
   Serial.print(g);
@@ -40,8 +40,8 @@ int read_color(){
   Serial.print(" ");
   Serial.print((float)c/clear);
   Serial.println(" ");
-  */
   
+  //Serial.println((float)c/clear);
   
   if((float)c/clear<BLACK_THRESHOLD){
     
@@ -52,10 +52,10 @@ int read_color(){
   if(c>SILVER_THRESHOLD){ // silver reflects more absolute light
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
-    Serial.print("silver at ");
-    Serial.print(nx);
-    Serial.print(", y=");
-    Serial.print(ny);
+    //Serial.print("silver at ");
+    //Serial.print(nx);
+    //Serial.print(", y=");
+    //Serial.print(ny);
     mapGrid[nx][ny].setType(CHECKPOINT);
     x_checkpoint = nx; y_checkpoint = ny;
     floor_checkpoint = currentFloor; // remember which floor this checkpoint is on
