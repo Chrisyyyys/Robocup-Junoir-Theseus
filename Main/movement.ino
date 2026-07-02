@@ -57,7 +57,7 @@ void fwd(double dist){ // in mm
       return;
     }
     else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&!(front_left<=OBSTACLE_DIST&&front_left!=-1)){
-      obstacleavoidance(0);
+      int prevdist = obstacleavoidance(0);
       drivetrain.fullstop();
       delay(50);
       if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){

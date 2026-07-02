@@ -328,12 +328,12 @@ void loop(){
     delay(500);
   }
   */
-  read_color();
+  //read_color();
 
   //lcdPrint("working");
   //delay(500);
   
-  /*
+  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -428,7 +428,7 @@ void loop(){
           delay(5000);
           mapGrid[x_pos][y_pos].setType(BLUE);
         }
-        
+        /*
         if(obstacle == true){
           // set obstacle type
           int nx = x, int ny = y;
@@ -436,7 +436,7 @@ void loop(){
           mapGrid[x][y].setObstacle(currentDir, true); // connected
           mapGrid[nx][ny].setObstacle(opposite(currentDir), true); // update both sides.
         }
-        
+        */
       }
       else{
         
@@ -578,6 +578,6 @@ void loop(){
       break;
     }
  }
- */
+ 
  
 }

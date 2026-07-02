@@ -390,8 +390,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             motorD->run(BACKWARD);
             drivetrain.drive(255,255,255,255);
           }
-          _ = measure(1);
-          _ = (_!=-1&&_!=8191) ? _ : -1;
+          
         }
         else if(leftright == 0){ // obstacle at right
           _ = measure(7);
