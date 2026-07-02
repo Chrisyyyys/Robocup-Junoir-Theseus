@@ -20,7 +20,7 @@ void fwd(double dist){ // in mm
   PID climbPID(10,0,0.1); // pid for centering on ramp
   PID center_PID(0.30,0,0.2);
   PID gyroPID(8,0,0.05);
-  PID Scale_PID(0.007,0,0.0008); // pid for encoder
+  PID Scale_PID(0.007,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
   fwdActive = true;
@@ -30,23 +30,14 @@ void fwd(double dist){ // in mm
   int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
   Serial.println("init_yaw");
   Serial.println(init_yaw);
-  // [DIAG] round-1 sideswipe instrumentation: show whether init_yaw matches actual heading
-  double _entry_hdg = myGyro.heading();
-  Serial.print("[FWD] entry hdg=");
-  Serial.print(_entry_hdg, 1);
-  Serial.print(" init_yaw=");
-  Serial.print(init_yaw);
-  Serial.print(" offset=");
-  Serial.println(_entry_hdg - init_yaw, 1);
-  const char* fwdExit = "normal";
-  int _fwd_tick = 0;
   int front_left_current=measure(7); int front_right_current=measure(1);
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
   int front_left = measure(7);int front_right = measure(1);
   // outside loop
-  if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
+    if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
+      Serial.println("obstacle left");
       int prevdist = obstacleavoidance(1);
       drivetrain.fullstop();
       delay(50);
@@ -64,10 +55,10 @@ void fwd(double dist){ // in mm
         }
       }
       drivetrain.fullstop();
-      Serial.println("[FWD] exit=obstacle-left");
       return;
     }
     else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&!(front_left<=OBSTACLE_DIST&&front_left!=-1)){
+      Serial.println("obstacle right");
       int prevdist = obstacleavoidance(0);
       drivetrain.fullstop();
       delay(50);
@@ -85,10 +76,9 @@ void fwd(double dist){ // in mm
       }
       drivetrain.fullstop();
       obstacle = true;
-      Serial.println("[FWD] exit=obstacle-right");
       return;
     }
-  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.1)&&black!=true){
+  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.12)&&black!=true){
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     if(Pausemaze==true) {drivetrain.fullstop(); break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
@@ -127,30 +117,23 @@ void fwd(double dist){ // in mm
       black = true;
     }
     // PID centering
-    int wall_left = measure(2);
-    int wall_right = measure(6);
+    
     double adjustment;
-    // [DIAG] track which control mode ran this tick and the raw error fed to PID
-    bool _diag_wall_mode;
-    double _diag_pid_err;
-    if(wall_left<MIN_DIST && wall_left!=-1 && wall_right<MIN_DIST && wall_right!=-1){
+    // only use distance sensor to center when there are walls on both sides.
+    
       // error sign must match the gyro branch: positive adjustment steers the
       // robot the same way for both. wall_right-wall_left is >0 when the robot
       // is closer to the left wall, which correctly steers it back toward center.
-      _diag_wall_mode = true;
-      _diag_pid_err = center();
-      adjustment = center_PID.getPID(_diag_pid_err);
-    }
+    adjustment = center_PID.getPID(center());
+    /*
     else{
       double yaw = myGyro.heading()-init_yaw;
       if(yaw>180) yaw = yaw-360;
       if(yaw<-180) yaw+= 360;
-      _diag_wall_mode = false;
-      _diag_pid_err = yaw;
       adjustment = gyroPID.getPID(yaw);
     }
-    
-    double Scale = Scale_PID.getPID(pulses*1.1-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
+    */
+    double Scale = Scale_PID.getPID(pulses*1.12-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     
     // emergency stop
     
@@ -160,11 +143,7 @@ void fwd(double dist){ // in mm
     if((front_left_current<=50&&front_left_current!=-1)&&(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
       // if the robot doesn't make it halfway across the tile, fwd failed.
-      Serial.print("[FWD] emergency-stop fl=");
-      Serial.print(front_left_current);
-      Serial.print(" fr=");
-      Serial.println(front_right_current);
-      fwdExit = "emergency-front";
+      
       drivetrain.fullstop();
       delay(50);
       break;
@@ -210,36 +189,9 @@ void fwd(double dist){ // in mm
     }
     
     
-    // [DIAG] throttled per-loop trace (every 5 ticks) — CSV so it can be graphed
-    // Fields: t_ms, wl, wr, mode(W/G), err, adj, encAvg, fl, fr
-    _fwd_tick++;
-    if((_fwd_tick % 5) == 0){
-      int _enc_avg = (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3;
-      Serial.print("[FWD] t=");
-      Serial.print(millis());
-      Serial.print(" wl=");
-      Serial.print(wall_left);
-      Serial.print(" wr=");
-      Serial.print(wall_right);
-      Serial.print(" mode=");
-      Serial.print(_diag_wall_mode ? 'W' : 'G');
-      Serial.print(" err=");
-      Serial.print(_diag_pid_err, 1);
-      Serial.print(" adj=");
-      Serial.print(adjustment, 1);
-      Serial.print(" enc=");
-      Serial.print(_enc_avg);
-      Serial.print(" fl=");
-      Serial.print(front_left_current);
-      Serial.print(" fr=");
-      Serial.println(front_right_current);
-    }
-
     drivetrain.drive(constrain(Scale*(150+adjustment),20,150),constrain(Scale*(150+adjustment),20,150)*1.25,constrain(Scale*(150-adjustment),20,150)*1.25,constrain(Scale*(150-adjustment),20,150));
     //drivetrain.drive(150+adjustment,(150+adjustment)*1.25,(150-adjustment)*1.25,150+adjustment);
   }
-  Serial.print("[FWD] exit=");
-  Serial.println(fwdExit);
   Serial.println("stop- end of fwd");
   // sometimes it barely makes it over the slope
   if(climbed == true){
@@ -322,7 +274,7 @@ void absoluteturn(double angle){
   else if(myGyro.inverse(angle,fasterway)-current_angle<0) {
     while(true){
       if(Pausemaze==true) {drivetrain.fullstop(); break;}
-      if(victimPending){ // service camera victim mid-turn (claude version 6/16/2026)
+      if(victimPending){ // service camera victim mid-turn 
         drivetrain.fullstop();
         myPID.pausePID(1); myTimer.pause(1);
         while(victimPending==true){
@@ -378,11 +330,6 @@ void lateralCorrect(){
   if(wallDir == 3) thetaDeg = -thetaDeg; // left wall: flip sign
 
   double newHeading = myGyro.heading() + thetaDeg;
-  // absoluteturn()'s wraparound ("fasterway") handling picks the wrong turn
-  // direction/distance for targets that cross the 0/360 boundary. Rather than
-  // wrap newHeading back into [0,360) and risk that buggy path, skip the
-  // correction this tile if it would cross the boundary — it'll be retried
-  // next tile once the heading has drifted away from the boundary.
   if(newHeading < 0 || newHeading >= 360){
     Serial.println("lateralCorrect: skipping, correction crosses 0/360 boundary");
     return;

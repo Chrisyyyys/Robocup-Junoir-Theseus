@@ -9,9 +9,6 @@ void init_color(){
     
   } else {
     Serial.println("No TCS34725 found ... check your connections");
-  
-    
-    
     //while (1); // halt!
   }
   myMux.setPort(TCS_PORT);          
@@ -42,7 +39,7 @@ int read_color(){
   Serial.print(b);
   Serial.print(" ");
   */
-  Serial.println(c);
+  
   
   if((float)c/clear<BLACK_THRESHOLD){
     

@@ -1,5 +1,3 @@
-// claude version 6/16/2026 — single-core port of the multicore_version loop +
-// navigation, with multi-floor elevation and an RTOS camera-detection thread.
 #include <mbed.h> // access arduino mbed OS (rtos::Thread)
 #include <Wire.h>
 #include <SparkFun_I2C_Mux_Arduino_Library.h>
@@ -25,7 +23,7 @@
 #include "dispenser.h"
 #include "motors.h"
 // movement constants
-#define MIN_DIST 150         // mm (tune this)
+#define MIN_DIST 120         // mm (tune this)
 #define OBSTACLE_DIST 90
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define ROBOT_LENGTH_MM 195                                      // mm, robot front-to-back length
@@ -179,7 +177,7 @@ double headingErrorDeg(double targetDeg, double actualDeg) {
   return abs(err);
 }
 
-// ===== camera victim-detection RTOS thread (claude version 6/16/2026) =====
+// ===== camera victim-detection RTOS thread =====
 // The thread only checks the camera UARTs (Serial3 = left, Serial2 = right).
 // It never touches the I2C bus (mux/distance/color) so it cannot race the main
 // context's measure()/detectWall() calls. When a camera reports a letter while
@@ -411,7 +409,7 @@ void loop(){
       }
 
       // Nudge heading to correct lateral (left-right) position before
-      // driving the tile — runs after turn validation so it's never
+      // driving the tile, runs after turn validation so it's never
       // mistaken for a botched turn.
       //lateralCorrect();
 
@@ -508,7 +506,7 @@ void loop(){
         while(true) drivetrain.fullstop();
       }
       Serial.println("path calculated");
-      // path[0]=currentpos, path[last]=endpos — iterate forward toward home
+      // path[0]=currentpos, path[last]=endpos >> iterate forward toward home
       for(int i = 0; i < (int)path.size() - 1; i++){
         Direction moveDir;
         int dx = path[i+1].second.first  - path[i].second.first;
