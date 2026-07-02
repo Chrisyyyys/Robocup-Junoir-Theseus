@@ -36,7 +36,8 @@ void fwd(double dist){ // in mm
   myTime.reset_delta_time();
   int front_left = measure(7);int front_right = measure(1);
   // outside loop
-  if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
+    if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
+      Serial.println("obstacle left");
       int prevdist = obstacleavoidance(1);
       drivetrain.fullstop();
       delay(50);
@@ -57,6 +58,7 @@ void fwd(double dist){ // in mm
       return;
     }
     else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&!(front_left<=OBSTACLE_DIST&&front_left!=-1)){
+      Serial.println("obstacle right");
       int prevdist = obstacleavoidance(0);
       drivetrain.fullstop();
       delay(50);
@@ -76,7 +78,7 @@ void fwd(double dist){ // in mm
       obstacle = true;
       return;
     }
-  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.1)&&black!=true){
+  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.12)&&black!=true){
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     if(Pausemaze==true) {drivetrain.fullstop(); break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
@@ -115,23 +117,23 @@ void fwd(double dist){ // in mm
       black = true;
     }
     // PID centering
-    int wall_left = measure(2);
-    int wall_right = measure(6);
+    
     double adjustment;
-    if(wall_left<MIN_DIST && wall_left!=-1 && wall_right<MIN_DIST && wall_right!=-1){
+    // only use distance sensor to center when there are walls on both sides.
+    
       // error sign must match the gyro branch: positive adjustment steers the
       // robot the same way for both. wall_right-wall_left is >0 when the robot
       // is closer to the left wall, which correctly steers it back toward center.
-      adjustment = center_PID.getPID(center());
-    }
+    adjustment = center_PID.getPID(center());
+    /*
     else{
       double yaw = myGyro.heading()-init_yaw;
       if(yaw>180) yaw = yaw-360;
       if(yaw<-180) yaw+= 360;
       adjustment = gyroPID.getPID(yaw);
     }
-    
-    double Scale = Scale_PID.getPID(pulses*1.1-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
+    */
+    double Scale = Scale_PID.getPID(pulses*1.12-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     
     // emergency stop
     

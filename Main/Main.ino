@@ -25,7 +25,7 @@
 #include "dispenser.h"
 #include "motors.h"
 // movement constants
-#define MIN_DIST 150         // mm (tune this)
+#define MIN_DIST 120         // mm (tune this)
 #define OBSTACLE_DIST 90
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define ROBOT_LENGTH_MM 195                                      // mm, robot front-to-back length
