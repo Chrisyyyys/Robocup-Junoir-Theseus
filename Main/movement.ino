@@ -41,6 +41,7 @@ void fwd(double dist){ // in mm
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
+  /*
   int front_left = measure(7);int front_right = measure(1);
   // outside loop
     if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
@@ -89,6 +90,7 @@ void fwd(double dist){ // in mm
       Serial.println("[FWD] exit=obstacle-right");
       return;
     }
+    */
   while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.12)&&black!=true){
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     if(Pausemaze==true) {drivetrain.fullstop(); break;}
