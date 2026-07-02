@@ -330,7 +330,7 @@ void loop(){
 
   //lcdPrint("working");
   //delay(500);
-  
+  //drivetrain.drive(150,150*1.25,150*1.25,150);
   
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
@@ -426,15 +426,16 @@ void loop(){
           delay(5000);
           mapGrid[x_pos][y_pos].setType(BLUE);
         }
-        /*
-        if(obstacle == true){
+        
+        //if(obstacle == true){
           // set obstacle type
-          int nx = x, int ny = y;
-          stepForward(currentDir, nx, ny);
-          mapGrid[x][y].setObstacle(currentDir, true); // connected
-          mapGrid[nx][ny].setObstacle(opposite(currentDir), true); // update both sides.
-        }
-        */
+          // make sure to prevent return to the tile with obstacle in the future.
+          //int nx = x_pos; int ny = y_pos;
+          //stepForward(currentDir, nx, ny);
+          //mapGrid[x_pos][y_pos].setObstacle(currentDir, true); // connected
+          //mapGrid[nx][ny].setObstacle(opposite(currentDir), true); // update both sides.
+        //}
+        
       }
       else{
         
@@ -537,11 +538,11 @@ void loop(){
       while(true){
         drivetrain.fullstop();
         lcdPrint("back to start");
-        for(int i = 0;i<10;i++){
+        for(int i = 0;i<5;i++){
           digitalWrite(LEDPIN,HIGH);
-          delay(500);
+          delay(1000);
           digitalWrite(LEDPIN,LOW);
-          delay(500);
+          delay(1000);
         }
       }
     }

@@ -19,7 +19,7 @@ void fwd(double dist){ // in mm
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   PID climbPID(10,0,0.1); // pid for centering on ramp
   PID center_PID(0.30,0,0.2);
-  PID gyroPID(8,0,0.05);
+  PID gyroPID(20,0.001,0.03);
   PID Scale_PID(0.007,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
@@ -137,8 +137,13 @@ void fwd(double dist){ // in mm
       // robot the same way for both. wall_right-wall_left is >0 when the robot
       // is closer to the left wall, which correctly steers it back toward center.
     // [DIAG] capture the error fed to PID so it can be logged below
-    double _diag_pid_err = center();
-    adjustment = center_PID.getPID(_diag_pid_err);
+    //double _diag_pid_err = center();
+    //adjustment = center_PID.getPID(_diag_pid_err);
+    double yaw = myGyro.heading()-init_yaw;
+    if(yaw>180) yaw = yaw-360;
+    if(yaw<-180) yaw+= 360;
+    double _diag_pid_err = yaw;
+    adjustment = gyroPID.getPID(_diag_pid_err);
     /*
     else{
       double yaw = myGyro.heading()-init_yaw;
@@ -233,7 +238,7 @@ void fwd(double dist){ // in mm
       Serial.println(front_right_current);
     }
 
-    drivetrain.drive(constrain(Scale*(150+adjustment),20,150),constrain(Scale*(150+adjustment),20,150)*1.25,constrain(Scale*(150-adjustment),20,150)*1.25,constrain(Scale*(150-adjustment),20,150));
+    drivetrain.drive(constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120-adjustment),20,150)*1.25,constrain(Scale*(120+adjustment),20,150)*1.25,constrain(Scale*(120+adjustment),20,150));
     //drivetrain.drive(150+adjustment,(150+adjustment)*1.25,(150-adjustment)*1.25,150+adjustment);
   }
   Serial.print("[FWD] exit=");
