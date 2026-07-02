@@ -328,12 +328,11 @@ void loop(){
   
   */
   read_color();
-  //read_color();
 
   //lcdPrint("working");
   //delay(500);
   //drivetrain.drive(150,150*1.25,150*1.25,150);
-  
+  /*
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -570,6 +569,6 @@ void loop(){
       break;
     }
  }
- 
+ */
  
 }

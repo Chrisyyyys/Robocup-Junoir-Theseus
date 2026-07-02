@@ -16,7 +16,7 @@ void fwd(double dist){ // in mm
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   PID climbPID(10,0,0.1); // pid for centering on ramp
   PID center_PID(0.30,0,0.2);
-  PID gyroPID(40,0.001,0.03);
+  PID gyroPID(40,0.005,0.03);
   PID Scale_PID(0.007,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
@@ -49,8 +49,9 @@ void fwd(double dist){ // in mm
       drivetrain.fullstop();
       delay(50);
       obstacle = true;
+      
       if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
-        int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM);
+        int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM); // don't "overmove"
         while(drivetrain.encoderCountA >= -pulses && drivetrain.encoderCountB >= -pulses && drivetrain.encoderCountD >= -pulses){ // too far in front, go back
           drivetrain.backward(150);
         }
@@ -61,6 +62,7 @@ void fwd(double dist){ // in mm
           drivetrain.fw(150);
         }
       }
+      
       drivetrain.fullstop();
       Serial.println("[FWD] exit=obstacle-left");
       return;
