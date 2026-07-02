@@ -31,15 +31,16 @@ int read_color(){
 
   tcs.getRawData(&r, &g, &b, &c);
   i2cMutex.unlock();
-  /*
+  
   Serial.print(r);
   Serial.print(" ");
   Serial.print(g);
   Serial.print(" ");
   Serial.print(b);
   Serial.print(" ");
-  */
-  //Serial.println((float)c/clear);
+  Serial.println(" ");
+  
+  Serial.println((float)c/clear);
   
   if((float)c/clear<BLACK_THRESHOLD){
     

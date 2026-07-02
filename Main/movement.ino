@@ -16,7 +16,7 @@ void fwd(double dist){ // in mm
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   PID climbPID(10,0,0.1); // pid for centering on ramp
   PID center_PID(0.30,0,0.2);
-  PID gyroPID(20,0.001,0.03);
+  PID gyroPID(20,0.005,0.03);
   PID Scale_PID(0.007,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
@@ -128,7 +128,7 @@ void fwd(double dist){ // in mm
     // PID centering
 
     double adjustment;
-<<<<<<< Updated upstream
+
     // only use distance sensor to center when there are walls on both sides.
 
       // error sign must match the gyro branch: positive adjustment steers the
