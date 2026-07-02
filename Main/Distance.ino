@@ -384,6 +384,10 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             motorB->run(BACKWARD);
             motorD->run(BACKWARD);
             drivetrain.drive(255,255,255,255);
+            if(Pausemaze == true){
+              drivetrain.fullstop();
+              break;
+            }
           }
           
         }
@@ -394,6 +398,10 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             motorA->run(BACKWARD);
             motorC->run(BACKWARD);
             drivetrain.drive(255,255,255,255);
+            if(Pausemaze == true){
+              drivetrain.fullstop();
+              break;
+            }
           }
           
         }
@@ -411,6 +419,10 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         if(leftright == 1){
           int a = measure(2); int b = measure(3);
           while(true){
+            if(Pausemaze == true){
+              drivetrain.fullstop();
+              break;
+            }
             a=measure(2); b = measure(3);
             if(a<=30) break;
             Serial.println("paralleling step");
@@ -431,6 +443,10 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         }
         else if(leftright == 0){
           while(true){
+            if(Pausemaze == true){
+              drivetrain.fullstop();
+              break;
+            }
             int a = measure(6); int b = measure(5);
             if(a<=30) break;
             double increment = pid.getPID(a-b); // signed error: positive turns one way, negative the other
@@ -459,11 +475,19 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         timer myTime;
         if(leftright == 0){
           while(measure(6)<=40&&myTime.getTime()<800000){
+            if(Pausemaze == true){
+              drivetrain.fullstop();
+              break;
+            }
             drivetrain.backward(120);
           }
         }
         else if(leftright == 1){
           while(measure(2)<=40&&myTime.getTime()<800000){
+            if(Pausemaze == true){
+              drivetrain.fullstop();
+              break;
+            }
             drivetrain.backward(120);
           }
         }
@@ -497,6 +521,10 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         delay(2000);
         timer myTime;
         while(abs(measure(2)-measure(6))>=15&&myTime.getTime()<1000000){
+          if(Pausemaze == true){
+              drivetrain.fullstop();
+              break;
+            }
           double diff = pid.getPID(measure(2)-measure(6));
           drivetrain.drive(70+diff,70+diff,70-diff,70-diff);
         }
