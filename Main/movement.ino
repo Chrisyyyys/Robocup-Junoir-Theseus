@@ -5,9 +5,6 @@ void init_drive(){
   myGyro.init_Gyro();
 }
 
-
-// full stop
-
 void fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   bool black = false; // toggle for black tile
@@ -131,6 +128,7 @@ void fwd(double dist){ // in mm
     // PID centering
 
     double adjustment;
+<<<<<<< Updated upstream
     // only use distance sensor to center when there are walls on both sides.
 
       // error sign must match the gyro branch: positive adjustment steers the
@@ -145,6 +143,14 @@ void fwd(double dist){ // in mm
     double _diag_pid_err = yaw;
     adjustment = gyroPID.getPID(_diag_pid_err);
     /*
+=======
+    if(wall_left<MIN_DIST && wall_left!=-1 && wall_right<MIN_DIST && wall_right!=-1){
+      // Same sign as gyro correction.
+      // wall_right - wall_left is > 0 when the robot is closer to the left wall.
+      // -> steers back to center.
+      adjustment = center_PID.getPID(center());
+    }
+>>>>>>> Stashed changes
     else{
       double yaw = myGyro.heading()-init_yaw;
       if(yaw>180) yaw = yaw-360;
@@ -352,12 +358,11 @@ void absoluteturn(double angle){
   drivetrain.reset_encoderCount(true,true,true); // reset encoder counters.
 }
 
-// Corrects left-right position within the tile by turning the robot a small
-// amount before the next forward drive, so fwd()'s heading-hold behavior
-// (it locks onto whatever heading it starts at) carries the robot diagonally
-// back toward center over the course of the tile. Must run AFTER
-// turnCompletedSuccessfully() has validated the cardinal turn, so this
-// intentional small heading offset isn't mistaken for a botched turn.
+// Corrects left-right position within the tile by turning the robot a small amount before the next forward drive
+// -> so fwd()'s heading-hold behavior moves the robot diagonally back towards the center.
+// (it locks onto whatever heading it starts at) 
+// Must run AFTER turnCompletedSuccessfully() has validated the cardinal turn, so this intentional small heading offset isn't mistaken for a botched turn.
+
 void lateralCorrect(){
   int wallDir;
   if(detectWall(1) == 0) wallDir = 1;      // right wall
@@ -390,5 +395,3 @@ void lateralCorrect(){
   Serial.print(" theta="); Serial.println(thetaDeg);
   absoluteturn(newHeading);
 }
-
-// full stop function

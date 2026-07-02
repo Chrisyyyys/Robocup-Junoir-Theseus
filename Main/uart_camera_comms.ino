@@ -146,11 +146,10 @@ bool detectCam2(){
   disp.dispenseRight(res);
   return true;
 }
+
 // Service a camera victim that the RTOS thread flagged via victimPending.
-// The caller (fwd/absoluteturn) has already paused its PID + timer. This stops
-// the drivetrain, identifies the victim on the wall, dispenses the rescue kit,
-// and labels the correct tile using the encoder position. (claude version 6/16/2026)
-// serviceCameraVictim() is outside to prevent I2C conflict with centered.
+// The caller (fwd/absoluteturn) has already paused PID + timer. This stops drivetrain, identifies victim, dispenses rescue kit, and labels the correct tile using encoder position. 
+// serviceCameraVictim() is outside to prevent I2C conflict with centered.x
 void serviceCameraVictim(){
   
   if(victimSide == 1){            // left camera (Serial3)
