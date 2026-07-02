@@ -125,6 +125,7 @@ void fwd(double dist){ // in mm
       // robot the same way for both. wall_right-wall_left is >0 when the robot
       // is closer to the left wall, which correctly steers it back toward center.
     adjustment = center_PID.getPID(center());
+    Serial.println(center());
     /*
     else{
       double yaw = myGyro.heading()-init_yaw;
