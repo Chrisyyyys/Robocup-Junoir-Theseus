@@ -12,7 +12,7 @@ PID::PID(double _kp, double _ki, double _kd){
 }
 double PID::getPID(double _error){
   error = _error;
-  currentTime = micros()-(end-start); // functions are slower! you need to use micros
+  currentTime = micros()-(end-start); // using micros since functions are slower
   delta = (error-prevError)/(currentTime - previousTime);
   cumError += error;
   double output = kp*error + ki*cumError + kd*delta;

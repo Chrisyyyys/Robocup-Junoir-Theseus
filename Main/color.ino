@@ -9,9 +9,6 @@ void init_color(){
     
   } else {
     Serial.println("No TCS34725 found ... check your connections");
-  
-    
-    
     //while (1); // halt!
   }
   myMux.setPort(TCS_PORT);          
