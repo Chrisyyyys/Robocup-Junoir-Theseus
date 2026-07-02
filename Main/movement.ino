@@ -146,6 +146,15 @@ void fwd(double dist){ // in mm
     if(yaw<-180) yaw+= 360;
     double _diag_pid_err = yaw;
     adjustment = gyroPID.getPID(_diag_pid_err);
+  // [DRIFT] feedforward drift bias: the drivetrain has a persistent mechanical
+    // pull to the left. The drive() line below adds +adjustment to motors A,C
+    // (left side) and subtracts it from B,D (right side), so adding a positive
+    // constant here permanently biases the robot to steer slightly right,
+    // cancelling the drift BEFORE the PID has to react to it. If tuning shows
+    // the robot now drifts right instead, reduce this value; if it still drifts
+    // left, increase it. If the drift direction were reversed, flip the sign.
+    const double DRIFT_BIAS = 5.0;
+    adjustment += DRIFT_BIAS;
     /*
 =======
     if(wall_left<MIN_DIST && wall_left!=-1 && wall_right<MIN_DIST && wall_right!=-1){
