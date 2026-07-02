@@ -147,6 +147,10 @@ Direction pickNextDirection() {
     return mapGrid[nx][ny].getType() == BLACK;
   };
 
+  auto isObstacle = [&](int nx, int ny){ 
+    return mapGrid[nx][ny].hasObstacle(); 
+  };
+
   // 1) try open + untraveled first
   for (int i = 0; i < 3; i++) {
     int nx = x_pos, ny = y_pos;
@@ -154,16 +158,27 @@ Direction pickNextDirection() {
     Direction d = priority[i];
     stepForward(d,nx,ny);
 
-    if (inBounds(nx, ny) && open(d) && untr(d) && !mapGrid[nx][ny].getVisited() && !blockedForTravel(nx, ny)) return d;
+    if (inBounds(nx, ny) && open(d) && untr(d) && !mapGrid[nx][ny].getVisited() && !blockedForTravel(nx, ny)&& !isObstacle(nx,ny)) return d;
   }
 
-  // 2) else any open (still avoid black/blue) using the same absolute priority.
+  // 2) else any open (still avoid black/blue/obstacle) using the same absolute priority.
+  // we could lwk have a stack (FILO) of unvisited tiles near and have bfs nav when all nearby is visited
+  for (int i = 0; i < 3; i++) {
+    int nx = x_pos, ny = y_pos;
+    Direction d = priority[i];
+    stepForward(d,nx,ny);
+    if (inBounds(nx, ny) && open(d) && !blockedForTravel(nx, ny) && !isObstacle(nx,ny)) return d;
+  }
+
+  // 3) Non blue tiles
   for (int i = 0; i < 3; i++) {
     int nx = x_pos, ny = y_pos;
     Direction d = priority[i];
     stepForward(d,nx,ny);
     if (inBounds(nx, ny) && open(d) && !blockedForTravel(nx, ny)) return d;
   }
+
+  // 4) Non black tile
   for (int i=0;i<3;i++){
     int nx = x_pos, ny = y_pos;
     Direction d = priority[i];
@@ -190,7 +205,7 @@ int dir[4][2] = {
     {0, -1},
     {-1, 0}
 };
-void initTile(int x, int y, Grid& map) {
+void initTile(int x, int y, Grid& map) { //needs update (probably unneeded, small prio)
     map[x][y].setDiscovered(false);
     map[x][y].setFully(false);
     map[x][y].setVisited(false);
@@ -388,7 +403,7 @@ struct BfsNode { uint8_t z, x, y; }; // 3d coords in form z (floor) ,x,y
 
 // allowBlue: if true, BLUE tiles are traversable (fallback mode).
 // Returns empty deque if endpos is unreachable under the given constraints.
-std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int, int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int, int>> endpos, bool allowBlue = false) {
+std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int, int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int, int>> endpos, bool allowBlue = false, bool allowObstacle = false) {
     Grid* map[3] = { &m1, &m2, &m3 };  // index, don't copy
 
     static bool    visited[3][MAP_SIZE][MAP_SIZE];
@@ -428,6 +443,9 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
                                 (*map[nz])[nx][ny].getType() != BLACK;
                 if (!allowBlue) {
                     passable = passable && (*map[nz])[nx][ny].getType() != BLUE;
+                }
+                if (!allowObstacle){
+                    passable = passable && !((*map[nz])[nx][ny].hasObstacle());
                 }
 
                 if (!visited[nz][nx][ny] && passable) {

@@ -98,6 +98,14 @@ struct Tile {
     bitset.set(dir+16, stat);
   }
 
+  bool hasObstacle(){
+    if(bitset.get(16) || bitset.get(17) || bitset.get(18) || bitset.get(19))
+    {
+      return true;
+    }
+    return false;
+  }
+
   //bool wall[4];
   //bool edge[4];
 

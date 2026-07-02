@@ -424,13 +424,13 @@ void loop(){
         }
         
         if(obstacle == true){
-          set obstacle type
-          make sure to prevent return to the tile with obstacle in the future.
+          //set obstacle type
+          //make sure to prevent return to the tile with obstacle in the future.
           int nx = x_pos; int ny = y_pos;
           stepForward(currentDir, nx, ny);
           mapGrid[x_pos][y_pos].setObstacle(currentDir, true); // connected
           mapGrid[nx][ny].setObstacle(opposite(currentDir), true); // update both sides.
-        //}
+        }
         
       }
       else{
