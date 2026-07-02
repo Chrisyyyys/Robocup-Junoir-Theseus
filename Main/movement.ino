@@ -20,7 +20,7 @@ void fwd(double dist){ // in mm
   PID climbPID(10,0,0.1); // pid for centering on ramp
   PID center_PID(0.30,0,0.2);
   PID gyroPID(8,0,0.05);
-  PID Scale_PID(0.07,0,0.0008); // pid for encoder 
+  PID Scale_PID(0.007,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
   fwdActive = true;
@@ -35,6 +35,7 @@ void fwd(double dist){ // in mm
   timer myTime;
   myTime.reset_delta_time();
   int front_left = measure(7);int front_right = measure(1);
+  // outside loop
   if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
       int prevdist = obstacleavoidance(1);
       drivetrain.fullstop();
@@ -59,6 +60,19 @@ void fwd(double dist){ // in mm
       obstacleavoidance(0);
       drivetrain.fullstop();
       delay(50);
+      if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
+        int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM);
+        while(drivetrain.encoderCountA >= -pulses && drivetrain.encoderCountB >= -pulses && drivetrain.encoderCountD >= -pulses){ // too far in front, go back
+          drivetrain.backward(150);
+        }
+      }
+      else if(prevdist - (measure(1)+measure(7))/2 < TILE_MM){
+        int pulses = pulsesForDistanceMm(TILE_MM-(prevdist - (measure(1)+measure(7))/2));
+        while(drivetrain.encoderCountA <= pulses && drivetrain.encoderCountB <= pulses && drivetrain.encoderCountD <= pulses){ // too far in front, go back
+          drivetrain.fw(150);
+        }
+      }
+      drivetrain.fullstop();
       obstacle = true;
       return;
     }

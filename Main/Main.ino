@@ -38,8 +38,8 @@
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
 #define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.7f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
-#define WHITE_THRESHOLD 0.8f
+#define SILVER_THRESHOLD 3000 // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define WHITE_THRESHOLD 0.9f
 #define MULTIPLER 1.1 
 float clear; 
 
