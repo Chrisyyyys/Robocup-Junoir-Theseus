@@ -179,11 +179,11 @@ double headingErrorDeg(double targetDeg, double actualDeg) {
 
 // ===== camera victim-detection RTOS thread =====
 // The thread only checks the camera UARTs (Serial3 = left, Serial2 = right).
-// It never touches the I2C bus (mux/distance/color) so it cannot race the main
-// context's measure()/detectWall() calls. When a camera reports a letter while
-// the robot is moving, the thread raises victimPending; fwd()/absoluteturn()
-// then stop the drivetrain, pause their PID + timer, run detectCam(), and use
-// markVictimAtEncoderPosition() to label the correct tile before resuming.
+// -> It never touches the I2C bus (mux/distance/color) so it cannot interfere w/ the main context's measure()/detectWall() calls. 
+
+// When a camera reports a letter while the robot is moving, the thread raises victimPending; fwd()/absoluteturn()
+// then stop the drivetrain, pause their PID + timer, run detectCam(), and use markVictimAtEncoderPosition() to label the correct tile before resuming.
+
 volatile bool fwdActive = false; // true only while inside fwd()
 volatile bool turnActive = false;
 volatile bool victimPending = false; // a camera reported -> movement must service it
@@ -343,10 +343,8 @@ void loop(){
 
       delay(200);
       state = UPDATE_MAP; // next state.
-      // Auto-trigger front-back centering: only when a front wall is
-      // present, off-center beyond CENTER_TOL_MM, and the offset isn't so
-      // large (>= one tile) that the reading is unreliable. Back-wall
-      // centering isn't implemented yet, so wallB is not checked here.
+      // Auto-trigger front-back centering >> only when a front wall is present, off-center beyond CENTER_TOL_MM, and the offset isn't too large (>= one tile) that the reading is unreliable. 
+      // Back-wall centering isn't implemented yet, so wallB is not checked here.
       if(wallF == true){
         int front1 = measure(1);
         int front7 = measure(7);
@@ -408,17 +406,13 @@ void loop(){
         turnCompletedForMove = true;
       }
 
-      // Nudge heading to correct lateral (left-right) position before
-      // driving the tile, runs after turn validation so it's never
-      // mistaken for a botched turn.
-      //lateralCorrect();
+      // Nudge heading to correct lateral position before driving the tile, runs after turn validation so it's never mistaken for a botched turn.
+      // lateralCorrect();
 
-      // 2) drive one tile. fwd() sets blacktoggle/bluetoggle, handles ramps
-      //    (advancing x_pos/y_pos for any climbed tiles) and services any
-      //    camera victim reported by the RTOS thread during the move.
+      // drive one tile. fwd() sets blacktoggle/bluetoggle, handles ramps (advancing x_pos/y_pos for any climbed tiles) and services any camera victim reported by the RTOS thread during the move.  
       fwd(TILE_MM);
       
-      // 3) update map + robot position only on a successful (non-black) move
+      // update map + robot position only on a successful (non-black) move
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos); // x_pos/y_pos now = new tile
@@ -550,11 +544,8 @@ void loop(){
       delay(200);
       if(digitalRead(logicswitch)==LOW){
         Pausemaze = false;
-        // Restore the checkpoint's FLOOR as well as its tile. Save the grid we
-        // were working on back into its floor slot (m1=floor0, m2=floor1,
-        // m3=floor2), then load the checkpoint floor's grid as the active grid
-        // so victim flags / walls are looked up on the correct floor. (Without
-        // this, resuming after a ramp left mapGrid pointing at the wrong floor.)
+        // Restore the checkpoint's FLOOR as well as its tile. Save the grid we were working on back into its floor slot (m1=floor0, m2=floor1, m3=floor2), then load the checkpoint floor's grid as the active grid
+        // -> so victim flags / walls are looked up on the correct floor.
         if(currentFloor == 0)      m1 = mapGrid;
         else if(currentFloor == 1) m2 = mapGrid;
         else if(currentFloor == 2) m3 = mapGrid;

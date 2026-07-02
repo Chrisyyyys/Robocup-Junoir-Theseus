@@ -288,16 +288,15 @@ void parallel(){
   drivetrain.fullstop();
 }
 
-// Self-centers the robot front-to-back within a tile using the front wall
-// (avg of sensors 1+7). Only acts when a front wall is present; back-wall-only
-// centering is not implemented yet. parallel() runs first so the robot is
-// squared to a side wall before the front reading is trusted.
+// Self-centers the robot front-to-back within a tile using the front wall (avg of sensors 1+7).
+// Only acts when a front wall is present (back-wall-only centering is not implemented yet)
+// parallel() runs first so the robot is squared to a side wall before the front reading is trusted.
+
 void centerFrontBack(){
   const int CENTERING_SPEED = 70;                   // mirrors PARALLEL_SPEED
   const unsigned long CENTERING_TIMEOUT_MS = 2000;
-  // MAX_CENTER_CORRECTION_MM is a file-scope #define (Main.ino), shared with
-  // the SENSE_TILE trigger gate — redundant safety abort in case conditions
-  // changed between the trigger check and this function actually running.
+  // MAX_CENTER_CORRECTION_MM is a file-scope #define (Main.ino), shared with the SENSE_TILE trigger gate >> redundant safety abort 
+  // -> in case conditions changed between the trigger check and this function actually running.
 
   Serial.println("centering front-back (front wall)");
   parallel();
@@ -344,8 +343,7 @@ void centerFrontBack(){
       Serial.println("centered");
       break;
     }
-    // If the live offset flips sign vs. our initial decision, we've
-    // overshot — stop rather than reversing (avoids oscillation).
+    // If the live offset flips sign vs. our initial decision >> overshot, stop rather than reversing (avoids oscillation).
     if((offset > 0) != driveForward){
       Serial.println("centerFrontBack: overshot target, stopping to avoid oscillation");
       break;
