@@ -274,7 +274,7 @@ void absoluteturn(double angle){
   else if(myGyro.inverse(angle,fasterway)-current_angle<0) {
     while(true){
       if(Pausemaze==true) {drivetrain.fullstop(); break;}
-      if(victimPending){ // service camera victim mid-turn (claude version 6/16/2026)
+      if(victimPending){ // service camera victim mid-turn 
         drivetrain.fullstop();
         myPID.pausePID(1); myTimer.pause(1);
         while(victimPending==true){
@@ -330,11 +330,6 @@ void lateralCorrect(){
   if(wallDir == 3) thetaDeg = -thetaDeg; // left wall: flip sign
 
   double newHeading = myGyro.heading() + thetaDeg;
-  // absoluteturn()'s wraparound ("fasterway") handling picks the wrong turn
-  // direction/distance for targets that cross the 0/360 boundary. Rather than
-  // wrap newHeading back into [0,360) and risk that buggy path, skip the
-  // correction this tile if it would cross the boundary — it'll be retried
-  // next tile once the heading has drifted away from the boundary.
   if(newHeading < 0 || newHeading >= 360){
     Serial.println("lateralCorrect: skipping, correction crosses 0/360 boundary");
     return;

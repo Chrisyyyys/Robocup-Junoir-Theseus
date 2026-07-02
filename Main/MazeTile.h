@@ -77,7 +77,7 @@ struct Tile {
   void setVisited(bool stat){
     bitset.set(11,stat);
   }
-  // multi-floor elevation flags (claude version 6/16/2026)
+  // multi-floor elevation flags 
   bool getElevate(){
     return bitset.get(12);
   }
@@ -109,11 +109,5 @@ struct Tile {
 };
 
 Direction opposite(Direction d);
-
-// Map dimensions and the multi-floor grid type. Declared here (rather than in
-// Main.ino) so the Grid type is visible to Arduino's auto-generated function
-// prototypes regardless of .ino concatenation order. (claude version 6/16/2026)
-
-
 
 #endif

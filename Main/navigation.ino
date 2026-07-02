@@ -1,4 +1,4 @@
-// navigation.ino — claude version 6/16/2026
+// navigation.ino 
 // Ported from multicore_version (M7_main/navigation.ino) into the single-core
 // main branch. All RPC.call(...) cross-core calls have been replaced with the
 // original single-core functions (drivetrain.encoderCountA, detectWall, ...).
@@ -384,17 +384,10 @@ int BFS(coord currentpos, Grid& mapGrid, coord endpos, coord path[MAP_SIZE * MAP
 */
 // Compact BFS node. uint8_t is safe because MAP_SIZE (40) and floors (3) both
 // fit easily; keeps the static scratch arrays small.
-struct BfsNode { uint8_t z, x, y; }; // 3d coords by claude?
+struct BfsNode { uint8_t z, x, y; }; // 3d coords in form z (floor) ,x,y
 
 // allowBlue: if true, BLUE tiles are traversable (fallback mode).
 // Returns empty deque if endpos is unreachable under the given constraints.
-//
-// Memory note: this used to copy all three floor grids into a ~37.5 KB local
-// stack array and allocate ~60 KB of nested std::vector on the heap *per call*,
-// which hard-faulted / fragmented the Giga's D1 SRAM. Now the grids are indexed
-// through pointers (no copy) and all scratch lives in fixed static .bss arrays
-// reserved once at link time (visited ~4.7 KB, prev ~14 KB, queue ~14 KB). The
-// only per-call heap use is the returned path, which is just the route length.
 std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int, int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int, int>> endpos, bool allowBlue = false) {
     Grid* map[3] = { &m1, &m2, &m3 };  // index, don't copy
 
@@ -424,10 +417,8 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
             int nz = z;
 
             if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE) {
-                // floor change: a neighbor tile flagged elevate/descend is a ramp
-                // entry. Index (*map[z])[nx][ny] only after the bounds check above,
-                // and clamp nz to the valid floor range [0,2] so map[nz]/visited[nz]
-                // can never go out of bounds.
+                // floor change: a neighbor tile flagged elevate/descend is a ramp entry. 
+                // check so that new pos can never go out of bounds.
                 if ((*map[z])[nx][ny].getElevate() && z + 1 < 3) nz = z + 1;
                 else if ((*map[z])[nx][ny].getDescend() && z - 1 >= 0) nz = z - 1;
 
@@ -448,7 +439,7 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
         }
     }
 
-    // endpos unreachable under current constraints — return empty path
+    // endpos unreachable under current constraints >> return empty path
     if (!visited[ez][ex][ey]) {
         return {};
     }

@@ -1,8 +1,6 @@
 // distance sensor code
 // blue for SDA, yellow for SCL
-// the motor shield takes up the I2C address at 0x70 so chatgpt made some code that prevents conflict.
-
-
+// the motor shield takes up the I2C address at 0x70.
 
 void disableAllCall() {
   // Point register to MODE1
@@ -26,7 +24,6 @@ void disableAllCall() {
 }
 
 void init_dist() {
-  // put your setup code here, to run once:
   
   if(!myMux.begin()){
     Serial.println("can't find the Mux");
