@@ -296,27 +296,35 @@ void absoluteturn(double angle){
   // create PID instance.
   PID myPID(4.5,0,0.3);
   double MOTORSPEED = 0;
-  double current_angle=myGyro.heading();
-  bool fasterway = false;
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   // allow the camera RTOS thread to flag victims during the turn
   turnActive = true;
   isVictim = false;
   victimPending = false;
-  if(abs(angle-current_angle)> abs(angle-(360-current_angle))){
-    current_angle = myGyro.inverse(current_angle,true); // make sure the robot turns the least amount
-    fasterway = true;
-  } 
-  double init_angle = current_angle;
-  Serial.println("current angle");
-  Serial.println(current_angle);
+  // Shortest signed-path error, wrapped into [-180, 180]:
+  //   sign of diff  = direction to turn (+CW/turnright, -CCW/turnleft)
+  //   |diff|        = shortest angular distance to target
+  // Replaces the old fasterway + inverse() pair, which had a discontinuity at
+  // 0/360 that caused left-turns through NORTH to go the 270-degree long way.
+  double diff = angle - myGyro.heading();
+  while(diff > 180.0)  diff -= 360.0;
+  while(diff < -180.0) diff += 360.0;
+  bool turn_right = (diff > 0);
+  double init_abs = fabs(diff);
+  const double TURN_TOL_DEG = 3.0;
+  Serial.print("[TURN] target=");
+  Serial.print(angle);
+  Serial.print(" hdg=");
+  Serial.print(myGyro.heading(), 1);
+  Serial.print(" init_diff=");
+  Serial.println(init_abs, 1);
    // create timer to cut of turning
   timer myTimer;
 
-  if(myGyro.inverse(angle,fasterway) - current_angle > 0){
+  if(turn_right){
     while(true){
       if(Pausemaze==true) {drivetrain.fullstop(); break;}
-      if(victimPending){ // service camera victim mid-turn 
+      if(victimPending){ // service camera victim mid-turn
         drivetrain.fullstop();
         myPID.pausePID(1); myTimer.pause(1);
         while(victimPending==true){
@@ -328,21 +336,23 @@ void absoluteturn(double angle){
       motorB->run(BACKWARD);
       motorD->run(BACKWARD);
       i2cMutex.unlock();
-      if(myGyro.inverse(angle,fasterway)-current_angle<=0 && current_angle < 190) break;
-      
-      if(myTimer.getTime() > 2*abs(myGyro.inverse(angle,fasterway)-init_angle)/90*1000000) break; // turning limit
-      current_angle = myGyro.inverse(myGyro.heading(),fasterway);
-      
-      MOTORSPEED = myPID.getPID(myGyro.inverse(angle,fasterway)-current_angle);
-      
+      // Recompute the wrapped error every tick.
+      double d = angle - myGyro.heading();
+      while(d > 180.0)  d -= 360.0;
+      while(d < -180.0) d += 360.0;
+      if(fabs(d) < TURN_TOL_DEG) break;
+      if(myTimer.getTime() > 2.0 * init_abs / 90.0 * 1000000.0) break; // turning limit
+
+      MOTORSPEED = myPID.getPID(fabs(d));
+
       drivetrain.turnright(constrain(MOTORSPEED,20,150));
     }
   }
 
-  else if(myGyro.inverse(angle,fasterway)-current_angle<0) {
+  else if(!turn_right) {
     while(true){
       if(Pausemaze==true) {drivetrain.fullstop(); break;}
-      if(victimPending){ // service camera victim mid-turn 
+      if(victimPending){ // service camera victim mid-turn
         drivetrain.fullstop();
         myPID.pausePID(1); myTimer.pause(1);
         while(victimPending==true){
@@ -354,11 +364,14 @@ void absoluteturn(double angle){
       motorA->run(BACKWARD);
       motorC->run(BACKWARD);
       i2cMutex.unlock();
-      if(myGyro.inverse(angle,fasterway)-current_angle>=0 && current_angle > 170) break;
-      if(myTimer.getTime() > 2*abs(myGyro.inverse(angle,fasterway)-init_angle)/90*1000000) break;
-      current_angle = myGyro.inverse(myGyro.heading(),fasterway);
-      MOTORSPEED = myPID.getPID(current_angle-myGyro.inverse(angle,fasterway));
-      
+      double d = angle - myGyro.heading();
+      while(d > 180.0)  d -= 360.0;
+      while(d < -180.0) d += 360.0;
+      if(fabs(d) < TURN_TOL_DEG) break;
+      if(myTimer.getTime() > 2.0 * init_abs / 90.0 * 1000000.0) break;
+
+      MOTORSPEED = myPID.getPID(fabs(d));
+
       drivetrain.turnleft(constrain(MOTORSPEED,20,150));
     }
   }
