@@ -317,7 +317,38 @@ void setup(){
 }
 int iterator = 0;
 
+// [DIAG-STACK] Default mbed OS_STACK_SIZE on this core is 3072 bytes, and cameraThread/
+// pauseThread are both constructed with no explicit stack size, so they get that default.
+// Log high-water-mark stack usage every 2s so we can see if either thread is close to
+// overflowing (which would corrupt whatever global memory sits next to its stack) around
+// the time the color-sensor readings go bad.
+unsigned long _diagStackLastMs = 0;
+void diagPrintStackUsage(){
+  unsigned long now = millis();
+  if(now - _diagStackLastMs < 2000) return;
+  _diagStackLastMs = now;
+  Serial.print("[DIAG-STACK] t=");
+  Serial.print(now);
+  Serial.print(" cameraThread size=");
+  Serial.print(cameraThread.stack_size());
+  Serial.print(" used=");
+  Serial.print(cameraThread.used_stack());
+  Serial.print(" max=");
+  Serial.print(cameraThread.max_stack());
+  Serial.print(" free=");
+  Serial.print(cameraThread.free_stack());
+  Serial.print(" | pauseThread size=");
+  Serial.print(pauseThread.stack_size());
+  Serial.print(" used=");
+  Serial.print(pauseThread.used_stack());
+  Serial.print(" max=");
+  Serial.print(pauseThread.max_stack());
+  Serial.print(" free=");
+  Serial.println(pauseThread.free_stack());
+}
+
 void loop(){
+  diagPrintStackUsage();
   /*
   for(int i = 1;i<=7;i++){
     Serial.print("sensor ");
