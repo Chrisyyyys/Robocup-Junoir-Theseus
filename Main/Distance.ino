@@ -386,7 +386,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              break;
+              return;
             }
           }
           
@@ -400,7 +400,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              break;
+              return;
             }
           }
           
@@ -421,7 +421,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              break;
+              return;
             }
             a=measure(2); b = measure(3);
             if(a<=30) break;
@@ -477,7 +477,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(6)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              break;
+              return;
             }
             drivetrain.backward(120);
           }
@@ -486,7 +486,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(2)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              break;
+              return;
             }
             drivetrain.backward(120);
           }
@@ -503,7 +503,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         
         if(measure(6)<=35&&measure(2)<=35){
           steps = WIGGLE;
-          break;
+          return;
         }
         
         Serial.println("fwd step");
@@ -523,7 +523,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         while(abs(measure(2)-measure(6))>=15&&myTime.getTime()<1000000){
           if(Pausemaze == true){
               drivetrain.fullstop();
-              break;
+              return;
             }
           double diff = pid.getPID(measure(2)-measure(6));
           drivetrain.drive(70+diff,70+diff,70-diff,70-diff);

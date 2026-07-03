@@ -308,8 +308,8 @@ void setup(){
   // start lcd
   lcd.begin(16, 2);
   // start RTOS threads: camera victim detection + pause-switch watcher.
-  //cameraThread.start(cameraTask);
-  //cameraThread.set_priority(osPriorityAboveNormal);
+  cameraThread.start(cameraTask);
+  cameraThread.set_priority(osPriorityAboveNormal);
   pauseThread.start(pauseTask);
   //Serial.println("starting");
   delay(2000); // wait for camera to start.
@@ -350,7 +350,8 @@ void diagPrintStackUsage(){
 }
 
 void loop(){
-  diagPrintStackUsage();
+  //diagPrintStackUsage();
+  
   /*
   for(int i = 1;i<=7;i++){
     Serial.print("sensor ");
@@ -365,7 +366,7 @@ void loop(){
   //lcdPrint("working");
   //delay(500);
   //drivetrain.drive(150,150*1.25,150*1.25,150);
-  /*
+  
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -602,6 +603,6 @@ void loop(){
       break;
     }
  }
- */
+ 
  
 }

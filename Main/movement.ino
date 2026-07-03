@@ -262,7 +262,7 @@ void fwd(double dist){ // in mm
       Serial.println(front_right_current);
     }
 
-    drivetrain.drive(constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120-adjustment),20,150)*1.25,constrain(Scale*(120+adjustment),20,150)*1.25,constrain(Scale*(120+adjustment),20,150));
+    drivetrain.drive(constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120+adjustment),20,150),constrain(Scale*(120+adjustment),20,150));
     //drivetrain.drive(150+adjustment,(150+adjustment)*1.25,(150-adjustment)*1.25,150+adjustment);
   }
   Serial.print("[FWD] exit=");
