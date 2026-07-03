@@ -319,32 +319,34 @@ int iterator = 0;
 
 // [DIAG-STACK] Default mbed OS_STACK_SIZE on this core is 3072 bytes, and cameraThread/
 // pauseThread are both constructed with no explicit stack size, so they get that default.
-// Log high-water-mark stack usage every 2s so we can see if either thread is close to
-// overflowing (which would corrupt whatever global memory sits next to its stack) around
-// the time the color-sensor readings go bad.
+// fwd() itself is NOT on its own thread -- it's called synchronously from loop(), so it
+// runs on the main sketch thread. cameraThread.stack_size() etc. only cover the two threads
+// we created ourselves and would miss an overflow on the thread that actually runs fwd().
+// mbed_stats_stack_get_each() enumerates every live thread (main sketch thread included),
+// so this is the one that can actually confirm/rule out a main-thread overflow during fwd().
+// max_size is a high-water mark tracked continuously by the RTOS, so it's safe to poll this
+// from loop() even though the peak may have happened deep inside a fwd() call -- the peak
+// isn't lost by the time we read it.
 unsigned long _diagStackLastMs = 0;
 void diagPrintStackUsage(){
   unsigned long now = millis();
   if(now - _diagStackLastMs < 2000) return;
   _diagStackLastMs = now;
+
+  mbed_stats_stack_t stats[10];
+  size_t n = mbed_stats_stack_get_each(stats, 10);
   Serial.print("[DIAG-STACK] t=");
-  Serial.print(now);
-  Serial.print(" cameraThread size=");
-  Serial.print(cameraThread.stack_size());
-  Serial.print(" used=");
-  Serial.print(cameraThread.used_stack());
-  Serial.print(" max=");
-  Serial.print(cameraThread.max_stack());
-  Serial.print(" free=");
-  Serial.print(cameraThread.free_stack());
-  Serial.print(" | pauseThread size=");
-  Serial.print(pauseThread.stack_size());
-  Serial.print(" used=");
-  Serial.print(pauseThread.used_stack());
-  Serial.print(" max=");
-  Serial.print(pauseThread.max_stack());
-  Serial.print(" free=");
-  Serial.println(pauseThread.free_stack());
+  Serial.println(now);
+  for(size_t i = 0; i < n; i++){
+    Serial.print("  thread_id=0x");
+    Serial.print(stats[i].thread_id, HEX);
+    Serial.print(" max_used=");
+    Serial.print(stats[i].max_size);
+    Serial.print(" reserved=");
+    Serial.print(stats[i].reserved_size);
+    Serial.print(" pct=");
+    Serial.println((100.0f * stats[i].max_size) / stats[i].reserved_size, 1);
+  }
 }
 
 void loop(){
