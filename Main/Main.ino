@@ -36,8 +36,8 @@
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
 #define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
 #define BLACK_THRESHOLD 0.1f // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 600 // use red value
-#define WHITE_THRESHOLD 0.95f
+#define SILVER_THRESHOLD 800 // use red value
+#define WHITE_THRESHOLD 0.85f
 #define MULTIPLER 1.1 
 float clear; 
 
@@ -163,6 +163,7 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 // logic switch pin
 const int logicswitch = 22;
 volatile bool Pausemaze = false; // set by pauseThread, read by loop()
+volatile bool moveInterrupted = false; // fwd() sets true when a pause aborts the move before the tile is completed
 int x_checkpoint = MAP_SIZE/2, y_checkpoint = MAP_SIZE/2;
 int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
 bool tilecheck = false;
@@ -317,41 +318,11 @@ void setup(){
 }
 int iterator = 0;
 
-// [DIAG-STACK] Default mbed OS_STACK_SIZE on this core is 3072 bytes, and cameraThread/
-// pauseThread are both constructed with no explicit stack size, so they get that default.
-// fwd() itself is NOT on its own thread -- it's called synchronously from loop(), so it
-// runs on the main sketch thread. cameraThread.stack_size() etc. only cover the two threads
-// we created ourselves and would miss an overflow on the thread that actually runs fwd().
-// mbed_stats_stack_get_each() enumerates every live thread (main sketch thread included),
-// so this is the one that can actually confirm/rule out a main-thread overflow during fwd().
-// max_size is a high-water mark tracked continuously by the RTOS, so it's safe to poll this
-// from loop() even though the peak may have happened deep inside a fwd() call -- the peak
-// isn't lost by the time we read it.
-unsigned long _diagStackLastMs = 0;
-void diagPrintStackUsage(){
-  unsigned long now = millis();
-  if(now - _diagStackLastMs < 2000) return;
-  _diagStackLastMs = now;
 
-  mbed_stats_stack_t stats[10];
-  size_t n = mbed_stats_stack_get_each(stats, 10);
-  Serial.print("[DIAG-STACK] t=");
-  Serial.println(now);
-  for(size_t i = 0; i < n; i++){
-    Serial.print("  thread_id=0x");
-    Serial.print(stats[i].thread_id, HEX);
-    Serial.print(" max_used=");
-    Serial.print(stats[i].max_size);
-    Serial.print(" reserved=");
-    Serial.print(stats[i].reserved_size);
-    Serial.print(" pct=");
-    Serial.println((100.0f * stats[i].max_size) / stats[i].reserved_size, 1);
-  }
-}
 
 void loop(){
   //diagPrintStackUsage();
- 
+  
   /*
   for(int i = 1;i<=7;i++){
     Serial.print("sensor ");
@@ -382,6 +353,7 @@ void loop(){
       state = UPDATE_MAP; // next state.
       // Auto-trigger front-back centering >> only when a front wall is present, off-center beyond CENTER_TOL_MM, and the offset isn't too large (>= one tile) that the reading is unreliable. 
       // Back-wall centering isn't implemented yet, so wallB is not checked here.
+      
       if(wallF == true){
         int front1 = measure(1);
         int front7 = measure(7);
@@ -391,7 +363,12 @@ void loop(){
           if(abs(offset) > CENTER_TOL_MM && abs(offset) < MAX_CENTER_CORRECTION_MM) state = CENTERING;
         }
       }
-      if(Pausemaze == true) state = PAUSE;
+      
+      if(Pausemaze == true){
+        Serial.println("pause");
+        state=PAUSE;
+        break;
+      }
       break;
     }
     case CENTERING: {
@@ -442,13 +419,13 @@ void loop(){
         currentDir = plannedMoveDir;
         turnCompletedForMove = true;
       }
-
-      // Nudge heading to correct lateral position before driving the tile, runs after turn validation so it's never mistaken for a botched turn.
-      // lateralCorrect();
-
-      // drive one tile. fwd() sets blacktoggle/bluetoggle, handles ramps (advancing x_pos/y_pos for any climbed tiles) and services any camera victim reported by the RTOS thread during the move.  
       fwd(TILE_MM);
-      
+      // A pause aborted the move before the tile was completed: don't advance
+      // position or write walls/edges (the robot didn't actually traverse the tile).
+      if(moveInterrupted == true){
+        if(Pausemaze == true) state = PAUSE;
+        break;
+      }
       // update map + robot position only on a successful (non-black) move
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
@@ -502,6 +479,10 @@ void loop(){
       break;
     }
     case BOTCHED_TURN_RECOVERY: {
+      if(Pausemaze == true){
+        state = PAUSE;
+        break;
+      }
       Direction snappedDir = (Direction)myGyro.headingToCardinal(myGyro.heading());
       int snappedHeading = turnNeededDeg(snappedDir);
       Serial.println("botched turn detected, snapping to cardinal");
@@ -512,6 +493,7 @@ void loop(){
       currentDir = snappedDir;
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
+      
       state = EXECUTE_MOVE;
       break;
     }
@@ -600,7 +582,7 @@ void loop(){
         Serial.println(x_checkpoint);
         Serial.println(y_checkpoint);
         Serial.println(currentDir);
-        steps = TURN // reset avoidance steps
+        steps = TURN; // reset avoidance steps
         state = PLAN_NEXT;
       }
       break;

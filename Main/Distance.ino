@@ -211,17 +211,20 @@ void parallel(){
   const int PARALLEL_SPEED = 90;
   const unsigned long PARALLEL_TIMEOUT_MS = 500;
   const double MAX_PARALLEL_ROTATION_DEG = 45.0;
-  
+  const int PARALLEL_MAX_WALL_MM = TILE_MM; // engage even when the wall is up to one tile away
+
   int sensorA = -1;
   int sensorB = -1;
   int wallDir;
   Serial.println("paralleling");
+  
+  
   // Prefer aligning to the right wall; otherwise use left wall.
-  if (detectWall(1) == 0) {
+  if (detectWall(1)==0) {
     sensorA = 2;
     sensorB = 3;
     wallDir=1;
-  } else if (detectWall(3) == 0) {
+  } else if (detectWall(3)==0) {
     sensorA = 6;
     sensorB = 5;
     wallDir=3;
@@ -242,6 +245,8 @@ void parallel(){
       Serial.println("parallel: invalid sensor reading, aborting correction");
       break;
     }
+    // If either sensor no longer sees the side wall within range, stop correcting
+    // (the wall ended / robot isn't beside one) to avoid spinning on a phantom reading.
     if(a>MIN_DIST||b>MIN_DIST){
       break;
     }
@@ -293,7 +298,7 @@ void parallel(){
 // parallel() runs first so the robot is squared to a side wall before the front reading is trusted.
 
 void centerFrontBack(){
-  const int CENTERING_SPEED = 70;                   // mirrors PARALLEL_SPEED
+  const int CENTERING_SPEED = 50;                   // mirrors PARALLEL_SPEED
   const unsigned long CENTERING_TIMEOUT_MS = 2000;
   // MAX_CENTER_CORRECTION_MM is a file-scope #define (Main.ino), shared with the SENSE_TILE trigger gate >> redundant safety abort 
   // -> in case conditions changed between the trigger check and this function actually running.
@@ -364,7 +369,7 @@ void centerFrontBack(){
 int center(){
   int a = measure(2);
   int b = measure(6);
-  if(a<MIN_DIST && a != -1 && b<MIN_DIST && b != -1) return (b-a);
+  if(b != 8191 && a != -1 && b!=8191 && b != -1) return (b%30-a%30); // mod 30 to find centering
   else return 0;
 }
 
@@ -372,8 +377,16 @@ int center(){
 int obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
 // return distance to wall at front
   Serial.println("obstacle avoidance");
-  int _;
+  int _ = -1;
   while(true){
+    // Single authoritative pause guard: gates every step boundary and transition
+    // burst, not just the innermost drive loops. Reset steps so a resume after the
+    // pause starts a fresh maneuver instead of re-entering mid-sequence.
+    if(Pausemaze == true){
+      drivetrain.fullstop();
+      steps = TURN;
+      return -2;
+    }
     switch (steps){
       case TURN:{
         if(leftright == 1){ // obstacle at left
@@ -386,7 +399,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -1;
+              return -2;
             }
           }
           
@@ -402,7 +415,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -1;
+              return -2;
             }
           }
           
@@ -423,7 +436,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -1;
+              return -2;
             }
             a=measure(2); b = measure(3);
             if(a<=30) break;
@@ -447,7 +460,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              break -1;
+              return -2;
             }
             int a = measure(6); int b = measure(5);
             if(a<=30) break;
@@ -479,7 +492,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(6)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -1;
+              return -2;
             }
             drivetrain.backward(120);
           }
@@ -488,7 +501,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(2)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -1;
+              return -2;
             }
             drivetrain.backward(120);
           }
@@ -505,7 +518,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         
         if(measure(6)<=35&&measure(2)<=35){
           steps = WIGGLE;
-          return -1;
+          return -2;
         }
         
         Serial.println("fwd step");
@@ -525,7 +538,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         while(abs(measure(2)-measure(6))>=15&&myTime.getTime()<1000000){
           if(Pausemaze == true){
               drivetrain.fullstop();
-              return -1;
+              return -2;
             }
           double diff = pid.getPID(measure(2)-measure(6));
           drivetrain.drive(70+diff,70+diff,70-diff,70-diff);

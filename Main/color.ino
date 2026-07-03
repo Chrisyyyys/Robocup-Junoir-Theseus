@@ -45,7 +45,7 @@ int read_color(){
   tcs.getRawData(&r, &g, &b, &c);
   i2cMutex.unlock();
   //diagnosis
-  /*
+  
   Serial.print(r);
   Serial.print(" ");
   Serial.print(g);
@@ -57,7 +57,7 @@ int read_color(){
   Serial.print(" ");
   Serial.print("ratio=");
   Serial.println((float)c/clear);
-  */
+  
   
   //Serial.println((float)c/clear);
   if(c == 0) return 0;
@@ -88,6 +88,6 @@ int read_color(){
 
   if(r>g+10&&r>b+10) return 2;
 
-  
+  return 0;
 
 }

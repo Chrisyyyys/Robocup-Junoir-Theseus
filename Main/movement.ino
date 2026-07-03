@@ -14,8 +14,8 @@ void fwd(double dist){ // in mm
   int cnt = 0; // tiles traversed while climbing.
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
-  PID climbPID(10,0,0.1); // pid for centering on ramp
-  PID center_PID(0.30,0,0.2);
+  PID climbPID(2,0,0.1); // pid for centering on ramp
+  PID center_PID(1,0,0.2);
   PID gyroPID(1,0.001,0.03);
   PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
@@ -23,6 +23,7 @@ void fwd(double dist){ // in mm
   fwdActive = true;
   isVictim = false;
   victimPending = false;
+  moveInterrupted = false; // becomes true only if a pause aborts this move
   int init_pitch = myGyro.modulus((int)myGyro.pitch_heading());
   int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
   Serial.println("init_yaw");
@@ -44,12 +45,13 @@ void fwd(double dist){ // in mm
   
   int front_left = measure(7);int front_right = measure(1);
   // outside loop
-    if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
+    if(front_left<=OBSTACLE_DIST&&front_left!=-1&&front_right>=MIN_DIST&&front_right!=-1){ // trigger obstacleavoidance
       Serial.println("obstacle left");
       int prevdist = obstacleavoidance(1);
       drivetrain.fullstop();
       delay(50);
-      obstacle = true;
+      if(prevdist != -2) obstacle = true;
+      else moveInterrupted = true; // avoidance aborted by pause -> tile not completed
       /*
       if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
         int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM); // don't "overmove"
@@ -68,7 +70,7 @@ void fwd(double dist){ // in mm
       Serial.println("[FWD] exit=obstacle-left");
       return;
     }
-    else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&!(front_left<=OBSTACLE_DIST&&front_left!=-1)){
+    else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&front_left>=OBSTACLE_DIST&&front_left!=-1){
       Serial.println("obstacle right");
       int prevdist = obstacleavoidance(0);
       drivetrain.fullstop();
@@ -89,7 +91,8 @@ void fwd(double dist){ // in mm
       
       drivetrain.fullstop();
       */
-      obstacle = true;
+      if(prevdist != -2) obstacle = true;
+      else moveInterrupted = true; // avoidance aborted by pause -> tile not completed
       Serial.println("[FWD] exit=obstacle-right");
       return;
     }
@@ -98,7 +101,7 @@ void fwd(double dist){ // in mm
     Serial.print("distance travelled: ");
     Serial.println((((double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3)/5)/195*wheel_diameter*M_PI);
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
-    if(Pausemaze==true) {drivetrain.fullstop(); break;}
+    if(Pausemaze==true) {drivetrain.fullstop(); moveInterrupted = true; break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
     
     if(victimPending){
@@ -146,22 +149,16 @@ void fwd(double dist){ // in mm
       // robot the same way for both. wall_right-wall_left is >0 when the robot
       // is closer to the left wall, which correctly steers it back toward center.
     // [DIAG] capture the error fed to PID so it can be logged below
-    //double _diag_pid_err = center();
-    //adjustment = center_PID.getPID(_diag_pid_err);
+    double _diag_pid_err = center();
+    adjustment = center_PID.getPID(_diag_pid_err);
+    /*
     double yaw = myGyro.heading()-init_yaw;
     if(yaw>180) yaw = yaw-360;
     if(yaw<-180) yaw+= 360;
     double _diag_pid_err = yaw;
     adjustment = gyroPID.getPID(_diag_pid_err);
-  // [DRIFT] feedforward drift bias: the drivetrain has a persistent mechanical
-    // pull to the left. The drive() line below adds +adjustment to motors A,C
-    // (left side) and subtracts it from B,D (right side), so adding a positive
-    // constant here permanently biases the robot to steer slightly right,
-    // cancelling the drift BEFORE the PID has to react to it. If tuning shows
-    // the robot now drifts right instead, reduce this value; if it still drifts
-    // left, increase it. If the drift direction were reversed, flip the sign.
-    //const double DRIFT_BIAS = 3.0;
-    //adjustment += DRIFT_BIAS;
+    */
+ 
     /*
 =======
     if(wall_left<MIN_DIST && wall_left!=-1 && wall_right<MIN_DIST && wall_right!=-1){
