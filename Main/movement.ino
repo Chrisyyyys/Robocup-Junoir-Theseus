@@ -16,8 +16,8 @@ void fwd(double dist){ // in mm
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   PID climbPID(10,0,0.1); // pid for centering on ramp
   PID center_PID(0.30,0,0.2);
-  PID gyroPID(40,0.005,0.03);
-  PID Scale_PID(0.007,0,0.0008); // pid for encoder 
+  PID gyroPID(1,0.001,0.03);
+  PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
   fwdActive = true;
@@ -94,7 +94,9 @@ void fwd(double dist){ // in mm
       return;
     }
     
-  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.12)&&black!=true){
+  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses)&&black!=true){
+    Serial.print("distance travelled: ");
+    Serial.println((((double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3)/5)/195*wheel_diameter*M_PI);
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     if(Pausemaze==true) {drivetrain.fullstop(); break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
@@ -176,7 +178,7 @@ void fwd(double dist){ // in mm
       adjustment = gyroPID.getPID(yaw);
     }
     */
-    double Scale = Scale_PID.getPID(pulses*1.12-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
+    double Scale = Scale_PID.getPID(pulses-(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     
     // emergency stop
     
@@ -239,6 +241,7 @@ void fwd(double dist){ // in mm
     // [DIAG] throttled per-loop trace (every 5 ticks) — CSV so it can be graphed.
     // wl/wr are re-read here only in the trace block, so the control path is
     // untouched. Fields: t_ms, wl, wr, err, adj, encAvg, fl, fr
+    /*
     _fwd_tick++;
     if((_fwd_tick % 5) == 0){
       int _diag_wl = measure(2);
@@ -261,7 +264,8 @@ void fwd(double dist){ // in mm
       Serial.print(" fr=");
       Serial.println(front_right_current);
     }
-
+    */
+    if(Scale*120 < 25) break;
     drivetrain.drive(constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120+adjustment),20,150),constrain(Scale*(120+adjustment),20,150));
     //drivetrain.drive(150+adjustment,(150+adjustment)*1.25,(150-adjustment)*1.25,150+adjustment);
   }
@@ -339,15 +343,11 @@ void absoluteturn(double angle){
         }
         myPID.pausePID(2); myTimer.pause(2);
       }
-      i2cMutex.lock();
-      motorB->run(BACKWARD);
-      motorD->run(BACKWARD);
-      i2cMutex.unlock();
       // Recompute the wrapped error every tick.
       double d = angle - myGyro.heading();
       while(d > 180.0)  d -= 360.0;
       while(d < -180.0) d += 360.0;
-      if(fabs(d) < TURN_TOL_DEG) break;
+      
       if(myTimer.getTime() > 2.0 * init_abs / 90.0 * 1000000.0) break; // turning limit
 
       MOTORSPEED = myPID.getPID(fabs(d));
@@ -367,14 +367,10 @@ void absoluteturn(double angle){
         }
         myPID.pausePID(2); myTimer.pause(2);
       }
-      i2cMutex.lock();
-      motorA->run(BACKWARD);
-      motorC->run(BACKWARD);
-      i2cMutex.unlock();
       double d = angle - myGyro.heading();
       while(d > 180.0)  d -= 360.0;
       while(d < -180.0) d += 360.0;
-      if(fabs(d) < TURN_TOL_DEG) break;
+      
       if(myTimer.getTime() > 2.0 * init_abs / 90.0 * 1000000.0) break;
 
       MOTORSPEED = myPID.getPID(fabs(d));
@@ -394,35 +390,3 @@ void absoluteturn(double angle){
 // (it locks onto whatever heading it starts at) 
 // Must run AFTER turnCompletedSuccessfully() has validated the cardinal turn, so this intentional small heading offset isn't mistaken for a botched turn.
 
-void lateralCorrect(){
-  int wallDir;
-  if(detectWall(1) == 0) wallDir = 1;      // right wall
-  else if(detectWall(3) == 0) wallDir = 3; // left wall
-  else return;                              // no wall to measure against
-
-  int a, b;
-  if(wallDir == 1){ a = measure(2); b = measure(3); }
-  else{ a = measure(6); b = measure(5); }
-  if(a == -1 || b == -1) return;
-
-  double gap = (a + b) / 2.0;
-  
-  double offset = gap - TARGET_SIDE_GAP_MM; // +ve => too far from this wall
-
-  if(abs(offset) > MAX_LATERAL_OFFSET_MM) return; // unreliable reading
-  if(abs(offset) <= LATERAL_TOL_MM) return;        // already close enough
-
-  double thetaDeg = asin(constrain(offset / TILE_MM, -1.0, 1.0)) * 180.0 / PI;
-  thetaDeg *= LATERAL_CORRECTION_GAIN; // compensates for fwd() pulling the heading back toward cardinal
-  if(wallDir == 3) thetaDeg = -thetaDeg; // left wall: flip sign
-
-  double newHeading = myGyro.heading() + thetaDeg;
-  if(newHeading < 0 || newHeading >= 360){
-    Serial.println("lateralCorrect: skipping, correction crosses 0/360 boundary");
-    return;
-  }
-
-  Serial.print("lateralCorrect: offset="); Serial.print(offset);
-  Serial.print(" theta="); Serial.println(thetaDeg);
-  absoluteturn(newHeading);
-}

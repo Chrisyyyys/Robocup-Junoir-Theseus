@@ -58,7 +58,7 @@ void motors::encoder_update_B(){
 }
 void motors::encoder_update_D(){
   int encoderState = digitalRead(_encoderPin_D_B);
-  if(encoderState == LOW){
+  if(encoderState == HIGH){
     encoderCountD--;
   }
   else{

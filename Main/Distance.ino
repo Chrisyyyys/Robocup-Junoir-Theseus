@@ -272,10 +272,10 @@ void parallel(){
     motorA->run(FORWARD);
     motorB->run(FORWARD);
     motorC->run(FORWARD);
-    motorD->run(FORWARD);
+    motorD->run(BACKWARD);
     if ((diff > 0 && wallDir == 1)||(diff < 0 && wallDir==3)) {
       motorB->run(BACKWARD);
-      motorD->run(BACKWARD);
+      motorD->run(FORWARD);
     } else {
       motorA->run(BACKWARD);
       motorC->run(BACKWARD);
@@ -382,11 +382,11 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           Serial.println("turn step");
           while(measure(7) < MIN_DIST){
             motorB->run(BACKWARD);
-            motorD->run(BACKWARD);
+            motorD->run(FORWARD);
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return;
+              return -1;
             }
           }
           
@@ -397,10 +397,12 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(1)<MIN_DIST){
             motorA->run(BACKWARD);
             motorC->run(BACKWARD);
+            motorB->run(FORWARD);
+            motorD->run(BACKWARD); // D is mounted reversed; BACKWARD raw = physically FORWARD, matching motorB
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return;
+              return -1;
             }
           }
           
@@ -421,7 +423,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return;
+              return -1;
             }
             a=measure(2); b = measure(3);
             if(a<=30) break;
@@ -445,7 +447,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              break;
+              break -1;
             }
             int a = measure(6); int b = measure(5);
             if(a<=30) break;
@@ -477,7 +479,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(6)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return;
+              return -1;
             }
             drivetrain.backward(120);
           }
@@ -486,7 +488,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(2)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return;
+              return -1;
             }
             drivetrain.backward(120);
           }
@@ -503,7 +505,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         
         if(measure(6)<=35&&measure(2)<=35){
           steps = WIGGLE;
-          return;
+          return -1;
         }
         
         Serial.println("fwd step");
@@ -523,7 +525,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         while(abs(measure(2)-measure(6))>=15&&myTime.getTime()<1000000){
           if(Pausemaze == true){
               drivetrain.fullstop();
-              return;
+              return -1;
             }
           double diff = pid.getPID(measure(2)-measure(6));
           drivetrain.drive(70+diff,70+diff,70-diff,70-diff);

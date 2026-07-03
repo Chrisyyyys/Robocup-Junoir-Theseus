@@ -11,28 +11,30 @@ void init_color(){
     Serial.println("No TCS34725 found ... check your connections");
     //while (1); // halt!
   }
-  myMux.setPort(TCS_PORT);          
+  myMux.setPort(TCS_PORT);
   tcs.setInterrupt(true);  // turn on LED
-  float red, green, blue;
-  uint16_t r, g, b, c, colorTemp, lux;
+  uint16_t r = 0, g = 0, b = 0, c = 0;
 
-  tcs.getRawData(&r, &g, &b, &c);
-  clear = c;
+  // The TCS34725 has no valid data until one integration cycle (~24ms) after
+  // enable; the first read(s) return all zeros. In the full sketch the I2C init
+  // that runs before this (mux + 7 distance sensors) shifts the timing so a
+  // single read sometimes lands too early -> c=0 -> clear=0 -> every later
+  // (float)c/clear is inf. Retry until we get a real clear value.
+  for (int i = 0; i < 10 && c == 0; i++) {
+    delay(50);                 // > one 24ms integration period
+    myMux.setPort(TCS_PORT);
+    tcs.getRawData(&r, &g, &b, &c);
+  }
+  clear = (c > 0) ? c : 1;     // never store 0 -> never divide by zero
   Serial.println("clear value");
   Serial.println(clear);
-  
+
 }
 int read_color(){
   // [DIAG-COLOR] snapshot the global `clear` divisor the instant this call starts,
   // before touching I2C at all. clear is written exactly once (init_color(), pre-thread)
   // and never reassigned anywhere else, so if this ever prints 0 here, its backing memory
   // has been clobbered by something other than this function -- not a bad sensor read.
-  Serial.print("[DIAG-COLOR] t=");
-  Serial.print(millis());
-  Serial.print(" clear_global=");
-  Serial.print(clear, 6);
-  Serial.print(" &clear=");
-  Serial.println((uint32_t)&clear, HEX);
 
   i2cMutex.lock();
   myMux.setPort(TCS_PORT);
@@ -42,6 +44,8 @@ int read_color(){
 
   tcs.getRawData(&r, &g, &b, &c);
   i2cMutex.unlock();
+  //diagnosis
+  /*
   Serial.print(r);
   Serial.print(" ");
   Serial.print(g);
@@ -53,10 +57,10 @@ int read_color(){
   Serial.print(" ");
   Serial.print("ratio=");
   Serial.println((float)c/clear);
-  
+  */
   
   //Serial.println((float)c/clear);
-
+  if(c == 0) return 0;
   if((float)c/clear<BLACK_THRESHOLD){
 
 
@@ -84,6 +88,6 @@ int read_color(){
 
   if(r>g+10&&r>b+10) return 2;
 
-  return 3; // normal floor tile — no special color detected
+  
 
 }
