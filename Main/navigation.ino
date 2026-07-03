@@ -403,7 +403,7 @@ struct BfsNode { uint8_t z, x, y; }; // 3d coords in form z (floor) ,x,y
 
 // allowBlue: if true, BLUE tiles are traversable (fallback mode).
 // Returns empty deque if endpos is unreachable under the given constraints.
-std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int, int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int, int>> endpos, bool allowBlue = false, bool allowObstacle = false) {
+std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int, int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int, int>> endpos, bool allowBlue, bool allowObstacle) {
     Grid* map[3] = { &m1, &m2, &m3 };  // index, don't copy
 
     static bool    visited[3][MAP_SIZE][MAP_SIZE];

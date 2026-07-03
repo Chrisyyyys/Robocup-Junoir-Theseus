@@ -26,7 +26,7 @@
 #define MIN_DIST 120         // mm (tune this)
 #define OBSTACLE_DIST 90
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define ROBOT_LENGTH_MM 195                                      // mm, robot front-to-back length
+#define ROBOT_LENGTH_MM 170                                      // mm, robot front-to-back length
 #define TARGET_GAP_MM (((double)TILE_MM - ROBOT_LENGTH_MM) / 2.0) // mm, ideal front/back clearance when centered (52.5)
 #define CENTER_TOL_MM 10                                          // mm, front-back centering tolerance
 #define MAX_CENTER_CORRECTION_MM 300.0                            // mm, one tile — offset this large means an unreliable reading or the robot isn't really in-tile; skip/abort centering
@@ -36,7 +36,7 @@
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
 #define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.9f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define SILVER_THRESHOLD 600 // use red value
 #define WHITE_THRESHOLD 0.95f
 #define MULTIPLER 1.1 
 float clear; 
@@ -168,7 +168,7 @@ int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
 bool tilecheck = false;
 
 // Forward declaration: Arduino can't auto-prototype template return types.
-std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int,int>> endpos, bool allowBlue);
+std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int,int>> endpos, bool allowBlue = false, bool allowObstacle = false);
 
 double headingErrorDeg(double targetDeg, double actualDeg) {
   double err = targetDeg - actualDeg;
@@ -308,8 +308,8 @@ void setup(){
   // start lcd
   lcd.begin(16, 2);
   // start RTOS threads: camera victim detection + pause-switch watcher.
-  cameraThread.start(cameraTask);
-  cameraThread.set_priority(osPriorityAboveNormal);
+  //cameraThread.start(cameraTask);
+  //cameraThread.set_priority(osPriorityAboveNormal);
   pauseThread.start(pauseTask);
   //Serial.println("starting");
   delay(2000); // wait for camera to start.
@@ -361,11 +361,11 @@ void loop(){
   
   */
   
-
+  
   //lcdPrint("working");
   //delay(500);
   //drivetrain.drive(150,150*1.25,150*1.25,150);
-  
+  /*
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -602,6 +602,6 @@ void loop(){
       break;
     }
  }
- 
+ */
  
 }

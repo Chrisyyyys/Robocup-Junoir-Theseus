@@ -41,7 +41,7 @@ void fwd(double dist){ // in mm
   int front_left_last=measure(7); int front_right_last=measure(1);
   timer myTime;
   myTime.reset_delta_time();
-  /*
+  
   int front_left = measure(7);int front_right = measure(1);
   // outside loop
     if(front_left<=OBSTACLE_DIST&&front_left!=-1&&!(front_right<=OBSTACLE_DIST&&front_right!=-1)){ // trigger obstacleavoidance
@@ -50,7 +50,7 @@ void fwd(double dist){ // in mm
       drivetrain.fullstop();
       delay(50);
       obstacle = true;
-      
+      /*
       if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
         int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM); // don't "overmove"
         while(drivetrain.encoderCountA >= -pulses && drivetrain.encoderCountB >= -pulses && drivetrain.encoderCountD >= -pulses){ // too far in front, go back
@@ -63,8 +63,8 @@ void fwd(double dist){ // in mm
           drivetrain.fw(150);
         }
       }
-      
       drivetrain.fullstop();
+      */
       Serial.println("[FWD] exit=obstacle-left");
       return;
     }
@@ -73,6 +73,7 @@ void fwd(double dist){ // in mm
       int prevdist = obstacleavoidance(0);
       drivetrain.fullstop();
       delay(50);
+      /*
       if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
         int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM);
         while(drivetrain.encoderCountA >= -pulses && drivetrain.encoderCountB >= -pulses && drivetrain.encoderCountD >= -pulses){ // too far in front, go back
@@ -85,12 +86,14 @@ void fwd(double dist){ // in mm
           drivetrain.fw(150);
         }
       }
+      
       drivetrain.fullstop();
+      */
       obstacle = true;
       Serial.println("[FWD] exit=obstacle-right");
       return;
     }
-    */
+    
   while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses*1.12)&&black!=true){
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     if(Pausemaze==true) {drivetrain.fullstop(); break;}
@@ -113,6 +116,8 @@ void fwd(double dist){ // in mm
     
     // color: detect black (stop + back off) and blue (swamp) tiles ahead.
     int color = read_color(); // also marks silver checkpoints internally
+    Serial.println("color");
+    Serial.println(color);
     if(color == 1){ // blue tile ahead
       bluetoggle = true;
     }
@@ -153,8 +158,8 @@ void fwd(double dist){ // in mm
     // cancelling the drift BEFORE the PID has to react to it. If tuning shows
     // the robot now drifts right instead, reduce this value; if it still drifts
     // left, increase it. If the drift direction were reversed, flip the sign.
-    const double DRIFT_BIAS = 5.0;
-    adjustment += DRIFT_BIAS;
+    //const double DRIFT_BIAS = 3.0;
+    //adjustment += DRIFT_BIAS;
     /*
 =======
     if(wall_left<MIN_DIST && wall_left!=-1 && wall_right<MIN_DIST && wall_right!=-1){
@@ -289,7 +294,7 @@ void fwd(double dist){ // in mm
   
   fwdActive = false; // camera thread idles until the next move
   drivetrain.fullstop();
-  //if(botchedfwd == false) drivetrain.reset_encoderCount(true,true,true);
+  drivetrain.reset_encoderCount(true,true,true);
   victimtoggle = false;
 }
 // absolute turning

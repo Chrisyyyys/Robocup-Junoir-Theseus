@@ -42,7 +42,6 @@ int read_color(){
 
   tcs.getRawData(&r, &g, &b, &c);
   i2cMutex.unlock();
-
   Serial.print(r);
   Serial.print(" ");
   Serial.print(g);
@@ -51,10 +50,11 @@ int read_color(){
   Serial.print(" ");
   Serial.print("c=");
   Serial.print(c);
-  Serial.print(" ratio=");
-  Serial.print((float)c/clear);
-  Serial.println(" ");
-
+  Serial.print(" ");
+  Serial.print("ratio=");
+  Serial.println((float)c/clear);
+  
+  
   //Serial.println((float)c/clear);
 
   if((float)c/clear<BLACK_THRESHOLD){
@@ -62,8 +62,8 @@ int read_color(){
 
     return -1; // black
   }
-  /*
-  if(c>SILVER_THRESHOLD){ // silver reflects more absolute light
+  
+  if(r>SILVER_THRESHOLD){ // silver reflects more absolute light
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
     //Serial.print("silver at ");
@@ -76,7 +76,7 @@ int read_color(){
 
     return 3; 
   }
-  */
+  
   if((float)c/clear>WHITE_THRESHOLD) return 0;
 
 
@@ -84,20 +84,6 @@ int read_color(){
 
   if(r>g+10&&r>b+10) return 2;
 
-  // [DIAG-COLOR] previously this fell off the end with no return (undefined behavior).
-  // Flagged fallthrough so we can see exactly how often/when none of the branches above match,
-  // instead of silently returning garbage. -99 is not a real color code anywhere else in the codebase.
-  Serial.print("[DIAG-COLOR] FALLTHROUGH t=");
-  Serial.print(millis());
-  Serial.print(" r=");
-  Serial.print(r);
-  Serial.print(" g=");
-  Serial.print(g);
-  Serial.print(" b=");
-  Serial.print(b);
-  Serial.print(" c=");
-  Serial.print(c);
-  Serial.print(" clear_global=");
-  Serial.println(clear, 6);
-  return -99;
+  return 3; // normal floor tile — no special color detected
+
 }
