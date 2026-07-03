@@ -31,15 +31,9 @@ int read_color(){
 
   tcs.getRawData(&r, &g, &b, &c);
   i2cMutex.unlock();
+  Serial.println("c value");
+  Serial.println((float)c/clear);
   
-  Serial.print(r);
-  Serial.print(" ");
-  Serial.print(g);
-  Serial.print(" ");
-  Serial.print(b);
-  Serial.print(" ");
-  Serial.print((float)c/clear);
-  Serial.println(" ");
   
   //Serial.println((float)c/clear);
   
@@ -48,8 +42,8 @@ int read_color(){
     
     return -1; // black
   }
-  /*
-  if(c>SILVER_THRESHOLD){ // silver reflects more absolute light
+  
+  if(r>SILVER_THRESHOLD){ // silver reflects more absolute light
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
     //Serial.print("silver at ");
@@ -62,7 +56,7 @@ int read_color(){
 
     return 3; 
   }
-  */
+  
   if((float)c/clear>WHITE_THRESHOLD) return 0;
   
   
@@ -70,5 +64,6 @@ int read_color(){
     
   if(r>g+10&&r>b+10) return 2;
 
+  return 3; // normal floor tile — no special color detected
 }
   

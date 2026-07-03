@@ -36,7 +36,7 @@
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
 #define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
 #define BLACK_THRESHOLD 0.1 // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 0.9f // ratio threshold — calibrate on real silver tile (typical normal~0.8, silver~2.0+)
+#define SILVER_THRESHOLD 600 // use red value
 #define WHITE_THRESHOLD 0.95f
 #define MULTIPLER 1.1 
 float clear; 
@@ -308,8 +308,8 @@ void setup(){
   // start lcd
   lcd.begin(16, 2);
   // start RTOS threads: camera victim detection + pause-switch watcher.
-  cameraThread.start(cameraTask);
-  cameraThread.set_priority(osPriorityAboveNormal);
+  //cameraThread.start(cameraTask);
+  //cameraThread.set_priority(osPriorityAboveNormal);
   pauseThread.start(pauseTask);
   //Serial.println("starting");
   delay(2000); // wait for camera to start.
@@ -327,12 +327,12 @@ void loop(){
   }
   
   */
+  drivetrain.drive(150,150,150,150);
   
-
   //lcdPrint("working");
   //delay(500);
   //drivetrain.drive(150,150*1.25,150*1.25,150);
-  
+  /*
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
@@ -569,6 +569,6 @@ void loop(){
       break;
     }
  }
- 
+ */
  
 }
