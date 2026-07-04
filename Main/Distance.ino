@@ -526,7 +526,14 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         drivetrain.reset_encoderCount(true,true,true);
         delay(200);
         
-        fwd((300-(_-measure(1))<0) ? 0:300-(_-measure(1))); // subtract already travelled distance.
+        // Drive the rest of the tile, subtracting distance already travelled.
+        // Read the front sensor ONCE (a second read can differ and overshoot) and
+        // clamp to [0, TILE_MM]: if either front reading is invalid the front is
+        // open/garbage, so fall back to one tile instead of a runaway distance.
+        int frontNow = measure(1);
+        int travelled = (_ != -1 && frontNow != -1) ? (_ - frontNow) : 0;
+        int remaining = constrain(TILE_MM - travelled, 0, TILE_MM);
+        fwd(remaining);
         steps = TURN;
         return _;
       }
