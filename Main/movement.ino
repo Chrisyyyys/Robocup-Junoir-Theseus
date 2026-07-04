@@ -236,30 +236,21 @@ void fwd(double dist){ // in mm
     // [DIAG] throttled per-loop trace (every 5 ticks) — CSV so it can be graphed.
     // wl/wr are re-read here only in the trace block, so the control path is
     // untouched. Fields: t_ms, wl, wr, err, adj, encAvg, fl, fr
-    /*
+    // [DIAG] right-wall follower trace. front=sensor2, back=sensor3.
+    // Watch: are m2/m3 valid (not -1) and <= SIDE_WALL_MAX_MM? is err non-zero when off-center?
     _fwd_tick++;
     if((_fwd_tick % 5) == 0){
-      int _diag_wl = measure(2);
-      int _diag_wr = measure(6);
-      int _enc_avg = (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3;
-      Serial.print("[FWD] t=");
-      Serial.print(millis());
-      Serial.print(" wl=");
-      Serial.print(_diag_wl);
-      Serial.print(" wr=");
-      Serial.print(_diag_wr);
+      int _diag_front = measure(2);
+      int _diag_back  = measure(3);
+      Serial.print("[CENTER] m2(front)=");
+      Serial.print(_diag_front);
+      Serial.print(" m3(back)=");
+      Serial.print(_diag_back);
       Serial.print(" err=");
       Serial.print(_diag_pid_err, 1);
       Serial.print(" adj=");
-      Serial.print(adjustment, 1);
-      Serial.print(" enc=");
-      Serial.print(_enc_avg);
-      Serial.print(" fl=");
-      Serial.print(front_left_current);
-      Serial.print(" fr=");
-      Serial.println(front_right_current);
+      Serial.println(adjustment, 1);
     }
-    */
     if(Scale*120 < 25) break;
     drivetrain.drive(constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120+adjustment),20,150),constrain(Scale*(120+adjustment),20,150));
     //drivetrain.drive(150+adjustment,(150+adjustment)*1.25,(150-adjustment)*1.25,150+adjustment);
