@@ -370,11 +370,20 @@ void centerFrontBack(){
   drivetrain.reset_encoderCount(true,true,true);
 }
 
+// Right-wall follower error, fed to center_PID in movement.ino.
+// Uses the two right-side sensors (front = 2, back = 3) per Hanafi et al. (2013):
+//   E_Tot = (ideal - D) + angle,  where D = avg gap, angle = back - front.
+// Positive error steers away from the right wall (matches the old sign convention).
+// Returns 0 when the right wall isn't present on BOTH sensors (no reliable reference).
 int center(){
-  int a = measure(2);
-  int b = measure(6);
-  if(b != 8191 && a != -1 && b!=8191 && b != -1) return (b%30-a%30); // mod 30 to find centering
-  else return 0;
+  int front = measure(2);   // right-front gap (mm)
+  int back  = measure(3);   // right-back gap  (mm)
+  bool wallPresent = front != -1 && front != 8191 && front <= SIDE_WALL_MAX_MM
+                  && back  != -1 && back  != 8191 && back  <= SIDE_WALL_MAX_MM;
+  if(!wallPresent) return 0;
+  double D = (front + back) / 2.0;                       // distance term
+  double e = (TARGET_SIDE_GAP_MM - D) + (back - front);  // (ideal - D) + angle
+  return (int)e;
 }
 
 
