@@ -328,9 +328,20 @@ void setup(){
 }
 int iterator = 0;
 
-
+// SuperTeam mode: true = run the Robot B chef mission (superteam_mission.ino)
+// instead of the maze state machine. Must stay ABOVE the AP-test block below,
+// which would otherwise consume the order before waitForHandoff() sees it.
+const bool SUPERTEAM_MISSION = false;
 
 void loop(){
+  if (SUPERTEAM_MISSION) {
+    runSuperteamMission();          // runs the whole game (3 orders + exit)
+    while (true) {                  // park forever when done
+      drivetrain.fullstop();
+      delay(1000);
+    }
+  }
+
   // ---- SuperTeam AP/UDP test: print any order received over WiFi ----
   if (superteamOrderAvailable()) {
     int sum = superteamTakeOrder();
@@ -338,7 +349,10 @@ void loop(){
     Serial.println(sum);
   }
   // ---- end AP test ----
-
+for(int i=1;i<=7;i++){
+  Serial.print("sensor"+i);
+  Serial.print(measure(i));
+}
   //diagPrintStackUsage();
 
   /*
@@ -627,6 +641,7 @@ void loop(){
       break;
     }
  }
+ 
  
  
 }
