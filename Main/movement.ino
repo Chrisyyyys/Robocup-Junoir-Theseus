@@ -24,6 +24,7 @@ void fwd(double dist){ // in mm
   isVictim = false;
   victimPending = false;
   moveInterrupted = false; // becomes true only if a pause aborts this move
+  blacktoggle = false;     // per-move flag: set again if THIS move finds black
   int init_pitch = myGyro.modulus((int)myGyro.pitch_heading());
   int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
   Serial.println("init_yaw");
@@ -132,30 +133,36 @@ void fwd(double dist){ // in mm
       climbPID.pausePID(2); gyroPID.pausePID(2); Scale_PID.pausePID(2); center_PID.pausePID(2); myTime.pause(2);
     }
 
-    // color: detect black (stop + back off) tiles ahead. Blue is read only
-    // after the move completes (in EXECUTE_MOVE), not mid-motion here.
+    // color: detect black tiles ahead. Maze mode: hole -> stop + back off.
+    // SuperTeam mode: the black tile is the handoff point -> NO back-off,
+    // keep driving and finish the move centered ON the tile. Blue is read
+    // only after the move completes (in EXECUTE_MOVE), not mid-motion here.
     int color = read_color(); // also marks silver checkpoints internally
     Serial.println("color");
     Serial.println(color);
-    if(color == -1){ // black tile ahead -> stop, mark next tile, back off
-      drivetrain.fullstop();
-      delay(100);
+    if(color == -1 && blacktoggle == false){ // black tile ahead
       Serial.println("black");
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
       mapGrid[nx][ny].setType(BLACK);
       blacktoggle = true;
-      // SuperTeam: remember how to come back for the dish handoff - after
-      // the back-off below we stand on (x_pos,y_pos) facing the black tile
       if(SUPERTEAM_MISSION){
+        // handoff tile, not a hole: remember the approach tile/heading for
+        // the dish-handoff return trip and let the move complete onto the
+        // tile (EXECUTE_MOVE advances the position and runs the handoff).
         stBlackApproachX = x_pos;
         stBlackApproachY = y_pos;
         stBlackApproachDir = currentDir;
       }
-      while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
-        drivetrain.backward(200);
+      else{
+        // maze: hole ahead -> stop and back off to the start of the move
+        drivetrain.fullstop();
+        delay(100);
+        while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
+          drivetrain.backward(200);
+        }
+        black = true;
       }
-      black = true;
     }
     // PID centering
 
