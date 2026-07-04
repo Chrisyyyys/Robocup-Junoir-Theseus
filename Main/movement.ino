@@ -15,7 +15,7 @@ void fwd(double dist){ // in mm
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   PID climbPID(2,0,0.1); // pid for centering on ramp
-  PID center_PID(2,0,0.5);
+  PID center_PID(1,0,0.25);
   PID gyroPID(1,0.001,0.03);
   PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
@@ -118,7 +118,20 @@ void fwd(double dist){ // in mm
       Scale_PID.pausePID(2);
       myTime.pause(2);
     }
-    
+
+    // SuperTeam: camera flagged a required ingredient target. Service it in
+    // place (blink 3 s, box push, cook if the order is complete) and resume
+    // this move; encoder counts are saved/restored around the excursion
+    // because the push maneuver resets them.
+    if(SUPERTEAM_MISSION && stIngredientPending){
+      drivetrain.fullstop();
+      climbPID.pausePID(1); gyroPID.pausePID(1); Scale_PID.pausePID(1); center_PID.pausePID(1); myTime.pause(1);
+      int _eA = drivetrain.encoderCountA; int _eB = drivetrain.encoderCountB; int _eD = drivetrain.encoderCountD;
+      serviceIngredientTarget();
+      drivetrain.set_encoderCountA(_eA); drivetrain.set_encoderCountB(_eB); drivetrain.set_encoderCountD(_eD);
+      climbPID.pausePID(2); gyroPID.pausePID(2); Scale_PID.pausePID(2); center_PID.pausePID(2); myTime.pause(2);
+    }
+
     // color: detect black (stop + back off) tiles ahead. Blue is read only
     // after the move completes (in EXECUTE_MOVE), not mid-motion here.
     int color = read_color(); // also marks silver checkpoints internally
@@ -132,6 +145,13 @@ void fwd(double dist){ // in mm
       stepForward(currentDir,nx,ny);
       mapGrid[nx][ny].setType(BLACK);
       blacktoggle = true;
+      // SuperTeam: remember how to come back for the dish handoff - after
+      // the back-off below we stand on (x_pos,y_pos) facing the black tile
+      if(SUPERTEAM_MISSION){
+        stBlackApproachX = x_pos;
+        stBlackApproachY = y_pos;
+        stBlackApproachDir = currentDir;
+      }
       while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
         drivetrain.backward(200);
       }

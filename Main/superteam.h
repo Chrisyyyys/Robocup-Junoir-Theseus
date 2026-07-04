@@ -13,11 +13,4 @@
 #define ING_BLUE   0x08
 #define ING_BLACK  0x10
 
-// per-station resupply geometry: which way the grey box sits relative to the
-// robot's route heading ('L'/'R'/'B', 'N' = no push), and push distance in mm
-struct StationCfg {
-  char boxTurn;
-  int pushMm;
-};
-
 #endif

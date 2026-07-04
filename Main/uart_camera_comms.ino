@@ -54,6 +54,21 @@ int readSerial2(){ //right
   }
   return classifyCamByte(sample);
 }
+// newest raw byte from each camera (0 = nothing pending). The SuperTeam
+// mission classifies ingredient letters ('R','Y','G','B','K') itself.
+char readCamRaw1(){ // left (Serial4)
+  if(Serial4.available() <= 0) return 0;
+  char sample = 0;
+  while(Serial4.available() > 0) sample = Serial4.read();
+  return sample;
+}
+char readCamRaw2(){ // right (Serial3)
+  if(Serial3.available() <= 0) return 0;
+  char sample = 0;
+  while(Serial3.available() > 0) sample = Serial3.read();
+  return sample;
+}
+
 bool detectCam1(){ // left camera serial4
    // read buffer
   // if there is content, take 5 samples and take the most common letter.
