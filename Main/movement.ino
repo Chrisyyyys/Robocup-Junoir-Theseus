@@ -45,7 +45,7 @@ void fwd(double dist){ // in mm
   
   int front_left = measure(7);int front_right = measure(1);
   // outside loop
-    if(front_left<=OBSTACLE_DIST&&front_left!=-1&&front_right>=MIN_DIST&&front_right!=-1){ // trigger obstacleavoidance
+    if(front_left<=MIN_DIST&&front_left!=-1&&front_right>=MIN_DIST&&front_right!=-1){ // trigger obstacleavoidance
       Serial.println("obstacle left");
       int prevdist = obstacleavoidance(1);
       drivetrain.fullstop();
@@ -70,7 +70,7 @@ void fwd(double dist){ // in mm
       Serial.println("[FWD] exit=obstacle-left");
       return;
     }
-    else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&front_left>=OBSTACLE_DIST&&front_left!=-1){
+    else if(front_right<=MIN_DIST&&front_right!=-1&&front_left>=MIN_DIST&&front_left!=-1){
       Serial.println("obstacle right");
       int prevdist = obstacleavoidance(0);
       drivetrain.fullstop();

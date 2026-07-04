@@ -372,7 +372,7 @@ void centerFrontBack(){
 int center(){
   int a = measure(2);
   int b = measure(6);
-  if(b != 8191 && a != -1 && b!=8191 && b != -1) return (b%30-a%30); // mod 30 to find centering
+  if(a != 8191 && a != -1 && b!=8191 && b != -1) return (b%300-a%300); // mod 30 to find centering
   else return 0;
 }
 
@@ -529,7 +529,14 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         drivetrain.reset_encoderCount(true,true,true);
         delay(200);
         
-        fwd((300-(_-measure(1))<0) ? 0:300-(_-measure(1))); // subtract already travelled distance.
+        // Drive the rest of the tile, subtracting distance already travelled.
+        // Read the front sensor ONCE (a second read can differ and overshoot) and
+        // clamp to [0, TILE_MM]: if either front reading is invalid the front is
+        // open/garbage, so fall back to one tile instead of a runaway distance.
+        int frontNow = measure(1);
+        int travelled = (_ != -1 && frontNow != -1) ? (_ - frontNow) : 0;
+        int remaining = constrain(TILE_MM - travelled, 0, TILE_MM);
+        fwd(remaining);
         steps = TURN;
         return _;
       }

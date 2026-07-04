@@ -381,20 +381,21 @@ void loop(){
         stepForward(currentDir, x_pos, y_pos); // x_pos/y_pos now = new tile
         int color = read_color();
         if(color == 1) bluetoggle = true;
-        else if(color == 0) blacktoggle = true;
+        else if(color == -1) blacktoggle = true;
         if(bluetoggle == true){
-          mapGrid[x_pos][y_pos].setVictim(true);
+          
           Serial.println("blue");
           if(mapGrid[x_pos][y_pos].getVictim()==false){
             victimCount += 1;
             digitalWrite(LEDPIN,HIGH);
             delay(6000);
             digitalWrite(LEDPIN,LOW);
+            mapGrid[x_pos][y_pos].setVictim(true);
           }
         }
         if(blacktoggle == true){
           Serial.println("black");
-          mapGrid[x_pos][y_pos].setVictim(true);
+          
           if(mapGrid[x_pos][y_pos].getVictim()==false){
             victimCount += 2;
             for(int i = 0; i< 6;i++){
@@ -402,6 +403,7 @@ void loop(){
               delay(500);
               digitalWrite(LEDPIN,LOW);
               delay(500);
+              mapGrid[x_pos][y_pos].setVictim(true);
             }
           }
         }
