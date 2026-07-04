@@ -328,8 +328,16 @@ int iterator = 0;
 
 
 void loop(){
+  // ---- SuperTeam AP/UDP test: print any order received over WiFi ----
+  if (superteamOrderAvailable()) {
+    int sum = superteamTakeOrder();
+    Serial.print("AP TEST: received order SUM=");
+    Serial.println(sum);
+  }
+  // ---- end AP test ----
+
   //diagPrintStackUsage();
-  
+
   /*
   for(int i = 1;i<=7;i++){
     Serial.print("sensor ");

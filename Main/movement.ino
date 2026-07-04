@@ -15,7 +15,7 @@ void fwd(double dist){ // in mm
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   PID climbPID(2,0,0.1); // pid for centering on ramp
-  PID center_PID(1,0,0.2);
+  PID center_PID(2,0,0.5);
   PID gyroPID(1,0.001,0.03);
   PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
   Serial.println("forwarding");
