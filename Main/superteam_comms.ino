@@ -37,12 +37,7 @@ volatile bool robotA_known = false;
 volatile bool orderPending = false; // a new order arrived and hasn't been taken yet
 volatile int  orderSumValue = 0;    // SUM of the latest order, -2..2
 
-// ingredient bitmask (matches the five single-colour ingredient targets)
-#define ING_RED    0x01
-#define ING_YELLOW 0x02
-#define ING_GREEN  0x04
-#define ING_BLUE   0x08
-#define ING_BLACK  0x10
+// ingredient bitmask ING_* lives in superteam.h (included by Main.ino)
 
 // comms gets its own thread like cameraThread/pauseThread; 8 KB stack because
 // the WiFi stack runs deeper call chains than the default 4 KB allows for.

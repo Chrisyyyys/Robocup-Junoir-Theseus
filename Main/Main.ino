@@ -46,6 +46,7 @@
 float clear; 
 
 #include "MazeTile.h"
+#include "superteam.h" // ING_* bits + RouteStep/StationCfg for the SuperTeam mission
 
 // set up mux and distance senosrs
 VL53L0X sensors[7];
@@ -683,8 +684,8 @@ const int NUM_STATIONS = 5;
 // The SuperTeam field is fixed (rules: layout does not change between runs,
 // only order-target SUMs and the ingredient colour order can differ), so the
 // kitchen is driven from a hand-written route table instead of the maze
-// explorer. Ops: 'F' = forward val mm, 'L'/'R'/'B' = snap-turn left/right/180.
-struct RouteStep { char op; int val; };
+// explorer. RouteStep is defined in superteam.h:
+// op 'F' = forward val mm, 'L'/'R'/'B' = snap-turn left/right/180.
 
 // TODO(field): all routes below are PLACEHOLDERS - walk the real field with a
 // tape measure and rewrite them. Distances are tile centre to tile centre
@@ -696,12 +697,11 @@ const RouteStep ROUTE_ST5_TO_HANDOFF[]   = { {'B', 0}, {'F', 300} };
 const RouteStep ROUTE_HANDOFF_TO_RED[]   = { {'B', 0}, {'F', 300} };
 #define ROUTE_LEN(r) (int)(sizeof(r) / sizeof((r)[0]))
 
-// Per-station resupply geometry: which way the grey box sits relative to the
-// robot's route heading when parked at that station, and how far to push.
-// turn: 'L', 'R', 'B' (or 'N' = no box push at this station).
+// Per-station resupply geometry (StationCfg in superteam.h): which way the
+// grey box sits relative to the robot's route heading when parked at that
+// station ('L'/'R'/'B', 'N' = no push), and how far to push.
 // Push = 2 tiles: the robot crosses its own tile onto the box tile and keeps
 // going so the box ends up past the delivery-tile boundary (>half over = +10).
-struct StationCfg { char boxTurn; int pushMm; };
 // TODO(field): set the real turn directions per station.
 StationCfg stationCfg[NUM_STATIONS] = {
   {'R', 2 * TILE_MM}, {'R', 2 * TILE_MM}, {'R', 2 * TILE_MM}, {'R', 2 * TILE_MM}, {'R', 2 * TILE_MM},
