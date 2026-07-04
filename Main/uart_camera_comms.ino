@@ -14,42 +14,15 @@ void lcdPrint(const char* msg) {
   lcd.print("                ");
   lcd.setCursor(0, 0);
   lcdMutex.unlock();
-  updateStatusDisplay(); // restore the persistent nav status now that the popup is done
 }
 
-// maps a read_color() classification to a short display string
-const char* colorReadingStr(int colorReading) {
-  switch (colorReading) {
-    case -1: return "BLK";
-    case  1: return "BLU";
-    case  2: return "RED";
-    case  0: return "WHT";
-    default: return "UNK";
-  }
-}
-
-// persistent navigation status: current coordinate, facing direction, tile
-// color, and whether the current tile's re-sensed walls matched the map
-// (tilecheck == true means they didn't -- position may be unreliable).
+// nav status: current coordinate + facing direction, shown via the
+// already-working lcdPrint() path.
 void updateStatusDisplay() {
   const char dirChars[4] = {'N', 'E', 'S', 'W'};
-  int colorReading = read_color();
-
-  char line1[17];
-  char line2[17];
-  snprintf(line1, sizeof(line1), "X%02d Y%02d %c", x_pos, y_pos, dirChars[currentDir]);
-  snprintf(line2, sizeof(line2), "COL:%s %s", colorReadingStr(colorReading), tilecheck ? "LOST" : "OK");
-
-  lcdMutex.lock();
-  lcd.setCursor(0, 0);
-  lcd.print("                ");
-  lcd.setCursor(0, 0);
-  lcd.print(line1);
-  lcd.setCursor(0, 1);
-  lcd.print("                ");
-  lcd.setCursor(0, 1);
-  lcd.print(line2);
-  lcdMutex.unlock();
+  char msg[17];
+  snprintf(msg, sizeof(msg), "X%02d Y%02d %c", x_pos, y_pos, dirChars[currentDir]);
+  lcdPrint(msg);
 }
 
 void clearSerialBuffer1() {
