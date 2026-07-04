@@ -369,7 +369,7 @@ void centerFrontBack(){
 int center(){
   int a = measure(2);
   int b = measure(6);
-  if(b != 8191 && a != -1 && b!=8191 && b != -1) return (b%30-a%30); // mod 30 to find centering
+  if(a != 8191 && a != -1 && b!=8191 && b != -1) return (b%300-a%300); // mod 30 to find centering
   else return 0;
 }
 
