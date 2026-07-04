@@ -125,6 +125,31 @@ void writeWallsToCurrentTile(bool wallF, bool wallR, bool wallB, bool wallL) {
   t.setWall(absL, wallL);
   // need to mark both ways.
 }
+// Re-sense check: does the freshly-sensed wall pattern at the current tile agree
+// with what the map already recorded for it? Only meaningful once the tile has
+// actually been visited before (getVisited(), not getDiscovered() -- the home
+// tile is marked discovered in setup() before any real walls are ever sensed,
+// so gating on getDiscovered() would false-positive "mismatch" on the very
+// first tile at power-on). Tolerates a single disagreeing wall (sensor noise)
+// via WALL_MISMATCH_THRESHOLD before flagging the position as unreliable.
+bool checkTileMismatch(bool wallF, bool wallR, bool wallB, bool wallL) {
+  Tile &t = mapGrid[x_pos][y_pos];
+  if (!t.getVisited()) return false; // no trustworthy prior data for this tile yet
+
+  Direction absF = currentDir;
+  Direction absR = rotateDir(currentDir, +1);
+  Direction absB = rotateDir(currentDir, +2);
+  Direction absL = rotateDir(currentDir, -1);
+
+  int mismatches = 0;
+  if (t.getWall(absF) != wallF) mismatches++;
+  if (t.getWall(absR) != wallR) mismatches++;
+  if (t.getWall(absB) != wallB) mismatches++;
+  if (t.getWall(absL) != wallL) mismatches++;
+
+  return mismatches >= WALL_MISMATCH_THRESHOLD;
+}
+
 Direction pickNextDirection() {
   Tile &t = mapGrid[x_pos][y_pos];
 

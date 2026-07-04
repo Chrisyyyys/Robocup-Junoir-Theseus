@@ -48,10 +48,20 @@ Locks `lcdMutex`, then writes:
 - Line 1: `X%02d Y%02d %c` built from `x_pos`, `y_pos`, and a facing-direction character
   looked up from `currentDir` (`{'N','E','S','W'}` indexed by the `Direction` enum). Example:
   `X20 Y20 N`.
-- Line 2: `COL:%s %s` built from a new helper `tileTypeStr(TileTypes)` (returns `"WHT"`,
-  `"BLU"`, `"CHK"`, `"BLK"` for `BLANK`/`BLUE`/`CHECKPOINT`/`BLACK` respectively) applied to
-  `mapGrid[x_pos][y_pos].getType()`, plus `tilecheck ? "LOST" : "OK"`. Example:
+- Line 2: `COL:%s %s` built from a new helper `colorReadingStr(int)` (returns `"WHT"`,
+  `"BLU"`, `"RED"`, `"BLK"`, or `"UNK"` for `read_color()`'s 0/1/2/-1/other return values)
+  applied to a **fresh** `read_color()` call, plus `tilecheck ? "LOST" : "OK"`. Example:
   `COL:WHT OK` or `COL:BLK LOST`.
+
+  **Revised during implementation:** the design originally planned to source the color
+  field from `mapGrid[x_pos][y_pos].getType()` (`TileTypes`). A teammate's commit
+  (`ebc9af4`, landed mid-session) reworked color handling so `setType(BLUE)` is no longer
+  called anywhere and `setType(BLACK)` is only ever applied to a tile the robot never
+  actually enters (it backs off instead) — so `getType()` would show `BLANK`/"WHT" for
+  almost every tile the robot is actually standing on. A fresh `read_color()` call is used
+  instead. The same commit also removed the checkpoint/silver-marking side effect from
+  `read_color()`, so calling it again here (in addition to the call `EXECUTE_MOVE` already
+  makes right after arriving at a tile) is side-effect-free.
 
 Both lines are cleared (overwritten with spaces) before the new text is written, following
 the existing pattern in `lcdPrint()`.

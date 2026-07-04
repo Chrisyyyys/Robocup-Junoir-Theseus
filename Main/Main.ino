@@ -38,7 +38,8 @@
 #define BLACK_THRESHOLD 0.1f // color clear-channel threshold ratio for black
 #define SILVER_THRESHOLD 800 // use red value
 #define WHITE_THRESHOLD 0.85f
-#define MULTIPLER 1.1 
+#define MULTIPLER 1.1
+#define WALL_MISMATCH_THRESHOLD 2 // >= this many of the 4 absolute walls disagreeing with the stored tile flags a position mismatch
 float clear; 
 
 #include "MazeTile.h"
@@ -288,6 +289,9 @@ void loop(){
       // Read for walls
       Serial.println("reading walls");
       readWallsRel(wallF, wallR, wallB, wallL);
+      // re-sense: does this tile actually match what the map already recorded for it?
+      tilecheck = checkTileMismatch(wallF, wallR, wallB, wallL);
+      updateStatusDisplay();
 
       delay(200);
       state = UPDATE_MAP; // next state.
@@ -320,7 +324,11 @@ void loop(){
     }
     case UPDATE_MAP: {
       Serial.println("updating tile");
-      writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
+      // skip the write on a mismatch: preserve the already-trusted wall data for
+      // this cell rather than overwriting it with a reading taken while the
+      // robot's position belief may be wrong.
+      if(!tilecheck) writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
+      else Serial.println("tile mismatch detected - preserving existing map data for this tile");
       updateFullyExploredAt(x_pos, y_pos);
       state = VICTIM_DETECT; // poll cameras while stopped before planning.
       if(Pausemaze == true) state = PAUSE;
