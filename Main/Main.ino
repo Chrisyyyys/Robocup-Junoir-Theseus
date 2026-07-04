@@ -38,8 +38,9 @@
 #define BLACK_THRESHOLD 0.1f // color clear-channel threshold ratio for black
 #define SILVER_THRESHOLD 800 // use red value
 #define WHITE_THRESHOLD 0.85f
-#define MULTIPLER 1.1 
-float clear; 
+#define MULTIPLER 1.1
+#define WALL_MISMATCH_THRESHOLD 2 // >= this many of the 4 absolute walls disagreeing with the stored tile flags a position mismatch
+float clear;
 
 #include "MazeTile.h"
 
@@ -138,6 +139,9 @@ Direction currentDir = NORTH;     // robot heading in map coords (0..3)
 int plannedTurnDeg = 0;           // -90,0,+90,180
 Direction plannedMoveDir = NORTH; // absolute direction robot will move next
 bool turnCompletedForMove = false;
+// bound BOTCHED_TURN_RECOVERY so a persistently un-completable turn can't cycle forever
+int botchedTurnAttempts = 0;
+const int MAX_BOTCHED_TURN_ATTEMPTS = 3;
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
@@ -348,6 +352,8 @@ void loop(){
       // Read for walls
       Serial.println("reading walls");
       readWallsRel(wallF, wallR, wallB, wallL);
+      // re-sense: does this tile actually match what the map already recorded for it?
+      tilecheck = checkTileMismatch(wallF, wallR, wallB, wallL);
 
       delay(200);
       state = UPDATE_MAP; // next state.
@@ -380,7 +386,11 @@ void loop(){
     }
     case UPDATE_MAP: {
       Serial.println("updating tile");
-      writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
+      // skip the write on a mismatch: preserve the already-trusted wall data for
+      // this cell rather than overwriting it with a reading taken while the
+      // robot's position belief may be wrong.
+      if(!tilecheck) writeWallsToCurrentTile(wallF, wallR, wallB, wallL);
+      else Serial.println("tile mismatch detected - preserving existing map data for this tile");
       updateFullyExploredAt(x_pos, y_pos);
       state = VICTIM_DETECT; // poll cameras while stopped before planning.
       if(Pausemaze == true) state = PAUSE;
@@ -418,6 +428,7 @@ void loop(){
         }
         currentDir = plannedMoveDir;
         turnCompletedForMove = true;
+        botchedTurnAttempts = 0; // clean turn -> reset the recovery counter
       }
       fwd(TILE_MM);
       // A pause aborted the move before the tile was completed: don't advance
@@ -486,6 +497,7 @@ void loop(){
         state = PAUSE;
         break;
       }
+      botchedTurnAttempts += 1;
       Direction snappedDir = (Direction)myGyro.headingToCardinal(myGyro.heading());
       int snappedHeading = turnNeededDeg(snappedDir);
       Serial.println("botched turn detected, snapping to cardinal");
@@ -496,7 +508,17 @@ void loop(){
       currentDir = snappedDir;
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
-      
+
+      // Repeated failures on the same planned turn (wall, gyro drift, motor slip):
+      // stop retrying it. Re-plan a fresh direction from the now-clean cardinal
+      // heading instead of bouncing between EXECUTE_MOVE and recovery forever.
+      if(botchedTurnAttempts >= MAX_BOTCHED_TURN_ATTEMPTS){
+        Serial.println("max botched-turn retries reached, re-planning");
+        botchedTurnAttempts = 0;
+        state = PLAN_NEXT;
+        break;
+      }
+
       state = EXECUTE_MOVE;
       break;
     }
