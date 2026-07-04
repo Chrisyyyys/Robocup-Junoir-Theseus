@@ -50,8 +50,8 @@ void fwd(double dist){ // in mm
       int prevdist = obstacleavoidance(1);
       drivetrain.fullstop();
       delay(50);
-      if(prevdist != -2) obstacle = true;
-      else moveInterrupted = true; // avoidance aborted by pause -> tile not completed
+      
+       // avoidance aborted by pause -> tile not completed
       /*
       if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
         int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM); // don't "overmove"
@@ -91,8 +91,8 @@ void fwd(double dist){ // in mm
       
       drivetrain.fullstop();
       */
-      if(prevdist != -2) obstacle = true;
-      else moveInterrupted = true; // avoidance aborted by pause -> tile not completed
+      
+      ; // avoidance aborted by pause -> tile not completed
       Serial.println("[FWD] exit=obstacle-right");
       return;
     }
@@ -123,17 +123,15 @@ void fwd(double dist){ // in mm
     int color = read_color(); // also marks silver checkpoints internally
     Serial.println("color");
     Serial.println(color);
-    if(color == 1){ // blue tile ahead
-      bluetoggle = true;
-    }
-    else if(color == -1){ // black tile ahead -> stop, mark next tile, back off
+    
+    if(color == 2){ // red tile ahead -> stop, mark next tile, back off (same as black)
       drivetrain.fullstop();
       delay(100);
-      Serial.println("black");
+      Serial.println("red");
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
       mapGrid[nx][ny].setType(BLACK);
-      blacktoggle = true;
+      redtoggle = 1;
       while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
         drivetrain.backward(200);
       }

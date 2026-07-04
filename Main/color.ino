@@ -67,19 +67,6 @@ int read_color(){
     return -1; // black
   }
   
-  if(r>SILVER_THRESHOLD){ // silver reflects more absolute light
-    int nx = x_pos; int ny = y_pos;
-    stepForward(currentDir,nx,ny);
-    //Serial.print("silver at ");
-    //Serial.print(nx);
-    //Serial.print(", y=");
-    //Serial.print(ny);
-    mapGrid[nx][ny].setType(CHECKPOINT);
-    x_checkpoint = nx; y_checkpoint = ny;
-    floor_checkpoint = currentFloor; // remember which floor this checkpoint is on
-
-    return 3; 
-  }
   
   if((float)c/clear>WHITE_THRESHOLD) return 0;
 

@@ -396,7 +396,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(7) < MIN_DIST){
             motorB->run(BACKWARD);
             motorD->run(FORWARD);
-            drivetrain.drive(255,255,255,255);
+            drivetrain.drive(150,150,150,150);
             if(Pausemaze == true){
               drivetrain.fullstop();
               return -2;
@@ -412,7 +412,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             motorC->run(BACKWARD);
             motorB->run(FORWARD);
             motorD->run(BACKWARD); // D is mounted reversed; BACKWARD raw = physically FORWARD, matching motorB
-            drivetrain.drive(255,255,255,255);
+            drivetrain.drive(150,150,150,150);
             if(Pausemaze == true){
               drivetrain.fullstop();
               return -2;
@@ -422,8 +422,8 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         }
         drivetrain.fullstop();
         delay(200);
-        drivetrain.fw(255);
-        delay(300);
+        drivetrain.fw(150);
+        delay(500);
         drivetrain.fullstop();
         delay(200);
         steps = PARALLEL;

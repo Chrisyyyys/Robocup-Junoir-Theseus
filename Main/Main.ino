@@ -138,6 +138,9 @@ Direction currentDir = NORTH;     // robot heading in map coords (0..3)
 int plannedTurnDeg = 0;           // -90,0,+90,180
 Direction plannedMoveDir = NORTH; // absolute direction robot will move next
 bool turnCompletedForMove = false;
+// bound BOTCHED_TURN_RECOVERY so a persistently un-completable turn can't cycle forever
+int botchedTurnAttempts = 0;
+const int MAX_BOTCHED_TURN_ATTEMPTS = 3;
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
 RobotState state = SENSE_TILE;
@@ -145,6 +148,7 @@ RobotState state = SENSE_TILE;
 int medkits = 8;
 timer mazeTime;
 // black blue toggles
+int redtoggle = 0;
 bool blacktoggle = false;
 bool bluetoggle = false;
 bool stairtoggle = false;
@@ -153,6 +157,7 @@ bool obstacle = false;
 // victim toggles
 bool victimtoggle = false;
 bool victimAtCurrent = false;
+int victimCount = 0;
 // camera GPIOs
 const int gpio1 = 13;
 const int gpio2 = 12;
@@ -194,53 +199,7 @@ volatile bool isVictim = false;      // a victim already handled during current 
 rtos::Thread cameraThread;
 rtos::Mutex i2cMutex;
 rtos::Mutex lcdMutex; // lcd mutex to prevent conflict
-void cameraTask(){
-  while(true){
-    int encoderCount = (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3;
-    int nx = x_pos; int ny=y_pos;
-    if((fwdActive||turnActive) && !victimPending && !isVictim){
-      
-      //if(encoderCount>=0.3*pulsesForDistanceMm(TILE_MM)||encoderCount<=0.7*pulsesForDistanceMm(TILE_MM)){
-        if(readSerial1() != -1){        // left camera (Serial4)
-          if(fwdActive) victimTileFromEncoder(TILE_MM,encoderCount,nx,ny);
-          Serial.println("nx, ny");
-          Serial.println(nx);
-          Serial.println(ny);
-          Serial.println(mapGrid[nx][ny].getVictim());
-          if(mapGrid[nx][ny].getVictim() == false){
-            i2cMutex.lock();
-            victimSide = 1;
-            drivetrain.fullstop();
-            victimPending = true;
-            i2cMutex.unlock();
-            rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
-            i2cMutex.lock();
-            serviceCameraVictim();
-            i2cMutex.unlock();
-          }
-        }
-        else if(readSerial2() != -1){   // right camera (Serial3)
-          if(fwdActive) victimTileFromEncoder(TILE_MM,encoderCount,nx,ny);
-          Serial.println("nx, ny");
-          Serial.println(nx);
-          Serial.println(ny);
-          Serial.println(mapGrid[nx][ny].getVictim());
-          if(mapGrid[nx][ny].getVictim() == false){
-            i2cMutex.lock();
-            victimSide = 2;
-            drivetrain.fullstop();
-            victimPending = true;
-            i2cMutex.unlock();
-            rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
-            i2cMutex.lock();
-            serviceCameraVictim();
-            i2cMutex.unlock();
-          }
-        }
-      }
-    rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
-  }
-}
+
 
 
 // pause maze thread: watches the logic switch and requests a stop.
@@ -309,8 +268,6 @@ void setup(){
   // start lcd
   lcd.begin(16, 2);
   // start RTOS threads: camera victim detection + pause-switch watcher.
-  cameraThread.start(cameraTask);
-  cameraThread.set_priority(osPriorityAboveNormal);
   pauseThread.start(pauseTask);
   //Serial.println("starting");
   
@@ -321,30 +278,13 @@ int iterator = 0;
 
 
 void loop(){
-  //diagPrintStackUsage();
-  
-  /*
-  for(int i = 1;i<=7;i++){
-    Serial.print("sensor ");
-    Serial.println(i);
-    Serial.println(measure(i));
-    delay(500);
-  }
-  
-  */
-  
-  
-  //lcdPrint("working");
-  //delay(500);
-  //drivetrain.drive(150,150*1.25,150*1.25,150);
-  //drivetrain.drive(150,150,150,150);
   
   
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
     case SENSE_TILE: {
       // reset per-tile toggles
-      blacktoggle = false; bluetoggle = false; victimtoggle = false; obstacle = false;
+      redtoggle = 0; bluetoggle = false; victimtoggle = false; obstacle = false; blacktoggle = false;
       // Read for walls
       Serial.println("reading walls");
       readWallsRel(wallF, wallR, wallB, wallL);
@@ -418,6 +358,7 @@ void loop(){
         }
         currentDir = plannedMoveDir;
         turnCompletedForMove = true;
+        botchedTurnAttempts = 0; // clean turn -> reset the recovery counter
       }
       fwd(TILE_MM);
       // A pause aborted the move before the tile was completed: don't advance
@@ -426,28 +367,42 @@ void loop(){
         if(Pausemaze == true) state = PAUSE;
         break;
       }
-      // update map + robot position only on a successful (non-black) move
-      if(blacktoggle == false){
+      // update map + robot position only on a successful (non-red) move
+      if(redtoggle == 0){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos); // x_pos/y_pos now = new tile
+        int color = read_color();
+        if(color == 1) bluetoggle = true;
+        else if(color == 0) blacktoggle = true;
         if(bluetoggle == true){
-          delay(5000);
-          mapGrid[x_pos][y_pos].setType(BLUE);
+          mapGrid[x_pos][y_pos].setVictim(true);
+          Serial.println("blue");
+          if(mapGrid[x_pos][y_pos].getVictim()==false){
+            victimCount += 1;
+            digitalWrite(LEDPIN,HIGH);
+            delay(6000);
+            digitalWrite(LEDPIN,LOW);
+          }
+        }
+        if(blacktoggle == true){
+          Serial.println("black");
+          mapGrid[x_pos][y_pos].setVictim(true);
+          if(mapGrid[x_pos][y_pos].getVictim()==false){
+            victimCount += 2;
+            for(int i = 0; i< 6;i++){
+              digitalWrite(LEDPIN,HIGH);
+              delay(500);
+              digitalWrite(LEDPIN,LOW);
+              delay(500);
+            }
+          }
         }
         
-        if(obstacle == true){
-          //set obstacle type
-          //make sure to prevent return to the tile with obstacle in the future.
-          int nx = x_pos; int ny = y_pos;
-          stepForward(currentDir, nx, ny);
-          mapGrid[x_pos][y_pos].setObstacle(currentDir, true); // connected
-          mapGrid[nx][ny].setObstacle(opposite(currentDir), true); // update both sides.
-        }
         
       }
       else{
         
-        state = BACKPEDAL; // black tile ahead (marked BLACK by fwd) -> back off
+        state = BACKPEDAL; // red tile ahead (marked BLACK by fwd) -> back off
         turnCompletedForMove = false;
         break;
       }
@@ -464,7 +419,7 @@ void loop(){
       if(Pausemaze == true) state = PAUSE;
       //if(mazeTime.getTime() >= 1000000*60*6) state = RETURN;
       //if(medkits <= 0) state = RETURN;
-      if(iterator >= 25) state = RETURN;
+      if(iterator >= 30) state = RETURN;
       break;
     }
     case BACKPEDAL: {
@@ -473,7 +428,7 @@ void loop(){
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
       state = EXECUTE_MOVE;
-      blacktoggle = false;
+      redtoggle = 0;
       if(Pausemaze == true) state = PAUSE;
       delay(200);
       break;
@@ -483,6 +438,7 @@ void loop(){
         state = PAUSE;
         break;
       }
+      botchedTurnAttempts += 1;
       Direction snappedDir = (Direction)myGyro.headingToCardinal(myGyro.heading());
       int snappedHeading = turnNeededDeg(snappedDir);
       Serial.println("botched turn detected, snapping to cardinal");
@@ -493,7 +449,17 @@ void loop(){
       currentDir = snappedDir;
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
-      
+
+      // Repeated failures on the same planned turn (wall, gyro drift, motor slip):
+      // stop retrying it. Re-plan a fresh direction from the now-clean cardinal
+      // heading instead of bouncing between EXECUTE_MOVE and recovery forever.
+      if(botchedTurnAttempts >= MAX_BOTCHED_TURN_ATTEMPTS){
+        Serial.println("max botched-turn retries reached, re-planning");
+        botchedTurnAttempts = 0;
+        state = PLAN_NEXT;
+        break;
+      }
+
       state = EXECUTE_MOVE;
       break;
     }
@@ -549,14 +515,22 @@ void loop(){
       }
       
       while(true){
+        // end and deploy victims
         drivetrain.fullstop();
         lcdPrint("back to start");
+        for(int i = 0; i<victimCount/2;i++){
+          disp.dispenseLeft('H');
+        }
+        for(int i = 0; i< victimCount%2;i++){
+          disp.dispenseRight('S');
+        }
         for(int i = 0;i<5;i++){
           digitalWrite(LEDPIN,HIGH);
           delay(1000);
           digitalWrite(LEDPIN,LOW);
           delay(1000);
         }
+        
       }
     }
     case PAUSE: {
