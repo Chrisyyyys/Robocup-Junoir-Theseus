@@ -602,10 +602,14 @@ void loop(){
         else if(currentFloor == 1) mapGrid = m2;
         else if(currentFloor == 2) mapGrid = m3;
         x_pos = x_checkpoint; y_pos = y_checkpoint; // resume from last checkpoint
-        Direction snapped = (Direction)myGyro.headingToCardinal(myGyro.heading()); // snap to cardinal
-        absoluteturn(turnNeededDeg(snapped));
-        currentDir = snapped;
-        
+        //Direction snapped = (Direction)myGyro.headingToCardinal(myGyro.heading()); // snap to cardinal
+        //absoluteturn(turnNeededDeg(snapped));
+        //currentDir = snapped;
+         // Deterministic reset: rotate to the gyro's zero and declare it NORTH.
+        // Removes the ambiguous headingToCardinal snap (which could bucket a near-45 deg
+        // reading into the wrong cardinal and leave the robot diagonal).
+        absoluteturn(0);        // turnNeededDeg(NORTH) == 0
+        currentDir = NORTH;
         Serial.println("checkpoint coordinates");
         Serial.println(x_checkpoint);
         Serial.println(y_checkpoint);
