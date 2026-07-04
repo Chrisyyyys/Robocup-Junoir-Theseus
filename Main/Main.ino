@@ -323,6 +323,7 @@ void setup(){
   Wire.begin();
   disableAllCall();
   myMux.begin();
+  calibrateSensor(2,80);
   init_dist(); // initialize mux before distance sensors.
   scanAllPorts();
   init_color();

@@ -144,6 +144,13 @@ int measure(int sensor){
 }
 old robot settings
 */
+// Per-sensor distance offsets in mm, indexed by logical sensor number (1..7); [0] unused.
+// Calibrate: place a flat matte target at a known distance D (near the ~80mm working
+// range), average ~100 raw readings, set SENSOR_OFFSET_MM[n] = mean(raw) - D.
+// Positive => sensor reads long; it is subtracted from every reading in measure().
+// Use calibrateSensor(n, D) below to compute these values automatically.
+const int SENSOR_OFFSET_MM[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
 int measure(int sensor){
   // sensor→mux port mapping
   const int portMap[] = {-1, 1, 0, 6, 4, 5, 3, 2};
@@ -156,7 +163,62 @@ int measure(int sensor){
   int value = sensors[sensorIdx].readRangeContinuousMillimeters();
   i2cMutex.unlock();
 
-  return (value != -1 && value != 8191) ? value : -1;
+  if(value == -1 || value == 8191) return -1;          // keep the no-reading sentinel
+  int corrected = value - SENSOR_OFFSET_MM[sensor];     // apply per-sensor calibration
+  return (corrected < 0) ? 0 : corrected;               // clamp: negative distance is nonsense
+}
+
+// Calibration helper. Place a flat matte target at a known true distance trueDistanceMm
+// (perpendicular to sensor n, ideally near the working range), then call this once from
+// setup() or a serial command, e.g. calibrateSensor(2, 80). It averages RAW readings
+// (offset NOT applied) and prints the recommended SENSOR_OFFSET_MM[n] value to Serial.
+// Copy that number into the SENSOR_OFFSET_MM array above and reflash. Returns the
+// computed offset, or -1 if the sensor never returned a valid reading.
+int calibrateSensor(int sensor, int trueDistanceMm){
+  const int samples = 100;
+  if(sensor < 1 || sensor > 7) return -1;
+  const int portMap[] = {-1, 1, 0, 6, 4, 5, 3, 2};
+  int port = portMap[sensor];
+  int sensorIdx = port;
+
+  long sum = 0;
+  int valid = 0;
+  for(int i = 0; i < samples; i++){
+    i2cMutex.lock();
+    myMux.setPort(port);
+    int value = sensors[sensorIdx].readRangeContinuousMillimeters();
+    i2cMutex.unlock();
+    if(value != -1 && value != 8191){
+      sum += value;
+      valid++;
+    }
+    delay(10); // ~let a fresh continuous-ranging sample accumulate between reads
+  }
+
+  if(valid == 0){
+    Serial.print("calibrateSensor: sensor ");
+    Serial.print(sensor);
+    Serial.println(" returned no valid readings");
+    return -1;
+  }
+
+  double meanRaw = (double)sum / valid;
+  int offset = (int)lround(meanRaw - trueDistanceMm);
+  Serial.print("[CAL] sensor ");
+  Serial.print(sensor);
+  Serial.print("  meanRaw=");
+  Serial.print(meanRaw, 1);
+  Serial.print("mm  true=");
+  Serial.print(trueDistanceMm);
+  Serial.print("mm  valid=");
+  Serial.print(valid);
+  Serial.print("/");
+  Serial.print(samples);
+  Serial.print("  -> SENSOR_OFFSET_MM[");
+  Serial.print(sensor);
+  Serial.print("] = ");
+  Serial.println(offset);
+  return offset;
 }
 // detects wall in a direction( 0 is north, 1 is east, etc..) If output = 0, there is a wall.
 // realtive directions(local).
