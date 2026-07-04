@@ -46,7 +46,7 @@
 float clear; 
 
 #include "MazeTile.h"
-#include "superteam.h" // ING_* bits + RouteStep/StationCfg for the SuperTeam mission
+#include "superteam.h" // ING_* bits + StationCfg for the SuperTeam mission
 
 // set up mux and distance senosrs
 VL53L0X sensors[7];
@@ -332,7 +332,7 @@ int iterator = 0;
 // SuperTeam mode: true = run the Robot B chef mission (superteam_mission.ino)
 // instead of the maze state machine. Must stay ABOVE the AP-test block below,
 // which would otherwise consume the order before waitForHandoff() sees it.
-const bool SUPERTEAM_MISSION = false;
+const bool SUPERTEAM_MISSION = true;
 
 void loop(){
   if (SUPERTEAM_MISSION) {
@@ -350,10 +350,10 @@ void loop(){
     Serial.println(sum);
   }
   // ---- end AP test ----
-for(int i=1;i<=7;i++){
-  Serial.print("sensor"+i);
-  Serial.print(measure(i));
-}
+// for(int i=1;i<=7;i++){
+//   Serial.print("sensor"+i);
+//   Serial.print(measure(i));
+// }
   //diagPrintStackUsage();
 
   /*
@@ -667,9 +667,11 @@ for(int i=1;i<=7;i++){
 // Enable by setting SUPERTEAM_MISSION = true (above loop()). The WiFi AP is
 // brought up by initSuperteamComms() in setup() (superteam_comms.ino).
 //
-// !! COORDINATE WITH ROBOT A'S TEAM: Robot A should start sending the order
-// (repeating every ~500 ms until ACKed) only once it is parked on its blue
-// handoff tile, so the 5 s handoff windows of the two robots overlap.
+// Robot A may send the order over WiFi at ANY time (it is just data); the
+// scored handoff is the physical 5 s meeting on the blue/black tile pair.
+// B detects A's arrival with its front distance sensors (B faces the blue
+// tile across the open edge: empty corridor reads far, A parked reads close),
+// so the shared 5 s window only starts once both robots are actually there.
 // ============================================================================
 
 // ---------------- timing (rulebook) ----------------
@@ -680,42 +682,46 @@ const unsigned long EXIT_HOLD_MS = 5000 + 1000;    // >= 5 s on the red tile
 const int NUM_ORDERS = 3;
 const int NUM_STATIONS = 5;
 
-// ---------------- route tables (MEASURE ON THE REAL FIELD) ----------------
-// The SuperTeam field is fixed (rules: layout does not change between runs,
-// only order-target SUMs and the ingredient colour order can differ), so the
-// kitchen is driven from a hand-written route table instead of the maze
-// explorer. RouteStep is defined in superteam.h:
-// op 'F' = forward val mm, 'L'/'R'/'B' = snap-turn left/right/180.
+// ---------------- field geometry (from the rules map, fixed layout) --------
+// Kitchen = bottom 3 rows of the 8x6 field. Mission frame: NORTH = from the
+// kitchen silver tile toward the handoff (place the robot FACING the black
+// tile at the start; the gyro zeroes on boot orientation).
+//
+//   row3:  BLACK | st0 st1 | gap | st2 st3 st4 | BLACK    <- ingredient row,
+//   row4:        | box box |     | box box box |             targets on the
+//   row5: SILVER | dlv dlv |     | dlv dlv dlv | RED         north wall
+//
+// 5 ingredient targets at fixed columns (2 in the left group, 3 in the right
+// group past the gap); a grey box sits one tile SOUTH of each target and its
+// delivery tile one further SOUTH. Only the COLOURS shuffle between rounds.
+const int START_TO_HANDOFF_MM = 2 * TILE_MM;   // silver -> north 2 tiles -> left black
+// station positions measured EAST from the centre of the left black tile:
+// cols 1,2 (left group), skip col 3 (gap), cols 4,5,6 (right group)
+const int STATION_POS_MM[NUM_STATIONS] = {
+  1 * TILE_MM, 2 * TILE_MM, 4 * TILE_MM, 5 * TILE_MM, 6 * TILE_MM,
+};
+const int LEFT_TO_RIGHT_BLACK_MM = 7 * TILE_MM; // left black -> right black
+const int BLACK_TO_RED_MM = 2 * TILE_MM;        // right black -> south 2 tiles -> red exit
+// front distance below which Robot A is considered parked on the facing blue
+// tile (empty restaurant corridor beyond the edge reads much farther)
+const int ROBOT_A_PRESENT_MM = 400;
 
-// TODO(field): all routes below are PLACEHOLDERS - walk the real field with a
-// tape measure and rewrite them. Distances are tile centre to tile centre
-// (1 tile = 300 mm).
-const RouteStep ROUTE_START_TO_HANDOFF[] = { {'F', 300} };
-const RouteStep ROUTE_HANDOFF_TO_ST1[]   = { {'B', 0}, {'F', 300} };
-const RouteStep ROUTE_BETWEEN_STATIONS[] = { {'F', 300} };  // reused for st1->2, 2->3, 3->4, 4->5
-const RouteStep ROUTE_ST5_TO_HANDOFF[]   = { {'B', 0}, {'F', 300} };
-const RouteStep ROUTE_HANDOFF_TO_RED[]   = { {'B', 0}, {'F', 300} };
-#define ROUTE_LEN(r) (int)(sizeof(r) / sizeof((r)[0]))
-
-// Per-station resupply geometry (StationCfg in superteam.h): which way the
-// grey box sits relative to the robot's route heading when parked at that
-// station ('L'/'R'/'B', 'N' = no push), and how far to push.
-// Push = 2 tiles: the robot crosses its own tile onto the box tile and keeps
-// going so the box ends up past the delivery-tile boundary (>half over = +10).
-// TODO(field): set the real turn directions per station.
+// Per-station resupply (StationCfg in superteam.h): every box is SOUTH of its
+// station, i.e. a RIGHT turn while cruising EAST along the ingredient row.
+// Push = 2 tiles: the robot crosses the box tile and ends on the delivery
+// tile, so the box is fully across the boundary (>half over = +10).
 StationCfg stationCfg[NUM_STATIONS] = {
   {'R', 2 * TILE_MM}, {'R', 2 * TILE_MM}, {'R', 2 * TILE_MM}, {'R', 2 * TILE_MM}, {'R', 2 * TILE_MM},
 };
 bool boxPushed[NUM_STATIONS] = {false, false, false, false, false};
 
-// Ingredient colour at each station, in the physical order they are met on
-// the route. The rules allow this left-to-right order to differ per run, so:
-// TODO(hardware): replace assumedStationColors with a real reading in
-// identifyStationColor() (side camera / colour sensor at the target), OR
-// update this array by hand during pre-run calibration once the field is
-// visible. Uses the ING_* bits from superteam_comms.ino.
+// Ingredient colour at each station position, west to east. The default is
+// the arrangement printed in the rules map; the real arrangement CAN DIFFER
+// each round, so either update this array by hand during calibration or
+// TODO(hardware): read the target for real in identifyStationColor()
+// (side camera / colour sensor). Uses the ING_* bits from superteam.h.
 uint8_t assumedStationColors[NUM_STATIONS] = {
-  ING_BLACK, ING_BLUE, ING_GREEN, ING_RED, ING_YELLOW,
+  ING_RED, ING_YELLOW, ING_BLACK, ING_BLUE, ING_GREEN,
 };
 
 Direction missionDir = NORTH; // route-frame heading, tracked like currentDir
@@ -793,31 +799,27 @@ void missionBackward(double dist) {
   drivetrain.reset_encoderCount(true, true, true);
 }
 
-void runRoute(const RouteStep* route, int len) {
-  for (int i = 0; i < len; i++) {
-    switch (route[i].op) {
-      case 'F': missionFwd(route[i].val); break;
-      case 'L': missionTurnRel(-1); break;
-      case 'R': missionTurnRel(+1); break;
-      case 'B': missionTurnRel(+2); break;
-    }
-    delay(150);
-  }
+// true when something (Robot A) is parked directly in front across the tile
+// edge. Call while stopped on the black tile facing the blue tile (NORTH).
+bool robotAPresent() {
+  int fl = measure(7);
+  int fr = measure(1);
+  return (fl != -1 && fl < ROBOT_A_PRESENT_MM) || (fr != -1 && fr < ROBOT_A_PRESENT_MM);
 }
 
 // ---------------- mission steps ----------------
 
-// Step 1: order handoff. Already parked on the black tile when called.
-// Blocks until an order arrives over WiFi, then keeps holding so the shared
-// stationary window with Robot A is >= 5 s. Returns the SUM value.
+// Step 1: order handoff. Already parked on the black tile FACING NORTH
+// (toward A's blue tile) when called. The WiFi order may have arrived at any
+// earlier moment (A sends whenever it likes and stops once ACKed) - keep it.
+// The scored part is the physical meeting: wait until A is detected in front,
+// then both robots sit out the shared >= 5 s window. Returns the SUM value.
 int waitForHandoff() {
   lcdPrint("waiting order");
   drivetrain.fullstop();
-  // flush any stale order captured before we reached the tile
-  if (superteamOrderAvailable()) superteamTakeOrder();
-  while (!superteamOrderAvailable()) {
+  while (!superteamOrderAvailable() || !robotAPresent()) {
     drivetrain.fullstop();
-    delay(20);
+    delay(50);
   }
   int sum = superteamTakeOrder();
   Serial.print("superteam: handoff order SUM=");
@@ -880,17 +882,29 @@ void prepareDish() {
   holdStill(COOK_HOLD_MS);
 }
 
-// Step 4: dish handoff - stationary >= 5 s on the black tile next to A.
-// No data is sent: Robot A detects our presence with its distance sensors.
+// Step 4: dish handoff - on the black tile facing NORTH, wait until A is
+// back on its blue tile, then both hold >= 5 s. DISH_READY is sent as a
+// courtesy heads-up (A's team said they detect us with distance sensors,
+// but the extra signal costs nothing).
 void dishHandoff() {
   lcdPrint("dish handoff");
   Serial.println("superteam: dish handoff");
+  superteamSend("DISH_READY");
+  while (!robotAPresent()) {
+    drivetrain.fullstop();
+    delay(50);
+  }
   holdStill(HANDOFF_HOLD_MS);
 }
 
+// From the LEFT black tile: cruise east along the ingredient row to the
+// right black tile, then 2 tiles south into the red exit tile.
 void exitToRedTile() {
   lcdPrint("exiting");
-  runRoute(ROUTE_HANDOFF_TO_RED, ROUTE_LEN(ROUTE_HANDOFF_TO_RED));
+  missionTurnRel(+1);                  // NORTH -> EAST
+  missionFwd(LEFT_TO_RIGHT_BLACK_MM);
+  missionTurnRel(+1);                  // EAST -> SOUTH
+  missionFwd(BLACK_TO_RED_MM);
   holdStill(EXIT_HOLD_MS);
   lcdPrint("run complete");
 }
@@ -902,31 +916,38 @@ void exitToRedTile() {
 // pause switch (both robots go back to their start tiles per the rules).
 void runSuperteamMission() {
   Serial.println("superteam: mission start");
-  runRoute(ROUTE_START_TO_HANDOFF, ROUTE_LEN(ROUTE_START_TO_HANDOFF));
+  // silver start tile -> 2 tiles north -> left black handoff tile (robot is
+  // placed on the silver tile FACING the handoff, which defines NORTH)
+  missionFwd(START_TO_HANDOFF_MM);
 
   for (int order = 0; order < NUM_ORDERS; order++) {
-    int sum = waitForHandoff();
+    int sum = waitForHandoff();            // facing NORTH at the left black tile
     uint8_t needed = decodeOrder(sum);
     int collected = 0;
 
-    // drive the station loop in physical order; stop only where needed
-    // (stopping+blinking at a wrong target is -10, driving past is free)
+    // cruise EAST along the ingredient row, driving straight past stations
+    // whose colour the dish doesn't need (stopping+blinking at a wrong
+    // target is -10, driving past is free)
+    missionTurnRel(+1);                    // NORTH -> EAST
+    int posMm = 0;                         // current offset east of the left black tile
     for (int st = 0; st < NUM_STATIONS; st++) {
-      if (st == 0) runRoute(ROUTE_HANDOFF_TO_ST1, ROUTE_LEN(ROUTE_HANDOFF_TO_ST1));
-      else         runRoute(ROUTE_BETWEEN_STATIONS, ROUTE_LEN(ROUTE_BETWEEN_STATIONS));
-
       uint8_t colorHere = identifyStationColor(st);
-      if (needed & colorHere) {
-        collectIngredient(st);
-        collected++;
-        executeResupply(st); // +10 box bonus while we're already parked here
-      }
+      if (!(needed & colorHere)) continue; // skip: don't even stop
+      missionFwd(STATION_POS_MM[st] - posMm);
+      posMm = STATION_POS_MM[st];
+      collectIngredient(st);
+      collected++;
+      executeResupply(st);                 // +10 box bonus while already parked here
     }
 
+    // cook right where the last ingredient was collected (any Kitchen tile
+    // counts), then drive back west to the left black tile for the handoff
     if (collected > 0) prepareDish();
     else Serial.println("superteam: WARNING no ingredients collected, skipping cook");
 
-    runRoute(ROUTE_ST5_TO_HANDOFF, ROUTE_LEN(ROUTE_ST5_TO_HANDOFF));
+    missionTurnRel(+2);                    // EAST -> WEST
+    missionFwd(posMm);                     // back to the left black tile
+    missionTurnRel(+1);                    // WEST -> NORTH, face A's blue tile
     dishHandoff();
   }
 
