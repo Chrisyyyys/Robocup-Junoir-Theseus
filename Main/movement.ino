@@ -119,14 +119,12 @@ void fwd(double dist){ // in mm
       myTime.pause(2);
     }
     
-    // color: detect black (stop + back off) and blue (swamp) tiles ahead.
+    // color: detect black (stop + back off) tiles ahead. Blue is read only
+    // after the move completes (in EXECUTE_MOVE), not mid-motion here.
     int color = read_color(); // also marks silver checkpoints internally
     Serial.println("color");
     Serial.println(color);
-    if(color == 1){ // blue tile ahead
-      bluetoggle = true;
-    }
-    else if(color == -1){ // black tile ahead -> stop, mark next tile, back off
+    if(color == -1){ // black tile ahead -> stop, mark next tile, back off
       drivetrain.fullstop();
       delay(100);
       Serial.println("black");

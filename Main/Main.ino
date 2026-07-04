@@ -430,6 +430,9 @@ void loop(){
       if(blacktoggle == false){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos); // x_pos/y_pos now = new tile
+        // read blue only after the move completes, on the tile just entered
+        int color = read_color();
+        if(color == 1) bluetoggle = true;
         if(bluetoggle == true){
           delay(5000);
           mapGrid[x_pos][y_pos].setType(BLUE);
