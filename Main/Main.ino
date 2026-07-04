@@ -312,6 +312,9 @@ void setup(){
   state = SENSE_TILE;
   // start lcd
   lcd.begin(16, 2);
+  // SuperTeam: bring up the WiFi access point + UDP listener for Robot A's
+  // order messages (starts its own RTOS thread; non-fatal if WiFi fails).
+  initSuperteamComms();
   // start RTOS threads: camera victim detection + pause-switch watcher.
   cameraThread.start(cameraTask);
   cameraThread.set_priority(osPriorityAboveNormal);
