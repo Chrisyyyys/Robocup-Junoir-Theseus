@@ -3,16 +3,16 @@
 
 void lcdPrint(const char* msg) {
   lcdMutex.lock();
-  lcd.setCursor(0, 0);
+  lcd.setCursor(0, 1);
   lcd.print("                ");
   lcd.print("                ");
-  lcd.setCursor(0, 0);
+  lcd.setCursor(0, 1);
   lcd.print(msg);
   delay(1000);
-  lcd.setCursor(0, 0);
+  lcd.setCursor(0, 1);
   lcd.print("                ");
   lcd.print("                ");
-  lcd.setCursor(0, 0);
+  lcd.setCursor(0, 1);
   lcdMutex.unlock();
 }
 

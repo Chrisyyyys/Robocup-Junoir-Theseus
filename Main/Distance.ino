@@ -299,6 +299,8 @@ void parallel(){
 
 void centerFrontBack(){
   const int CENTERING_SPEED = 50;                   // mirrors PARALLEL_SPEED
+  const int CENTERING_SLOW_SPEED = 25;              // crawl speed near the target -- less momentum, less overshoot
+  const int CENTERING_SLOW_BAND_MM = 25;            // switch to the slow speed once this close to the target
   const unsigned long CENTERING_TIMEOUT_MS = 2000;
   // MAX_CENTER_CORRECTION_MM is a file-scope #define (Main.ino), shared with the SENSE_TILE trigger gate >> redundant safety abort 
   // -> in case conditions changed between the trigger check and this function actually running.
@@ -358,8 +360,9 @@ void centerFrontBack(){
       break;
     }
 
-    if(driveForward) drivetrain.fw(CENTERING_SPEED);
-    else drivetrain.backward(CENTERING_SPEED);
+    int speed = (abs(offset) <= CENTERING_SLOW_BAND_MM) ? CENTERING_SLOW_SPEED : CENTERING_SPEED;
+    if(driveForward) drivetrain.fw(speed);
+    else drivetrain.backward(speed);
   }
 
   drivetrain.fullstop();
