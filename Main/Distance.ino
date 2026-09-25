@@ -268,7 +268,10 @@ int detectWall(int dir){
   return 1;
 }
 
-void parallel(){
+// Squares the robot against a side wall. Returns true only if it actually converged: the
+// robot is then exactly on a maze axis, so the gyro is re-synced to `facing` (the direction
+// the robot is supposed to be facing) if it already agrees within HEADING_SYNC_MAX_DEG.
+bool parallel(Direction facing){
   const int PARALLEL_TOL_MM = 3;
   const int PARALLEL_SPEED = 90;
   const unsigned long PARALLEL_TIMEOUT_MS = 500;
@@ -292,11 +295,12 @@ void parallel(){
     wallDir=3;
   } else {
     drivetrain.fullstop();
-    return;
+    return false;
   }
 
   unsigned long startMs = millis();
   double startHeading = myGyro.heading();
+  bool squared = false;
 
   while (true) {
     // abort the correction on pause so the caller can transition to PAUSE.
@@ -318,6 +322,7 @@ void parallel(){
     int diff = a - b;
     if (abs(diff) <= PARALLEL_TOL_MM) {
       Serial.println("paralleled");
+      squared = true;
       break;
     }
     // break out after rotation.
@@ -355,6 +360,29 @@ void parallel(){
   }
   drivetrain.reset_encoderCount(true,true,true);
   drivetrain.fullstop();
+  if (squared) {
+    delay(50); // let the robot stop rotating before reading the heading
+    syncHeadingToWall(facing, HEADING_SYNC_MAX_DEG);
+  }
+  return squared;
+}
+
+// Re-zeroes the gyro against a wall the robot has just squared up to. The robot is on a
+// maze axis now; if the gyro agrees with `facing` to within maxErrDeg, snap the heading to
+// that axis exactly so drift can't build up. A bigger disagreement means the turn really
+// went wrong (or the "wall" was an angled obstacle): leave the gyro alone and let
+// turnCompletedSuccessfully() catch it. Returns true if the heading was re-synced.
+bool syncHeadingToWall(Direction facing, double maxErrDeg){
+  double target = turnNeededDeg(facing);
+  double err = wrap180(myGyro.heading() - target);
+  bool apply = fabs(err) <= maxErrDeg;
+  if (apply) myGyro.setMapHeading(target);
+  Serial.print("[SYNC] facing=");
+  Serial.print((int)facing);
+  Serial.print(" err=");
+  Serial.print(err, 1);
+  Serial.println(apply ? " applied" : " skipped");
+  return apply;
 }
 
 // Self-centers the robot front-to-back within a tile using the front wall (avg of sensors 1+7).
@@ -368,7 +396,7 @@ void centerFrontBack(){
   // -> in case conditions changed between the trigger check and this function actually running.
 
   Serial.println("centering front-back (front wall)");
-  parallel();
+  parallel(currentDir);
 
   if(detectWall(0) != 0){ // 0 == wall present, matches detectWall's convention
     Serial.println("centerFrontBack: no front wall, nothing to center against");
@@ -597,7 +625,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         }
         
         Serial.println("fwd step");
-        parallel();
+        parallel(currentDir);
         drivetrain.reset_encoderCount(true,true,true);
         delay(200);
         

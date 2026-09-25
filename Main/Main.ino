@@ -41,6 +41,8 @@
 #define WHITE_THRESHOLD 0.85f
 #define MULTIPLER 1.1
 #define WALL_MISMATCH_THRESHOLD 2 // >= this many of the 4 absolute walls disagreeing with the stored tile flags a position mismatch
+#define HEADING_SYNC_MAX_DEG 20.0      // re-zero the gyro on a wall only if it already agrees this closely (same as the turn check)
+#define HEADING_SYNC_RECOVERY_DEG 40.0 // wider window right after snapping to the nearest axis (turn recovery, LoP resume)
 
 #define TARGET_WALL_DISTANCE 80
 float clear; 
@@ -423,7 +425,7 @@ void loop(){
           absoluteturn(plannedTurnDeg);
         }
         delay(200);
-        parallel();
+        parallel(plannedMoveDir); // currentDir is still the old heading here
         delay(100);
 
         if (turnCompletedSuccessfully(plannedMoveDir) == false) {
@@ -471,7 +473,7 @@ void loop(){
       }
 
       delay(200);
-      parallel();
+      parallel(currentDir);
       delay(100);
       iterator += 1;
 
@@ -507,7 +509,10 @@ void loop(){
       Serial.println("botched turn detected, snapping to cardinal");
       absoluteturn(snappedHeading);
       delay(150);
-      parallel();
+      // After snapping to the nearest axis and squaring up, the robot really is on
+      // snappedDir, so accept a larger gyro error here. Otherwise a gyro that is 20-40
+      // degrees off would fail every turn check and loop in this state forever.
+      if(parallel(snappedDir)) syncHeadingToWall(snappedDir, HEADING_SYNC_RECOVERY_DEG);
       delay(100);
       currentDir = snappedDir;
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
@@ -560,7 +565,7 @@ void loop(){
         plannedTurnDeg = turnNeededDeg(moveDir);
         absoluteturn(plannedTurnDeg);
         delay(200);
-        parallel();
+        parallel(moveDir);
         delay(100);
         currentDir = moveDir;
         fwd(TILE_MM);
