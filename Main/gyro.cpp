@@ -12,7 +12,11 @@ gyro::gyro(){
 }
 void gyro::init_Gyro(){
   i2cMutex.lock();
-  bool found = bno.begin();
+  // IMUPLUS fuses only the accelerometer and gyroscope, so the heading is relative to the
+  // power-on pose and isn't bent by magnets or metal on the field (rules 3.8.2-3.8.3).
+  // The library default, NDOF, also uses the magnetometer, which makes heading 0 magnetic
+  // north instead of a maze axis. Maze NORTH is set with setMapHeading() at the run start.
+  bool found = bno.begin(OPERATION_MODE_IMUPLUS);
   i2cMutex.unlock();
   if(!found) Serial.println("can't find gyro");
   else        Serial.println("gyro found");
@@ -33,14 +37,24 @@ int gyro::modulus(int val){
   else if(val < -180) val += 360;
   return val;
 }
-double gyro::heading(){
+double gyro::rawHeading(){
   sensors_event_t event;
   i2cMutex.lock();
   bno.getEvent(&event);
   i2cMutex.unlock();
-  float heading = (double)event.orientation.x;
-  
-  return heading;
+  return (double)event.orientation.x;
+}
+// Maze-frame heading: 0 = maze NORTH (the way the robot faced when the run started),
+// kept lined up with the walls by setMapHeading() whenever the robot squares up on one.
+double gyro::heading(){
+  double h = fmod(rawHeading() - headingOffset, 360.0);
+  if (h < 0) h += 360.0;
+  return h;
+}
+void gyro::setMapHeading(double mapDeg){
+  double off = fmod(rawHeading() - mapDeg, 360.0);
+  if (off < 0) off += 360.0;
+  headingOffset = off;
 }
 double gyro::pitch_heading(){
   sensors_event_t event;
