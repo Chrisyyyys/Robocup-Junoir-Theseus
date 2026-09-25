@@ -25,9 +25,10 @@ struct Tile {
   
   private:
   //bits 0-3 wall, 4-7 edge, 8 discovered, 9 fully, 10 victim, 11 visited,
-  //12 elevate, 13 descend, 16-19 obstacle (one bit per direction)
+  //12 elevate, 13 descend, 16-19 obstacle (one bit per direction),
+  //20-23 blocked (one bit per direction)
   //set amount of bits
-  Bitset<20> bitset;
+  Bitset<24> bitset;
   TileTypes tileType;
   public:
   //get and set functions
@@ -104,6 +105,15 @@ struct Tile {
       return true;
     }
     return false;
+  }
+  // blocked edge, one bit per direction (0=N,1=E,2=S,3=W), stored at 20-23: a move that
+  // way was stopped short. Planning treats it like a wall, and re-sensing the walls
+  // can't clear it (a flaky sensor would otherwise reopen it and the robot would retry).
+  bool getBlocked(unsigned dir){
+    return bitset.get(dir+20);
+  }
+  void setBlocked(unsigned dir,bool stat){
+    bitset.set(dir+20, stat);
   }
 
   //bool wall[4];

@@ -477,10 +477,12 @@ int center(){
 }
 
 
-int obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
-// return distance to wall at front
+MoveResult obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
+// returns how the detour ended: MOVE_OK once the robot has driven on into the next tile
   Serial.println("obstacle avoidance");
-  int _ = -1;
+  int _ = -1; // front distance when the detour started
+  int wiggles = 0;
+  const int MAX_WIGGLES = 2;
   while(true){
     // Single authoritative pause guard: gates every step boundary and transition
     // burst, not just the innermost drive loops. Reset steps so a resume after the
@@ -488,7 +490,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
     if(Pausemaze == true){
       drivetrain.fullstop();
       steps = TURN;
-      return -2;
+      return MOVE_PAUSED;
     }
     switch (steps){
       case TURN:{
@@ -502,7 +504,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
           }
           
@@ -518,7 +520,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
           }
           
@@ -539,7 +541,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
             a=measure(2); b = measure(3);
             if(a<=30) break;
@@ -563,7 +565,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
             int a = measure(6); int b = measure(5);
             if(a<=30) break;
@@ -595,7 +597,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(6)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
             drivetrain.backward(120);
           }
@@ -604,7 +606,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(2)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
             drivetrain.backward(120);
           }
@@ -620,8 +622,15 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
       case FWD:{
         
         if(measure(6)<=35&&measure(2)<=35){
+          // Squeezed between the obstacle and a wall: wiggle straight and retry, but give
+          // up after MAX_WIGGLES so a stuck robot reports BLOCKED instead of looping.
+          if(++wiggles > MAX_WIGGLES){
+            Serial.println("[MOVE] obstacle detour stuck, giving up");
+            steps = TURN;
+            return MOVE_BLOCKED;
+          }
           steps = WIGGLE;
-          return -2;
+          break;
         }
         
         Serial.println("fwd step");
@@ -636,9 +645,10 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         int frontNow = measure(1);
         int travelled = (_ != -1 && frontNow != -1) ? (_ - frontNow) : 0;
         int remaining = constrain(TILE_MM - travelled, 0, TILE_MM);
-        fwd(remaining);
+        // Reset before driving on, so an obstacle met during this drive starts a fresh
+        // detour instead of re-entering this step (which recursed without moving).
         steps = TURN;
-        return _;
+        return fwd(remaining);
       }
       case WIGGLE:{
         PID pid(8,0,0.1);
@@ -648,7 +658,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         while(abs(measure(2)-measure(6))>=15&&myTime.getTime()<1000000){
           if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
           double diff = pid.getPID(measure(2)-measure(6));
           drivetrain.drive(70+diff,70+diff,70-diff,70-diff);

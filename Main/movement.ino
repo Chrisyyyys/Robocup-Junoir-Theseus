@@ -5,7 +5,9 @@ void init_drive(){
   myGyro.init_Gyro();
 }
 
-void fwd(double dist){ // in mm
+// Drives one move forward. Returns what actually happened: only MOVE_OK means the robot is
+// now in the next tile, so the caller must not advance the map position on anything else.
+MoveResult fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
@@ -18,12 +20,14 @@ void fwd(double dist){ // in mm
   PID center_PID(2,0,0.5);
   PID gyroPID(1,0.001,0.03);
   PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
+  MoveResult result = MOVE_OK;
+  bool detoured = false; // an obstacle detour replaced the normal drive
   Serial.println("forwarding");
+  drivetrain.reset_encoderCount(true,true,true); // count this move from zero (the back-offs reverse to 0)
   // allow the camera RTOS thread to flag victims for this move
   fwdActive = true;
   isVictim = false;
   victimPending = false;
-  moveInterrupted = false; // becomes true only if a pause aborts this move
   int init_pitch = myGyro.modulus((int)myGyro.pitch_heading());
   int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
   Serial.println("init_yaw");
@@ -47,11 +51,10 @@ void fwd(double dist){ // in mm
   // outside loop
     if(front_left<=OBSTACLE_DIST&&front_left!=-1&&front_right>=MIN_DIST&&front_right!=-1){ // trigger obstacleavoidance
       Serial.println("obstacle left");
-      int prevdist = obstacleavoidance(1);
+      result = obstacleavoidance(1);
       drivetrain.fullstop();
       delay(50);
-      if(prevdist != -2) obstacle = true;
-      else moveInterrupted = true; // avoidance aborted by pause -> tile not completed
+      if(result == MOVE_OK) obstacle = true; // only a finished detour counts as a move
       /*
       if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
         int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM); // don't "overmove"
@@ -67,12 +70,12 @@ void fwd(double dist){ // in mm
       }
       drivetrain.fullstop();
       */
-      Serial.println("[FWD] exit=obstacle-left");
-      return;
+      fwdExit = "obstacle-left";
+      detoured = true;
     }
     else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&front_left>=OBSTACLE_DIST&&front_left!=-1){
       Serial.println("obstacle right");
-      int prevdist = obstacleavoidance(0);
+      result = obstacleavoidance(0);
       drivetrain.fullstop();
       delay(50);
       /*
@@ -91,17 +94,16 @@ void fwd(double dist){ // in mm
       
       drivetrain.fullstop();
       */
-      if(prevdist != -2) obstacle = true;
-      else moveInterrupted = true; // avoidance aborted by pause -> tile not completed
-      Serial.println("[FWD] exit=obstacle-right");
-      return;
+      if(result == MOVE_OK) obstacle = true; // only a finished detour counts as a move
+      fwdExit = "obstacle-right";
+      detoured = true;
     }
     
-  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses)&&black!=true){
+  while(!detoured&&(climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses)&&black!=true){
     Serial.print("distance travelled: ");
     Serial.println((((double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3)/5)/195*wheel_diameter*M_PI);
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
-    if(Pausemaze==true) {drivetrain.fullstop(); moveInterrupted = true; break;}
+    if(Pausemaze==true) {drivetrain.fullstop(); result = MOVE_PAUSED; break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
     
     if(victimPending){
@@ -131,11 +133,10 @@ void fwd(double dist){ // in mm
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
       mapGrid[nx][ny].setType(BLACK);
-      blacktoggle = true;
-      while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
-        drivetrain.backward(200);
-      }
+      backOffToMoveStart();
+      result = MOVE_BLACK;
       black = true;
+      break; // skip the rest of this pass, which would drive forward again
     }
     // PID centering
 
@@ -182,7 +183,6 @@ void fwd(double dist){ // in mm
     
     if((front_left_current<=50&&front_left_current!=-1)&&(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
-      // if the robot doesn't make it halfway across the tile, fwd failed.
       Serial.print("[FWD] emergency-stop fl=");
       Serial.print(front_left_current);
       Serial.print(" fr=");
@@ -190,6 +190,16 @@ void fwd(double dist){ // in mm
       fwdExit = "emergency-front";
       drivetrain.fullstop();
       delay(50);
+      // If the robot doesn't make it halfway across the tile, fwd failed: it is still in the
+      // tile it started from (usually a wall or obstacle the wall check missed), so back off
+      // to where the move started. Past halfway it is in the next tile and the far wall is
+      // just close, so the move counts. A move that climbed a ramp has left its tile either
+      // way (and the encoders were rewound to their pre-ramp values), so it always counts.
+      if(!climbed && (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3 < pulses/2){
+        fwdExit = "blocked";
+        backOffToMoveStart();
+        result = MOVE_BLOCKED;
+      }
       break;
     }
     
@@ -286,6 +296,29 @@ void fwd(double dist){ // in mm
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true,true);
   victimtoggle = false;
+  Serial.print("[MOVE] result=");
+  Serial.println(moveResultName(result));
+  return result;
+}
+
+// Reverses until the wheels are back where the current move started (fwd() zeroes the
+// encoders when it starts), so an abandoned move leaves the robot in the tile the map
+// says it is in.
+void backOffToMoveStart(){
+  unsigned long startMs = millis();
+  while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
+    if(Pausemaze == true) break;
+    if(millis() - startMs > 3000){ Serial.println("[MOVE] back-off timeout"); break; }
+    drivetrain.backward(200);
+  }
+  drivetrain.fullstop();
+}
+
+const char* moveResultName(MoveResult r){
+  if(r == MOVE_OK) return "OK";
+  if(r == MOVE_BLOCKED) return "BLOCKED";
+  if(r == MOVE_BLACK) return "BLACK";
+  return "PAUSED";
 }
 // absolute turning
 // Turns in place to an absolute maze-frame heading (0 = NORTH, clockwise positive).

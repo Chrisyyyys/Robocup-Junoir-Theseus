@@ -66,6 +66,7 @@ void initializeMap() {
         mapGrid[x][y].setWall(d, false);
         mapGrid[x][y].setEdge(d, false);
         mapGrid[x][y].setObstacle(d, false);
+        mapGrid[x][y].setBlocked(d, false);
       }
       mapGrid[x][y].setType(BLANK);
     }
@@ -89,7 +90,7 @@ void updateFullyExploredAt(int x, int y) {
   bool allDone = true;
   t.setVisited(true);
   for (int d = 0; d < 4; d++) {
-    if (t.getWall(d) == false) {     // open
+    if (t.getWall(d) == false && t.getBlocked(d) == false) {     // open
       if (t.getEdge(d) == false) {   // not traveled yet
         allDone = false;
         break;
@@ -161,7 +162,7 @@ Direction pickNextDirection() {
   // Plan directly in absolute map directions.
   const Direction priority[3] = {absF,absR, absL};
 
-  auto open  = [&](Direction d){ return t.getWall(d) == false; };
+  auto open  = [&](Direction d){ return t.getWall(d) == false && t.getBlocked(d) == false; }; // blocked: a move that way stopped short
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
   auto isBlueTile = [&](int nx, int ny){
     return mapGrid[nx][ny].getType() == BLUE;
@@ -241,6 +242,7 @@ void initTile(int x, int y, Grid& map) { //needs update (probably unneeded, smal
         map[x][y].setWall(d, false);
         map[x][y].setEdge(d, false);
         map[x][y].setObstacle(d, false);
+        map[x][y].setBlocked(d, false);
     }
     map[x][y].setType(BLANK);
 }
@@ -465,6 +467,8 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
 
                 bool passable = !(*map[z])[x][y].getWall((Direction)i) &&
                                 !(*map[nz])[nx][ny].getWall(opposite((Direction)i)) &&
+                                !(*map[z])[x][y].getBlocked((Direction)i) &&
+                                !(*map[nz])[nx][ny].getBlocked(opposite((Direction)i)) &&
                                 (*map[nz])[nx][ny].getDiscovered() &&
                                 (*map[nz])[nx][ny].getType() != BLACK;
                 if (!allowBlue) {

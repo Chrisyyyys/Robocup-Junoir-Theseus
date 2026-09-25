@@ -125,6 +125,13 @@ enum RobotState {
   PAUSE,
   RETURN
 };
+// Outcome of fwd(). Only MOVE_OK means the robot actually reached the next tile.
+enum MoveResult {
+  MOVE_OK,      // reached the next tile (directly or through an obstacle detour)
+  MOVE_BLOCKED, // stopped short of the next tile; still in the current one
+  MOVE_BLACK,   // black tile ahead; backed off to where the move started
+  MOVE_PAUSED   // the logic switch paused the move
+};
 enum Steps {
   TURN,
   PARALLEL,
@@ -154,8 +161,7 @@ RobotState state = WAIT_START;
 // maze return to start condition variables
 int medkits = 8;
 timer mazeTime;
-// black blue toggles
-bool blacktoggle = false;
+// blue toggle (black tiles are reported by fwd()'s MOVE_BLACK result)
 bool bluetoggle = false;
 bool stairtoggle = false;
 // obstacle toggle
@@ -174,7 +180,6 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 const int logicswitch = 22;
 volatile bool Pausemaze = false; // set by pauseThread, read by loop()
 bool startArmed = false; // logic switch seen at PAUSE since power-on (WAIT_START needs PAUSE -> RUN)
-volatile bool moveInterrupted = false; // fwd() sets true when a pause aborts the move before the tile is completed
 int x_checkpoint = MAP_SIZE/2, y_checkpoint = MAP_SIZE/2;
 int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
 bool tilecheck = false;
@@ -383,7 +388,7 @@ void loop(){
     }
     case SENSE_TILE: {
       // reset per-tile toggles
-      blacktoggle = false; bluetoggle = false; victimtoggle = false; obstacle = false;
+      bluetoggle = false; victimtoggle = false; obstacle = false;
       // Read for walls
       Serial.println("reading walls");
       readWallsRel(wallF, wallR, wallB, wallL);
@@ -465,15 +470,15 @@ void loop(){
         turnCompletedForMove = true;
         botchedTurnAttempts = 0; // clean turn -> reset the recovery counter
       }
-      fwd(TILE_MM);
+      MoveResult moveResult = fwd(TILE_MM);
       // A pause aborted the move before the tile was completed: don't advance
       // position or write walls/edges (the robot didn't actually traverse the tile).
-      if(moveInterrupted == true){
-        if(Pausemaze == true) state = PAUSE;
+      if(moveResult == MOVE_PAUSED){
+        state = PAUSE;
         break;
       }
-      // update map + robot position only on a successful (non-black) move
-      if(blacktoggle == false){
+      // update map + robot position only when the robot really reached the next tile
+      if(moveResult == MOVE_OK){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos); // x_pos/y_pos now = new tile
         // read blue only after the move completes, on the tile just entered
@@ -495,8 +500,9 @@ void loop(){
         
       }
       else{
-        
-        state = BACKPEDAL; // black tile ahead (marked BLACK by fwd) -> back off
+        // MOVE_BLACK: black tile ahead (marked BLACK by fwd) -> back off
+        // MOVE_BLOCKED: stopped short of the next tile -> still in this one
+        state = (moveResult == MOVE_BLACK) ? BACKPEDAL : BOTCHED_FWD_RECOVERY;
         turnCompletedForMove = false;
         break;
       }
@@ -522,7 +528,6 @@ void loop(){
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
       state = EXECUTE_MOVE;
-      blacktoggle = false;
       if(Pausemaze == true) state = PAUSE;
       delay(200);
       break;
@@ -558,6 +563,29 @@ void loop(){
       }
 
       state = EXECUTE_MOVE;
+      break;
+    }
+    case BOTCHED_FWD_RECOVERY: {
+      // fwd() stopped short of the next tile (usually a wall or obstacle the wall check
+      // missed) and backed off, so the robot is still in this tile. Mark the edge blocked
+      // in both tiles so the planner won't drive into it again, then square up and
+      // re-sense before planning.
+      int nx = x_pos, ny = y_pos;
+      stepForward(currentDir, nx, ny);
+      mapGrid[x_pos][y_pos].setBlocked(currentDir, true);
+      if(inBounds(nx, ny)) mapGrid[nx][ny].setBlocked(opposite(currentDir), true);
+      Serial.print("[MOVE] blocked edge recorded x=");
+      Serial.print(x_pos);
+      Serial.print(" y=");
+      Serial.print(y_pos);
+      Serial.print(" dir=");
+      Serial.println((int)currentDir);
+      absoluteturn(turnNeededDeg(currentDir)); // undo any rotation left by an obstacle detour
+      delay(100);
+      parallel(currentDir);
+      turnCompletedForMove = false;
+      state = SENSE_TILE;
+      if(Pausemaze == true) state = PAUSE;
       break;
     }
     case RETURN: {
