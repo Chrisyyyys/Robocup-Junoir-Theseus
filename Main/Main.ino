@@ -112,6 +112,7 @@ int LEDPIN = 51;
 
 //states that the robot will be in
 enum RobotState {
+  WAIT_START,
   SENSE_TILE,
   CENTERING,
   UPDATE_MAP,
@@ -149,7 +150,7 @@ int botchedTurnAttempts = 0;
 const int MAX_BOTCHED_TURN_ATTEMPTS = 3;
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
-RobotState state = SENSE_TILE;
+RobotState state = WAIT_START;
 // maze return to start condition variables
 int medkits = 8;
 timer mazeTime;
@@ -172,6 +173,7 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 // logic switch pin
 const int logicswitch = 22;
 volatile bool Pausemaze = false; // set by pauseThread, read by loop()
+bool startArmed = false; // logic switch seen at PAUSE since power-on (WAIT_START needs PAUSE -> RUN)
 volatile bool moveInterrupted = false; // fwd() sets true when a pause aborts the move before the tile is completed
 int x_checkpoint = MAP_SIZE/2, y_checkpoint = MAP_SIZE/2;
 int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
@@ -315,7 +317,7 @@ void setup(){
   y_pos=MAP_SIZE/2;
   mapGrid[x_pos][y_pos].setDiscovered(true);
   currentDir = NORTH;
-  state = SENSE_TILE;
+  state = WAIT_START;
   // start lcd
   lcd.begin(16, 2);
   // start RTOS threads: camera victim detection + pause-switch watcher.
@@ -352,6 +354,33 @@ void loop(){
   
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
+    case WAIT_START: {
+      // Rule 4.2.8: the run is started with the logic switch. Require PAUSE -> RUN, so a
+      // robot that powers up with the switch already at RUN doesn't drive off by itself.
+      drivetrain.fullstop();
+      static unsigned long lastWaitPrintMs = 0;
+      if(millis() - lastWaitPrintMs >= 500){ // heading readout for bench checks
+        lastWaitPrintMs = millis();
+        Serial.print("[WAIT] armed=");
+        Serial.print(startArmed ? 1 : 0);
+        Serial.print(" heading=");
+        Serial.println(myGyro.heading(), 1);
+      }
+      if(digitalRead(logicswitch) == HIGH){
+        startArmed = true; // switch at PAUSE
+      }
+      else if(startArmed && Pausemaze == false){
+        // Maze NORTH is the way the robot faces on the start tile. Square up on a side
+        // wall if there is one, then define NORTH again from the squared pose.
+        myGyro.setMapHeading(0);
+        if(parallel(NORTH)) myGyro.setMapHeading(0);
+        currentDir = NORTH;
+        Serial.println("[START] run started, heading zeroed to NORTH");
+        state = SENSE_TILE; // read the start tile's walls before planning
+      }
+      delay(20);
+      break;
+    }
     case SENSE_TILE: {
       // reset per-tile toggles
       blacktoggle = false; bluetoggle = false; victimtoggle = false; obstacle = false;
@@ -608,20 +637,33 @@ void loop(){
         else if(currentFloor == 1) mapGrid = m2;
         else if(currentFloor == 2) mapGrid = m3;
         x_pos = x_checkpoint; y_pos = y_checkpoint; // resume from last checkpoint
-        //Direction snapped = (Direction)myGyro.headingToCardinal(myGyro.heading()); // snap to cardinal
-        //absoluteturn(turnNeededDeg(snapped));
-        //currentDir = snapped;
-         // Deterministic reset: rotate to the gyro's zero and declare it NORTH.
-        // Removes the ambiguous headingToCardinal snap (which could bucket a near-45 deg
-        // reading into the wrong cardinal and leave the robot diagonal).
-        absoluteturn(0);        // turnNeededDeg(NORTH) == 0
-        currentDir = NORTH;
-        Serial.println("checkpoint coordinates");
-        Serial.println(x_checkpoint);
-        Serial.println(y_checkpoint);
-        Serial.println(currentDir);
+        // Rule 5.5.2: after a lack of progress the robot may be put down facing any
+        // direction. The gyro keeps running while it is carried and heading() is in the
+        // maze frame, so snap to the nearest axis, turn onto it and square up on a wall.
+        // If it was put down near 45 degrees either axis is fine: the robot turns onto the
+        // one it picked and currentDir matches it. Nearest axis instead of always NORTH is
+        // the same result with less turning.
+        Direction facing = (Direction)myGyro.headingToCardinal(myGyro.heading());
+        absoluteturn(turnNeededDeg(facing));
+        delay(100);
+        if(parallel(facing)) syncHeadingToWall(facing, HEADING_SYNC_RECOVERY_DEG);
+        currentDir = facing;
+        // clear per-move state left over from the interrupted move
+        turnCompletedForMove = false;
+        botchedTurnAttempts = 0;
+        fwdActive = false;
+        isVictim = false;
+        drivetrain.reset_encoderCount(true,true,true);
         steps = TURN; // reset avoidance steps
-        state = PLAN_NEXT;
+        Serial.print("[RESUME] checkpoint x=");
+        Serial.print(x_checkpoint);
+        Serial.print(" y=");
+        Serial.print(y_checkpoint);
+        Serial.print(" floor=");
+        Serial.print(currentFloor);
+        Serial.print(" facing=");
+        Serial.println((int)currentDir);
+        state = SENSE_TILE; // re-read the walls here before planning
       }
       break;
     }
