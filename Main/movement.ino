@@ -288,87 +288,74 @@ void fwd(double dist){ // in mm
   victimtoggle = false;
 }
 // absolute turning
-
-void absoluteturn(double angle){
-  // create PID instance.
-  PID myPID(4.5,0,0.3);
-  double MOTORSPEED = 0;
-  Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
+// Turns in place to an absolute maze-frame heading (0 = NORTH, clockwise positive).
+// The direction is re-chosen every tick from the signed error, so an overshoot is turned
+// back instead of pushed further. Returns true once the heading has stayed within
+// TURN_TOL_DEG for TURN_SETTLE_MS; false if a pause or the safety timeout ended the turn.
+bool absoluteturn(double angle){
+  const double TURN_TOL_DEG = 3.0;
+  const unsigned long TURN_SETTLE_MS = 60; // must stay inside the tolerance this long (catches coasting back out)
+  const double TURN_KP = 4.5;              // PWM per degree of error (the old PID's gain)
+  const int TURN_MIN_PWM = 45;             // lowest PWM that still rotates the robot on the field floor: bench-tune
+  const int TURN_MAX_PWM = 150;
   // allow the camera RTOS thread to flag victims during the turn
   turnActive = true;
   isVictim = false;
   victimPending = false;
-  // Shortest signed-path error, wrapped into [-180, 180]:
-  //   sign of diff  = direction to turn (+CW/turnright, -CCW/turnleft)
-  //   |diff|        = shortest angular distance to target
-  // Replaces the old fasterway + inverse() pair, which had a discontinuity at
-  // 0/360 that caused left-turns through NORTH to go the 270-degree long way.
-  double diff = angle - myGyro.heading();
-  while(diff > 180.0)  diff -= 360.0;
-  while(diff < -180.0) diff += 360.0;
-  bool turn_right = (diff > 0);
-  double init_abs = fabs(diff);
-  const double TURN_TOL_DEG = 3.0;
+  // Shortest signed error, wrapped into [-180, 180): the sign is the direction to turn
+  // (+ = clockwise/turnright, - = turnleft), the size is the angle still to go.
+  double d = wrap180(angle - myGyro.heading());
+  // Safety net only: a normal turn ends as soon as it settles.
+  const unsigned long budgetMs = 1000 + (unsigned long)(20.0 * fabs(d));
   Serial.print("[TURN] target=");
   Serial.print(angle);
-  Serial.print(" hdg=");
-  Serial.print(myGyro.heading(), 1);
-  Serial.print(" init_diff=");
-  Serial.println(init_abs, 1);
-   // create timer to cut of turning
-  timer myTimer;
+  Serial.print(" start_err=");
+  Serial.println(d, 1);
 
-  if(turn_right){
-    while(true){
-      if(Pausemaze==true) {drivetrain.fullstop(); break;}
-      if(victimPending){ // service camera victim mid-turn
-        drivetrain.fullstop();
-        myPID.pausePID(1); myTimer.pause(1);
-        while(victimPending==true){
-          rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
-        }
-        myPID.pausePID(2); myTimer.pause(2);
+  unsigned long startMs = millis();
+  unsigned long pausedMs = 0; // time spent servicing victims, not counted against the budget
+  bool inTol = false;
+  unsigned long inTolSinceMs = 0;
+  bool reached = false;
+  while(true){
+    if(Pausemaze==true) break;
+    if(victimPending){ // service camera victim mid-turn
+      drivetrain.fullstop();
+      unsigned long pauseStartMs = millis();
+      while(victimPending==true){
+        rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
       }
-      // Recompute the wrapped error every tick.
-      double d = angle - myGyro.heading();
-      while(d > 180.0)  d -= 360.0;
-      while(d < -180.0) d += 360.0;
-      
-      if(myTimer.getTime() > 2.0 * init_abs / 90.0 * 1000000.0) break; // turning limit
-
-      MOTORSPEED = myPID.getPID(fabs(d));
-
-      drivetrain.turnright(constrain(MOTORSPEED,20,150));
+      pausedMs += millis() - pauseStartMs;
+      inTol = false;
     }
-  }
-
-  else if(!turn_right) {
-    while(true){
-      if(Pausemaze==true) {drivetrain.fullstop(); break;}
-      if(victimPending){ // service camera victim mid-turn
-        drivetrain.fullstop();
-        myPID.pausePID(1); myTimer.pause(1);
-        while(victimPending==true){
-          rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
-        }
-        myPID.pausePID(2); myTimer.pause(2);
-      }
-      double d = angle - myGyro.heading();
-      while(d > 180.0)  d -= 360.0;
-      while(d < -180.0) d += 360.0;
-      
-      if(myTimer.getTime() > 2.0 * init_abs / 90.0 * 1000000.0) break;
-
-      MOTORSPEED = myPID.getPID(fabs(d));
-
-      drivetrain.turnleft(constrain(MOTORSPEED,20,150));
+    d = wrap180(angle - myGyro.heading());
+    unsigned long now = millis();
+    if(fabs(d) <= TURN_TOL_DEG){
+      drivetrain.fullstop();
+      if(!inTol){ inTol = true; inTolSinceMs = now; }
+      if(now - inTolSinceMs >= TURN_SETTLE_MS){ reached = true; break; }
     }
+    else{
+      inTol = false;
+      int pwm = constrain((int)(TURN_KP * fabs(d)), TURN_MIN_PWM, TURN_MAX_PWM);
+      if(d > 0) drivetrain.turnright(pwm);
+      else drivetrain.turnleft(pwm);
+    }
+    if(now - startMs - pausedMs > budgetMs) break; // turning limit
   }
   victimtoggle = false;
-  Serial.println("finished turning");
   turnActive = false; // camera thread idles until the next move
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true,true); // reset encoder counters.
+  Serial.print("[TURN] done target=");
+  Serial.print(angle);
+  Serial.print(" err=");
+  Serial.print(wrap180(angle - myGyro.heading()), 1);
+  Serial.print(" ms=");
+  Serial.print(millis() - startMs);
+  Serial.print(" ok=");
+  Serial.println(reached ? 1 : 0);
+  return reached;
 }
 
 // Corrects left-right position within the tile by turning the robot a small amount before the next forward drive
