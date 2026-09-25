@@ -272,9 +272,15 @@ int detectWall(int dir){
 // robot is then exactly on a maze axis, so the gyro is re-synced to `facing` (the direction
 // the robot is supposed to be facing) if it already agrees within HEADING_SYNC_MAX_DEG.
 bool parallel(Direction facing){
+  return squareToWall(facing, 500);
+}
+
+// parallel() with an explicit time limit. The recovery paths allow longer: after a snap to
+// the nearest axis the robot may have to rotate out a 20-40 degree gyro error, which takes
+// more than 500 ms at PARALLEL_SPEED.
+bool squareToWall(Direction facing, unsigned long timeoutMs){
   const int PARALLEL_TOL_MM = 3;
   const int PARALLEL_SPEED = 90;
-  const unsigned long PARALLEL_TIMEOUT_MS = 500;
   const double MAX_PARALLEL_ROTATION_DEG = 45.0;
   const int PARALLEL_MAX_WALL_MM = TILE_MM; // engage even when the wall is up to one tile away
 
@@ -336,7 +342,7 @@ bool parallel(Direction facing){
       break;
     }
 
-    if ((millis() - startMs) >= PARALLEL_TIMEOUT_MS) {
+    if ((millis() - startMs) >= timeoutMs) {
       Serial.println("parallel: timeout, aborting correction");
       break;
     }
