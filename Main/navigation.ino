@@ -105,10 +105,15 @@ void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // refer
   wallR = (detectWall(1)==0);
   wallB = (detectWall(2)==0);
   wallL = (detectWall(3)==0);
-  Serial.println(wallF);
-  Serial.println(wallR);
-  Serial.println(wallB);
-  Serial.println(wallL);
+  // one tagged line, relative to the robot: 1 = wall at the (F)ront, (R)ight, (B)ack, (L)eft
+  Serial.print("[WALLS] F=");
+  Serial.print(wallF ? 1 : 0);
+  Serial.print(" R=");
+  Serial.print(wallR ? 1 : 0);
+  Serial.print(" B=");
+  Serial.print(wallB ? 1 : 0);
+  Serial.print(" L=");
+  Serial.println(wallL ? 1 : 0);
 }
 //get the wall from L,R(local) into N W(global)
 // absF is the absolute heading the the robot front is heading.
@@ -216,6 +221,21 @@ Direction pickNextDirection() {
   // figure out BFS later
   // 3) trapped
   return absB;
+}
+
+// One tagged line per planning decision: where the robot thinks it is, which way it faces
+// and which way it will move next (directions: 0=N, 1=E, 2=S, 3=W).
+void logPlan(Direction next){
+  Serial.print("[PLAN] x=");
+  Serial.print(x_pos);
+  Serial.print(" y=");
+  Serial.print(y_pos);
+  Serial.print(" floor=");
+  Serial.print(currentFloor);
+  Serial.print(" facing=");
+  Serial.print((int)currentDir);
+  Serial.print(" next=");
+  Serial.println((int)next);
 }
 
 int turnNeededDeg(Direction direction) {

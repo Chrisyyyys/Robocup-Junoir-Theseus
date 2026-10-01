@@ -44,6 +44,10 @@
 #define HEADING_SYNC_MAX_DEG 20.0      // re-zero the gyro on a wall only if it already agrees this closely (same as the turn check)
 #define HEADING_SYNC_RECOVERY_DEG 40.0 // wider window right after snapping to the nearest axis (turn recovery, LoP resume)
 #define PARALLEL_RECOVERY_TIMEOUT_MS 1500 // squaring time on those paths (normal parallel() gets 500 ms)
+// Serial output. 0 = quiet: the tagged lines the test plan reads ([WALLS], [PLAN], [TURN],
+// [SYNC], [MOVE], ...) and one-off events. 1 = also the per-loop traces (distance travelled,
+// raw colour readings, [CENTER], ramp climbing, detour steps, camera samples).
+#define VERBOSE_DEBUG 0
 
 #define TARGET_WALL_DISTANCE 80
 float clear; 
@@ -220,10 +224,12 @@ void cameraTask(){
       //if(encoderCount>=0.3*pulsesForDistanceMm(TILE_MM)||encoderCount<=0.7*pulsesForDistanceMm(TILE_MM)){
         if(readSerial1() != -1){        // left camera (Serial4)
           if(fwdActive) victimTileFromEncoder(TILE_MM,encoderCount,nx,ny);
-          Serial.println("nx, ny");
-          Serial.println(nx);
-          Serial.println(ny);
-          Serial.println(mapGrid[nx][ny].getVictim());
+          if(VERBOSE_DEBUG){
+            Serial.println("nx, ny");
+            Serial.println(nx);
+            Serial.println(ny);
+            Serial.println(mapGrid[nx][ny].getVictim());
+          }
           if(mapGrid[nx][ny].getVictim() == false){
             i2cMutex.lock();
             victimSide = 1;
@@ -238,10 +244,12 @@ void cameraTask(){
         }
         else if(readSerial2() != -1){   // right camera (Serial3)
           if(fwdActive) victimTileFromEncoder(TILE_MM,encoderCount,nx,ny);
-          Serial.println("nx, ny");
-          Serial.println(nx);
-          Serial.println(ny);
-          Serial.println(mapGrid[nx][ny].getVictim());
+          if(VERBOSE_DEBUG){
+            Serial.println("nx, ny");
+            Serial.println(nx);
+            Serial.println(ny);
+            Serial.println(mapGrid[nx][ny].getVictim());
+          }
           if(mapGrid[nx][ny].getVictim() == false){
             i2cMutex.lock();
             victimSide = 2;
@@ -282,12 +290,13 @@ bool turnCompletedSuccessfully(Direction intendedDir) {
   double targetHeading = turnNeededDeg(intendedDir);
   double actualHeading = myGyro.heading();
   double err = headingErrorDeg(targetHeading, actualHeading);
-  Serial.print("turn target=");
+  Serial.print("[CHECK] turn target=");
   Serial.print(targetHeading);
   Serial.print(", actual=");
   Serial.print(actualHeading);
   Serial.print(", err=");
-  Serial.println(err);
+  Serial.print(err);
+  Serial.println(err <= TURN_SUCCESS_TOLERANCE_DEG ? ", ok=1" : ", ok=0");
   return err <= TURN_SUCCESS_TOLERANCE_DEG;
 }
 void setup(){
@@ -391,8 +400,8 @@ void loop(){
       // reset per-tile toggles
       bluetoggle = false; victimtoggle = false; obstacle = false;
       // Read for walls
-      Serial.println("reading walls");
-      readWallsRel(wallF, wallR, wallB, wallL);
+      if(VERBOSE_DEBUG) Serial.println("reading walls");
+      readWallsRel(wallF, wallR, wallB, wallL); // prints the [WALLS] line
       // re-sense: does this tile actually match what the map already recorded for it?
       tilecheck = checkTileMismatch(wallF, wallR, wallB, wallL);
 
@@ -419,14 +428,14 @@ void loop(){
       break;
     }
     case CENTERING: {
-      Serial.println("front/back centering in tile");
+      if(VERBOSE_DEBUG) Serial.println("front/back centering in tile");
       centerFrontBack();
       state = UPDATE_MAP;
       if(Pausemaze == true) state = PAUSE;
       break;
     }
     case UPDATE_MAP: {
-      Serial.println("updating tile");
+      if(VERBOSE_DEBUG) Serial.println("updating tile");
       // skip the write on a mismatch: preserve the already-trusted wall data for
       // this cell rather than overwriting it with a reading taken while the
       // robot's position belief may be wrong.
@@ -439,17 +448,18 @@ void loop(){
     }
     case VICTIM_DETECT: {
       
-      Serial.println("victim detect");
+      if(VERBOSE_DEBUG) Serial.println("victim detect");
       state = PLAN_NEXT;
       if(Pausemaze == true) state = PAUSE;
       break;
     }
     case PLAN_NEXT: {
-      Serial.println("plan next");
+      if(VERBOSE_DEBUG) Serial.println("plan next");
       plannedMoveDir = pickNextDirection();
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
-      Serial.println(plannedTurnDeg);
+      if(VERBOSE_DEBUG) Serial.println(plannedTurnDeg);
+      logPlan(plannedMoveDir);
       state = EXECUTE_MOVE;
       if(Pausemaze == true) state = PAUSE;
       break;
@@ -525,7 +535,8 @@ void loop(){
     }
     case BACKPEDAL: {
       plannedMoveDir = pickNextDirection();
-      Serial.println("next direction picked");
+      if(VERBOSE_DEBUG) Serial.println("next direction picked");
+      logPlan(plannedMoveDir);
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
       state = EXECUTE_MOVE;

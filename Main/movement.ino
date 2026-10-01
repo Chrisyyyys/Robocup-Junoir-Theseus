@@ -22,7 +22,7 @@ MoveResult fwd(double dist){ // in mm
   PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
   MoveResult result = MOVE_OK;
   bool detoured = false; // an obstacle detour replaced the normal drive
-  Serial.println("forwarding");
+  if(VERBOSE_DEBUG) Serial.println("forwarding");
   drivetrain.reset_encoderCount(true,true,true); // count this move from zero (the back-offs reverse to 0)
   // allow the camera RTOS thread to flag victims for this move
   fwdActive = true;
@@ -30,16 +30,18 @@ MoveResult fwd(double dist){ // in mm
   victimPending = false;
   int init_pitch = myGyro.modulus((int)myGyro.pitch_heading());
   int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
-  Serial.println("init_yaw");
-  Serial.println(init_yaw);
-  // [DIAG] round-1 sideswipe instrumentation: show whether init_yaw matches actual heading
-  double _entry_hdg = myGyro.heading();
-  Serial.print("[FWD] entry hdg=");
-  Serial.print(_entry_hdg, 1);
-  Serial.print(" init_yaw=");
-  Serial.print(init_yaw);
-  Serial.print(" offset=");
-  Serial.println(_entry_hdg - init_yaw, 1);
+  if(VERBOSE_DEBUG){
+    Serial.println("init_yaw");
+    Serial.println(init_yaw);
+    // [DIAG] round-1 sideswipe instrumentation: show whether init_yaw matches actual heading
+    double _entry_hdg = myGyro.heading();
+    Serial.print("[FWD] entry hdg=");
+    Serial.print(_entry_hdg, 1);
+    Serial.print(" init_yaw=");
+    Serial.print(init_yaw);
+    Serial.print(" offset=");
+    Serial.println(_entry_hdg - init_yaw, 1);
+  }
   const char* fwdExit = "normal";
   int _fwd_tick = 0;
   int front_left_current=measure(7); int front_right_current=measure(1);
@@ -100,8 +102,10 @@ MoveResult fwd(double dist){ // in mm
     }
     
   while(!detoured&&(climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses)&&black!=true){
-    Serial.print("distance travelled: ");
-    Serial.println((((double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3)/5)/195*wheel_diameter*M_PI);
+    if(VERBOSE_DEBUG){
+      Serial.print("distance travelled: ");
+      Serial.println((((double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3)/5)/195*wheel_diameter*M_PI);
+    }
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
     if(Pausemaze==true) {drivetrain.fullstop(); result = MOVE_PAUSED; break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
@@ -124,8 +128,10 @@ MoveResult fwd(double dist){ // in mm
     // color: detect black (stop + back off) tiles ahead. Blue is read only
     // after the move completes (in EXECUTE_MOVE), not mid-motion here.
     int color = read_color(); // also marks silver checkpoints internally
-    Serial.println("color");
-    Serial.println(color);
+    if(VERBOSE_DEBUG){
+      Serial.println("color");
+      Serial.println(color);
+    }
     if(color == -1){ // black tile ahead -> stop, mark next tile, back off
       drivetrain.fullstop();
       delay(100);
@@ -211,7 +217,7 @@ MoveResult fwd(double dist){ // in mm
       int _encoderCountD = drivetrain.encoderCountD;
       climbtoggle = true; // prevent outer loop from exiting on encoder count
       climbed = true;
-      Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
+      if(VERBOSE_DEBUG) Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
       if(myGyro.modulus(myGyro.pitch_heading())-init_pitch>20) upwards = true; // distinguish between moving up and moving down.
       //drivetrain.reset_encoderCount(true,true,true);
       while(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch) > 20){
@@ -222,9 +228,11 @@ MoveResult fwd(double dist){ // in mm
     
         double adjustment = climbPID.getPID(yaw);
         
-        Serial.println("climbing");
-        //Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
-        Serial.println(adjustment);
+        if(VERBOSE_DEBUG){
+          Serial.println("climbing");
+          //Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
+          Serial.println(adjustment);
+        }
         // center during climbing
         if(upwards == true) drivetrain.drive(180-adjustment,180-adjustment,180+adjustment,180+adjustment);
         if(upwards == false) drivetrain.drive(120-adjustment,120-adjustment,120+adjustment,120+adjustment);
@@ -249,7 +257,7 @@ MoveResult fwd(double dist){ // in mm
     // [DIAG] right-wall follower trace. front=sensor2, back=sensor3.
     // Watch: are m2/m3 valid (not -1) and <= SIDE_WALL_MAX_MM? is err non-zero when off-center?
     _fwd_tick++;
-    if((_fwd_tick % 5) == 0){
+    if(VERBOSE_DEBUG && (_fwd_tick % 5) == 0){
       int _diag_front = measure(2);
       int _diag_back  = measure(3);
       Serial.print("[CENTER] m2(front)=");
@@ -265,9 +273,11 @@ MoveResult fwd(double dist){ // in mm
     drivetrain.drive(constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120+adjustment),20,150),constrain(Scale*(120+adjustment),20,150));
     //drivetrain.drive(150+adjustment,(150+adjustment)*1.25,(150-adjustment)*1.25,150+adjustment);
   }
-  Serial.print("[FWD] exit=");
-  Serial.println(fwdExit);
-  Serial.println("stop- end of fwd");
+  if(VERBOSE_DEBUG){
+    Serial.print("[FWD] exit=");
+    Serial.println(fwdExit);
+    Serial.println("stop- end of fwd");
+  }
   // sometimes it barely makes it over the slope
   if(climbed == true){
     for(int i = 0; i<cnt;i++){
@@ -297,7 +307,9 @@ MoveResult fwd(double dist){ // in mm
   drivetrain.reset_encoderCount(true,true,true);
   victimtoggle = false;
   Serial.print("[MOVE] result=");
-  Serial.println(moveResultName(result));
+  Serial.print(moveResultName(result));
+  Serial.print(" exit=");
+  Serial.println(fwdExit);
   return result;
 }
 
@@ -340,10 +352,13 @@ bool absoluteturn(double angle){
   double d = wrap180(angle - myGyro.heading());
   // Safety net only: a normal turn ends as soon as it settles.
   const unsigned long budgetMs = 1000 + (unsigned long)(20.0 * fabs(d));
-  Serial.print("[TURN] target=");
-  Serial.print(angle);
-  Serial.print(" start_err=");
-  Serial.println(d, 1);
+  const double startErr = d;
+  if(VERBOSE_DEBUG){
+    Serial.print("[TURN] target=");
+    Serial.print(angle);
+    Serial.print(" start_err=");
+    Serial.println(d, 1);
+  }
 
   unsigned long startMs = millis();
   unsigned long pausedMs = 0; // time spent servicing victims, not counted against the budget
@@ -382,6 +397,8 @@ bool absoluteturn(double angle){
   drivetrain.reset_encoderCount(true,true,true); // reset encoder counters.
   Serial.print("[TURN] done target=");
   Serial.print(angle);
+  Serial.print(" start_err=");
+  Serial.print(startErr, 1);
   Serial.print(" err=");
   Serial.print(wrap180(angle - myGyro.heading()), 1);
   Serial.print(" ms=");

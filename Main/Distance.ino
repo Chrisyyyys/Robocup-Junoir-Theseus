@@ -287,7 +287,7 @@ bool squareToWall(Direction facing, unsigned long timeoutMs){
   int sensorA = -1;
   int sensorB = -1;
   int wallDir;
-  Serial.println("paralleling");
+  if(VERBOSE_DEBUG) Serial.println("paralleling");
   
   
   // Prefer aligning to the right wall; otherwise use left wall.
@@ -327,7 +327,7 @@ bool squareToWall(Direction facing, unsigned long timeoutMs){
 
     int diff = a - b;
     if (abs(diff) <= PARALLEL_TOL_MM) {
-      Serial.println("paralleled");
+      if(VERBOSE_DEBUG) Serial.println("paralleled"); // the [SYNC] line follows
       squared = true;
       break;
     }
@@ -401,7 +401,7 @@ void centerFrontBack(){
   // MAX_CENTER_CORRECTION_MM is a file-scope #define (Main.ino), shared with the SENSE_TILE trigger gate >> redundant safety abort 
   // -> in case conditions changed between the trigger check and this function actually running.
 
-  Serial.println("centering front-back (front wall)");
+  if(VERBOSE_DEBUG) Serial.println("centering front-back (front wall)");
   parallel(currentDir);
 
   if(detectWall(0) != 0){ // 0 == wall present, matches detectWall's convention
@@ -424,7 +424,7 @@ void centerFrontBack(){
     return;
   }
   if(abs(offset) <= CENTER_TOL_MM){
-    Serial.println("already centered");
+    if(VERBOSE_DEBUG) Serial.println("already centered");
     return;
   }
 
@@ -445,7 +445,7 @@ void centerFrontBack(){
     offset = frontGap - TARGET_GAP_MM;
 
     if(abs(offset) <= CENTER_TOL_MM){
-      Serial.println("centered");
+      if(VERBOSE_DEBUG) Serial.println("centered");
       break;
     }
     // If the live offset flips sign vs. our initial decision >> overshot, stop rather than reversing (avoids oscillation).
@@ -551,10 +551,10 @@ MoveResult obstacleavoidance(int leftright){ // leftright determines to manuver 
             }
             a=measure(2); b = measure(3);
             if(a<=30) break;
-            Serial.println("paralleling step");
+            if(VERBOSE_DEBUG) Serial.println("paralleling step");
             double increment = pid.getPID(a-b); // signed error: positive turns one way, negative the other
             drivetrain.drive(constrain(100+increment,50,170),constrain(100+increment,50,170),constrain(100-increment,50,170),constrain(100-increment,50,170));
-            Serial.println(a-b);
+            if(VERBOSE_DEBUG) Serial.println(a-b);
             
             
             if(abs(b-a)<=15){
@@ -588,7 +588,7 @@ MoveResult obstacleavoidance(int leftright){ // leftright determines to manuver 
           
         }
         Serial.println("too close, backing up");
-        Serial.println(measure(2));
+        if(VERBOSE_DEBUG) Serial.println(measure(2));
         steps = BACKTRACK; // put switch step in front of end( always meet it)
         break;
         end:
@@ -619,8 +619,10 @@ MoveResult obstacleavoidance(int leftright){ // leftright determines to manuver 
         }
         drivetrain.fullstop();
         delay(200);
-        Serial.println("sensor 2, now reading");
-        Serial.println(measure(2));
+        if(VERBOSE_DEBUG){
+          Serial.println("sensor 2, now reading");
+          Serial.println(measure(2));
+        }
         steps = PARALLEL;
         break;
       }

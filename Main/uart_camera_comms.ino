@@ -70,12 +70,12 @@ bool detectCam1(){ // left camera serial4
     
     if(value >= 0){   // only H/S/U
         samples[n] = value;
-        Serial.println(value);
+        if(VERBOSE_DEBUG) Serial.println(value);
         n++;
     }
   }
   for(int i =0; i<5;i++){
-    Serial.println(samples[i]);
+    if(VERBOSE_DEBUG) Serial.println(samples[i]);
   }
   
   for(int i=0;i<6;i++){
@@ -116,12 +116,12 @@ bool detectCam2(){
 
     if(value >= 0){   // only H/S/U
         samples[n] = value;
-        Serial.println(value);
+        if(VERBOSE_DEBUG) Serial.println(value);
         n++;
     }
   }
   for(int i =0; i<5;i++){
-    Serial.println(samples[i]);
+    if(VERBOSE_DEBUG) Serial.println(samples[i]);
   }
   
   for(int i=0;i<6;i++){

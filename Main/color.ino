@@ -44,19 +44,20 @@ int read_color(){
 
   tcs.getRawData(&r, &g, &b, &c);
   i2cMutex.unlock();
-  //diagnosis
-  
-  Serial.print(r);
-  Serial.print(" ");
-  Serial.print(g);
-  Serial.print(" ");
-  Serial.print(b);
-  Serial.print(" ");
-  Serial.print("c=");
-  Serial.print(c);
-  Serial.print(" ");
-  Serial.print("ratio=");
-  Serial.println((float)c/clear);
+  //diagnosis (runs on every fwd() loop pass, so verbose only)
+  if(VERBOSE_DEBUG){
+    Serial.print(r);
+    Serial.print(" ");
+    Serial.print(g);
+    Serial.print(" ");
+    Serial.print(b);
+    Serial.print(" ");
+    Serial.print("c=");
+    Serial.print(c);
+    Serial.print(" ");
+    Serial.print("ratio=");
+    Serial.println((float)c/clear);
+  }
   
   
   //Serial.println((float)c/clear);

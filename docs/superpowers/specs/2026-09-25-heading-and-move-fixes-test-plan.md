@@ -8,7 +8,7 @@ Work through the sections in order. Section 1 tunes the turns, and every later t
 
 ## Before you start
 
-1. Flash the branch and open the Serial Monitor at 115200 baud. Every test is judged from the log lines below.
+1. Flash the branch and open the Serial Monitor at 115200 baud. Every test is judged from the log lines below. Leave `VERBOSE_DEBUG` at `0` (top of `Main.ino`). The log then shows only these lines, the boot messages and rare events such as black tiles, ramps and victims. Set it to `1` only if you need the old per-loop traces.
 2. Use the new start procedure (tell the referee, rule 4.2.8):
    1. Power on with the logic switch at **PAUSE**.
    2. Place the robot square on the start tile and keep it still for about 2 s so the gyro can calibrate.
@@ -19,11 +19,16 @@ Work through the sections in order. Section 1 tunes the turns, and every later t
 |---|---|
 | `[WAIT] armed=… heading=…` | Waiting for the start switch. Heading readout every 0.5 s. |
 | `[START] run started…` | Switch went PAUSE → RUN. Heading zeroed to maze NORTH. |
-| `[TURN] done target=… err=… ms=… ok=…` | A turn finished: final error in degrees, time taken, and whether it settled (`ok=1`). |
+| `[WALLS] F=… R=… B=… L=…` | Walls read on the current tile, relative to the robot (1 = wall). |
+| `[PLAN] x=… y=… floor=… facing=… next=…` | Where the robot thinks it is, which way it faces and which way it will move next. |
+| `[TURN] done target=… start_err=… err=… ms=… ok=…` | A turn finished: error at the start and at the end in degrees, time taken, and whether it settled (`ok=1`). |
 | `[SYNC] facing=… err=… applied` / `skipped` | Robot squared up on a wall. Shows the gyro error found and whether it was corrected. |
-| `[MOVE] result=OK` / `BLOCKED` / `BLACK` / `PAUSED` | What a forward move actually did. |
+| `[CHECK] turn target=…, actual=…, err=…, ok=…` | The heading check before each move. `ok=0` sends the robot into turn recovery. |
+| `[MOVE] result=… exit=…` | What a forward move actually did (`OK`, `BLOCKED`, `BLACK` or `PAUSED`) and why it stopped. |
 | `[MOVE] blocked edge recorded x=… y=… dir=…` | The robot stopped short. That edge is now treated as a wall. |
 | `[RESUME] checkpoint x=… y=… floor=… facing=…` | Resumed after a lack of progress (LoP). |
+
+Directions are numbers: 0 = North, 1 = East, 2 = South, 3 = West.
 
 ## 1. Turns settle on the target (#5)
 
@@ -72,7 +77,7 @@ Then start on a tile that has a side wall.
 - **X = 10.** **Pass:** at the start you see `[SYNC] facing=0 err=≈10 applied`, and after that the turns are square.
 - **X = 30.** **Pass:**
   1. The sync at the start shows `skipped`.
-  2. The first move fails the turn check once (`botched turn detected`).
+  2. The first move fails the turn check once (`[CHECK] … ok=0`, then `botched turn detected`).
   3. The recovery's `[SYNC]` shows err ≈ 30 `applied`.
   4. From then on, moves are normal, with exactly one recovery.
 
@@ -84,7 +89,7 @@ Then start on a tile that has a side wall.
 ## 4. Start and resume read the walls first (#4)
 
 **4a. Wall ahead at the start.** Put the robot on the start tile facing a wall, then start.
-- **Pass:** after `reading walls`, the first of the four 0/1 lines (front) is `1`, and this happens before `plan next`. Move 1 doesn't go forward, and there's no `[FWD] emergency-stop` on move 1.
+- **Pass:** the first `[WALLS]` line shows `F=1` and comes before the first `[PLAN]` line. In that `[PLAN]` line, `next=` is different from `facing=`, so move 1 doesn't go forward. There's no `[FWD] emergency-stop` on move 1.
 - **Baseline:** on `main` the first move always went forward, into the wall.
 
 **4b. Powered on at RUN.** Power on with the switch already at RUN.
@@ -104,7 +109,7 @@ Repeat for all four ways.
   - `[RESUME] … facing=` shows the direction it was put down closest to.
   - The resume turn is at most about 45° (`[TURN] ok=1`).
   - If there's a side wall, a `[SYNC] … applied` line follows.
-  - Then `reading walls` appears, and the next moves are square and don't head into walls.
+  - Then a `[WALLS]` line appears, and the next moves are square and don't head into walls.
 - **Baseline:** on `main` the robot always turned all the way to gyro 0, then planned without reading the walls.
 
 ## 5. Moves report what happened (#3)
@@ -112,12 +117,12 @@ Repeat for all four ways.
 **5a. Blocked early.** As the robot starts a move toward an open side, put a board across the opening about 10–15 cm in front of it. The board must cover both front sensors.
 - **Pass:**
   - The log shows `[FWD] emergency-stop`, `[MOVE] result=BLOCKED` and `[MOVE] blocked edge recorded`.
-  - The robot backs up to where the move started, reads the walls and picks another direction.
+  - The robot backs up to where the move started. The next `[PLAN]` line shows the same `x` and `y` as before the move (the position didn't advance) and a different `next=`.
   - It never tries that edge again during this run.
 - **Baseline:** on `main`, the map counted this as a move into the next tile.
 
 **5b. Stopping after halfway still counts.** Put the board about 25 cm ahead of where the move starts, so the robot stops more than half a tile in.
-- **Pass:** `[MOVE] result=OK`, and the robot carries on from the next tile, centering itself front-to-back against the board.
+- **Pass:** `[MOVE] result=OK`, the next `[PLAN]` line shows the position one tile further on, and the robot centers itself front-to-back against the board.
 
 **5c. Squeezed obstacle.** Set up an obstacle the detour can't squeeze past.
 - **Pass:**
@@ -128,7 +133,7 @@ Repeat for all four ways.
 **5d. Black tile (should behave as before).** Place a black tile ahead.
 - **Pass:**
   - The log shows `[MOVE] result=BLACK`.
-  - The robot backs up to the tile centre without lurching forward again and picks another direction.
+  - The robot backs up to the tile centre without lurching forward again, and the next `[PLAN]` line picks another direction.
   - No LoP.
 
 ## 6. Full runs
