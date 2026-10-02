@@ -315,8 +315,11 @@ void setup(){
   Wire.begin();
   disableAllCall();
   myMux.begin();
-  calibrateSensor(2,80);
   init_dist(); // initialize mux before distance sensors.
+  // calibrateSensor() reads a sensor, so it may only run after init_dist() has started them.
+  // Before, it ran first and froze the robot after a cold power-on. Its result isn't used yet
+  // (SENSOR_OFFSET_MM is all zero), so it stays off; turn it on here when calibrating.
+  //calibrateSensor(2,80);
   scanAllPorts();
   init_color();
   init_drive();

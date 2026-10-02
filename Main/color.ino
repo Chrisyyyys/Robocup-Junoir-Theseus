@@ -68,7 +68,11 @@ int read_color(){
     return -1; // black
   }
   
-  if(r>SILVER_THRESHOLD){ // silver reflects more absolute light
+  // Silver marks the tile AHEAD, so only accept it while fwd() is in the second half of a
+  // move, when the sensor is over that tile. Earlier in the move the sensor still sees the
+  // tile the robot is leaving, which used to mark the wrong tile as a checkpoint.
+  bool overNextTile = fwdActive && (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3 > pulsesForDistanceMm(TILE_MM/2);
+  if(r>SILVER_THRESHOLD && overNextTile){ // silver reflects more absolute light
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
     //Serial.print("silver at ");

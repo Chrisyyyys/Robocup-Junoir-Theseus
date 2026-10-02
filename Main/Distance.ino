@@ -44,6 +44,7 @@ void init_dist() {
     else{
       Serial.println("Sensor "+String(i)+" is able to initialize");
     }
+    sensors[i].setTimeout(100); // a read gives up after 100 ms instead of waiting forever (library default: no timeout)
     sensors[i].startContinuous(); // start continuous ranging.
   }
     
