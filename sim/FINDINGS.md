@@ -38,8 +38,9 @@ mazes (walls, black / blue / silver tiles, victims) unless noted.
 The changes in the patch cover findings 1-6 and 10. What is left is mostly findings 8 (turning next to a
 wall), 12-13 (ramps) and the tuning of the wall follower (6), which need work on the robot itself.
 
-Reproduce: `python sim/sim.py batch --count 40 --moves-limit off`, then the same with
-`--sketch <a copy of Main with the patch applied>`.
+Reproduce: `python sim/sim.py batch --count 40 --moves-limit off --seed-start 1`, then the same with
+`--sketch <a copy of Main with the patch applied>`. All the batches here used `--seed-start 1`;
+without it, every batch gets new random mazes.
 
 "Lost" means that on arriving at a tile, the robot's belief (`x_pos`, `y_pos`, `currentDir`) did
 not match the tile it was really on.

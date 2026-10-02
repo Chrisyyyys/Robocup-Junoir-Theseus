@@ -38,8 +38,8 @@ From the repository root:
 
 ```sh
 python sim/sim.py run --maze sim/mazes/simple.txt --view    # one run, opens the replay
-python sim/sim.py run --profile basic --seed 7               # one run on a random maze
-python sim/sim.py batch --count 30 --profile basic           # 30 random mazes + report
+python sim/sim.py run --profile basic                        # one run on a new random maze
+python sim/sim.py batch --count 30 --profile basic           # 30 new random mazes + report
 ```
 
 The first run compiles everything (about 20 s); later runs only recompile what changed. Output goes
@@ -50,8 +50,8 @@ to `sim/out/` (not committed): `trace.json`, `result.json`, `maze.txt` and `view
 
 | Command | What it does |
 |---|---|
-| `run` | One simulation. `--maze FILE` or a random maze (`--profile`, `--seed`). `--view` opens the replay, `--echo` prints the robot's Serial output live. |
-| `batch` | Many simulations in parallel (`--count`, `--seed-start`, `--jobs`), then a report. `--keep-traces none\|problems\|all`. |
+| `run` | One simulation. `--maze FILE` or a new random maze (`--profile`; `--seed N` repeats a run). `--view` opens the replay, `--echo` prints the robot's Serial output live. |
+| `batch` | Many simulations in parallel (`--count`, `--jobs`) on new random mazes, or on the same ones again with `--seed-start N`, then a report. `--keep-traces none\|problems\|all`. |
 | `gen` | Write a random maze file: `python sim/sim.py gen --profile full --seed 3 -o my.txt` |
 | `view` | Turn any `trace.json` into a replay page. |
 | `build` | Compile only, and list compiler warnings found in the robot code. |
@@ -78,15 +78,26 @@ python sim/sim.py batch --count 20 --profile full             # ramps, obstacles
 python sim/sim.py run --maze sim/mazes/simple.txt --boot cold # reproduce the start-up freeze
 ```
 
+### New mazes or the same mazes
+
+Every `run` and `batch` uses new random mazes unless you give a seed. The seed decides the maze and
+all the noise (sensor noise, wheel slip, motor differences), so the same seed always gives exactly
+the same run. The seed is printed with the results and in the batch report:
+
+- `run --seed 483920` repeats one run (keep the other options the same).
+- `batch --count 40 --seed-start 1` tests the same 40 mazes every time.
+
+New mazes find problems you haven't seen yet. Use the same seeds when you compare two versions of
+the code, so a difference comes from the code and not from easier or harder mazes.
+
 To check that a code change helps, run the same batch (same `--seed-start` and `--count`) before
-and after: the mazes and the noise are identical, so differences come from your change. You can
-keep your current code and try the change on a copy:
+and after. You can keep your current code and try the change on a copy:
 
 ```sh
 mkdir -p /tmp/fixed && cp -r Main /tmp/fixed/        # keep the folder name Main (like Main.ino)
 patch -d /tmp/fixed -p1 < sim/examples/suggested-fixes.patch   # or edit /tmp/fixed/Main by hand
-python sim/sim.py batch --count 40 --moves-limit off                          # current code
-python sim/sim.py batch --count 40 --moves-limit off --sketch /tmp/fixed/Main # the changed copy
+python sim/sim.py batch --count 40 --moves-limit off --seed-start 1                          # current code
+python sim/sim.py batch --count 40 --moves-limit off --seed-start 1 --sketch /tmp/fixed/Main # the changed copy
 ```
 
 ## The replay page
@@ -196,6 +207,9 @@ floor or ramp edges through the vertical part of their cone.
 ## Continuous testing
 
 `.github/workflows/simulator.yml` builds the simulator and runs batches on every push and pull request
-that touches `Main/` or `sim/`. The tables appear on the workflow run's summary page and the full reports
-(with replay pages for the problem runs) can be downloaded as the run's artifact. The workflow
-only reports; it does not fail because the robot got lost, only if the simulator itself crashes.
+that touches `Main/` or `sim/`. Three batches use the same mazes every time (`--seed-start 1`), so
+their numbers can be compared between commits. A fourth uses new random mazes on every run, to find
+problems the fixed mazes don't show; its report lists the seeds, so any bad run can be repeated. The
+tables appear on the workflow run's summary page and the full reports (with replay pages for the
+problem runs) can be downloaded as the run's artifact. The workflow only reports; it does not fail
+because the robot got lost, only if the simulator itself crashes.

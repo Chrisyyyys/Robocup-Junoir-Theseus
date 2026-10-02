@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Theseus maze simulator: runs the robot code in Main/ against simulated mazes.
 
-  python sim/sim.py run                       # one run on a random 'basic' maze
+  python sim/sim.py run                       # one run on a new random 'basic' maze
   python sim/sim.py run --maze sim/mazes/simple.txt --view
-  python sim/sim.py batch --count 30 --profile basic
+  python sim/sim.py batch --count 30 --profile basic       # 30 new random mazes
+  python sim/sim.py batch --count 30 --seed-start 1        # the same 30 mazes every time
   python sim/sim.py gen --profile full --seed 4 -o mymaze.txt
   python sim/sim.py view sim/out/run/trace.json
 
@@ -19,6 +20,7 @@ import html
 import json
 import os
 import platform
+import random
 import shutil
 import subprocess
 import sys
@@ -178,6 +180,19 @@ def important_warnings(exe=None):
 
 
 # ---------------------------------------------------------------- one run
+def new_seed():
+    """Seed for a new random maze (and noise). Printed with the results so the run can be repeated."""
+    return random.SystemRandom().randint(1, 999999)
+
+
+def describe_moves_limit(moves_limit):
+    if moves_limit in (None, "code"):
+        return "move limit as in the code"
+    if moves_limit == "off":
+        return "no move limit"
+    return "move limit %s" % moves_limit
+
+
 def make_maze(args, seed, out_dir):
     if getattr(args, "maze", None):
         path = os.path.join(out_dir, "maze.txt")
@@ -289,7 +304,7 @@ def fmt_summary(r):
 
 def cmd_run(args):
     exe = build(args.sketch, quiet=args.quiet_build)
-    seed = args.seed if args.seed is not None else 1
+    seed = args.seed if args.seed is not None else new_seed()
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     out_dir = args.out or os.path.join(SIM_DIR, "out", "run-" + stamp)
     os.makedirs(out_dir, exist_ok=True)
@@ -308,6 +323,10 @@ def cmd_run(args):
     print()
     with open(maze) as fh:
         print("".join(l for l in fh if not l.startswith("#")))
+    if args.seed is None:
+        print("Seed:         %d (random; add --seed %d to repeat this exact run)" % (seed, seed))
+    else:
+        print("Seed:         %d" % seed)
     print(fmt_summary(r))
     warn = important_warnings(exe)
     if warn:
@@ -315,7 +334,8 @@ def cmd_run(args):
         for w in warn[:8]:
             print("  " + w)
     if os.path.exists(trace):
-        html_path = write_viewer(trace, os.path.join(out_dir, "view.html"), "Theseus run - " + os.path.basename(maze))
+        html_path = write_viewer(trace, os.path.join(out_dir, "view.html"), "Theseus run - %s, seed %d" % (
+            os.path.basename(args.maze) if args.maze else args.profile + " maze", seed))
         print("\nReplay: open %s in a browser" % html_path)
         if args.view:
             import webbrowser
@@ -408,7 +428,12 @@ def cmd_batch(args):
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     out_dir = args.out or os.path.join(SIM_DIR, "out", "batch-" + stamp)
     os.makedirs(out_dir, exist_ok=True)
+    args.random_seeds = args.seed_start is None
+    if args.random_seeds:
+        args.seed_start = new_seed()
     seeds = list(range(args.seed_start, args.seed_start + args.count))
+    print("seeds %d-%d%s" % (seeds[0], seeds[-1], (" (random; add --seed-start %d to test the same %s again)" % (
+        seeds[0], "runs" if args.maze else "mazes")) if args.random_seeds else ""))
     jobs = []
     args_dict = vars(args).copy()
     args_dict.pop("func", None)
@@ -428,7 +453,7 @@ def cmd_batch(args):
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         for r in pool.map(_batch_job, jobs):
             results.append(r)
-            print("  seed %-4d %-12s coverage %4s  %s" % (
+            print("  seed %-6d %-12s coverage %4s  %s" % (
                 r["_seed"], r.get("outcome"), ("%d%%" % round(100 * r["coverage"])) if "coverage" in r else "-",
                 ", ".join(classify(r, args.moves_limit not in ("off",))) or "ok"))
     expect_return = args.moves_limit not in ("off",)
@@ -481,10 +506,23 @@ def batch_stats(results):
     return s
 
 
+def batch_title(args, n):
+    seeds = "seeds %d-%d" % (args.seed_start, args.seed_start + n - 1)
+    new = "new random " if args.random_seeds else ""
+    if args.maze:
+        what = "%d runs on %s, %s%s" % (n, os.path.basename(args.maze), new, seeds)
+    else:
+        what = "%d %s%s mazes, %s" % (n, new, args.profile, seeds)
+    return "%s, %s" % (what, describe_moves_limit(args.moves_limit))
+
+
 def batch_report_md(results, args):
     s = batch_stats(results)
     n = s["runs"]
-    lines = ["## Theseus simulator batch: %d runs (%s mazes)" % (n, "given" if args.maze else args.profile), ""]
+    lines = ["## Simulator batch: %s" % batch_title(args, n), ""]
+    lines.append("To test the same %s again, add `--seed-start %d`. To repeat one run, use `run --seed <seed>` "
+                 "with the same options." % ("runs" if args.maze else "mazes", args.seed_start))
+    lines.append("")
     lines.append("| | runs | share |")
     lines.append("|---|---:|---:|")
     for label, key in (("No problems found", "no_problems"), ("Got lost (position or heading wrong)", "lost"),
@@ -548,23 +586,24 @@ h1{font-size:22px;margin:0 0 4px}p{color:var(--mut);margin:0 0 16px}table{border
 td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}tr.ok td:nth-child(7){color:var(--ok)}tr.bad td:nth-child(7){color:var(--bad)}
 .k{display:flex;gap:24px;flex-wrap:wrap;margin:16px 0 24px}.k div b{display:block;font-size:24px}a{color:inherit}
 .wrap{overflow-x:auto}</style></head><body>
-<h1>Simulator batch report</h1><p>%d runs on %s mazes, generated %s</p>
+<h1>Simulator batch report</h1><p>%s, generated %s</p>
 <div class="k"><div><b>%d%%</b>runs with no problems</div><div><b>%d%%</b>average coverage</div><div><b>%d</b>runs got lost</div>
 <div><b>%d</b>runs entered a hole</div><div><b>%.0f</b>average score</div></div>
 <div class="wrap"><table><tr><th>seed</th><th>outcome</th><th>coverage</th><th>first lost</th><th>likely cause</th><th>score</th><th>problems</th><th>files</th></tr>%s</table></div>
-</body></html>""" % (s["runs"], "given" if args.maze else html.escape(args.profile), datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+</body></html>""" % (html.escape(batch_title(args, s["runs"])), datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                      round(100 * s["no_problems"] / max(1, s["runs"])), round(100 * s["coverage"]), s["lost"], s["hole"],
                      s["score"], "".join(rows))
 
 
 # ---------------------------------------------------------------- gen / view
 def cmd_gen(args):
-    m = mazegen.generate(args.seed if args.seed is not None else 1, args.profile, args.width, args.height)
-    text = m.to_text("generated by sim/sim.py gen (profile %s, seed %s)" % (args.profile, args.seed))
+    seed = args.seed if args.seed is not None else new_seed()
+    m = mazegen.generate(seed, args.profile, args.width, args.height)
+    text = m.to_text("generated by sim/sim.py gen (profile %s, seed %d)" % (args.profile, seed))
     if args.output:
         with open(args.output, "w") as fh:
             fh.write(text)
-        print("wrote", args.output)
+        print("wrote %s (profile %s, seed %d)" % (args.output, args.profile, seed))
     else:
         print(text)
     return 0
@@ -619,7 +658,7 @@ def main():
 
     p = sub.add_parser("run", help="run one simulation")
     common(p)
-    p.add_argument("--seed", type=int, help="random seed for the maze and the noise (default 1)")
+    p.add_argument("--seed", type=int, help="random seed for the maze and the noise (default: a new one each run)")
     p.add_argument("--echo", action="store_true", help="print the robot's Serial output live")
     p.add_argument("--view", action="store_true", help="open the replay in the browser afterwards")
     p.set_defaults(func=cmd_run)
@@ -627,14 +666,15 @@ def main():
     p = sub.add_parser("batch", help="run many simulations and write a report")
     common(p)
     p.add_argument("--count", type=int, default=20)
-    p.add_argument("--seed-start", type=int, default=1)
+    p.add_argument("--seed-start", type=int,
+                   help="seed of the first maze; the same value tests the same mazes (default: new ones each batch)")
     p.add_argument("--jobs", type=int, help="parallel simulations (default: number of CPUs)")
     p.add_argument("--keep-traces", choices=["none", "problems", "all"], default="problems")
     p.set_defaults(func=cmd_batch)
 
     p = sub.add_parser("gen", help="write a random RCJ-style maze file")
     p.add_argument("--profile", default="basic", choices=["walls", "basic", "full"])
-    p.add_argument("--seed", type=int, default=1)
+    p.add_argument("--seed", type=int, help="default: a new one each time")
     p.add_argument("--width", type=int)
     p.add_argument("--height", type=int)
     p.add_argument("-o", "--output")

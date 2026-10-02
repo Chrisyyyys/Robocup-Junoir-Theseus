@@ -25,18 +25,25 @@ jobs:
           echo "## Scenario mazes" >> "$GITHUB_STEP_SUMMARY"
           for m in sim/mazes/scenarios/*.txt; do
             name=$(basename "$m" .txt)
-            python3 sim/sim.py run --maze "$m" --time-limit 120 --quiet-build --out "sim/out/scenario-$name" > "sim/out-$name.txt" 2>&1 || true
+            python3 sim/sim.py run --maze "$m" --seed 1 --time-limit 120 --quiet-build --out "sim/out/scenario-$name" > "sim/out-$name.txt" 2>&1 || true
             { echo "### $name"; echo '```'; grep -E "^(Outcome|Explored|Position|Map|Field|Warning)" "sim/out-$name.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           done
 
-      - name: Exploration (move limit off, 8 minutes)
-        run: python3 sim/sim.py batch --count 20 --profile basic --moves-limit off --quiet-build --out sim/out/explore
+      # These three use the same mazes every time (--seed-start 1), so their numbers can be
+      # compared between commits: a change in the numbers comes from a change in the code.
+      - name: Exploration, same 20 mazes each time (no move limit, 8 minutes)
+        run: python3 sim/sim.py batch --count 20 --seed-start 1 --profile basic --moves-limit off --quiet-build --out sim/out/explore
 
-      - name: Return to start (move limit as in the code)
-        run: python3 sim/sim.py batch --count 20 --profile basic --quiet-build --out sim/out/return
+      - name: Return to start, same 20 mazes each time (move limit as in the code)
+        run: python3 sim/sim.py batch --count 20 --seed-start 1 --profile basic --quiet-build --out sim/out/return
 
-      - name: Full field (ramps, obstacles, stairs, bumps, debris)
-        run: python3 sim/sim.py batch --count 10 --profile full --quiet-build --out sim/out/full
+      - name: Full field, same 10 mazes each time (ramps, obstacles, stairs, bumps, debris)
+        run: python3 sim/sim.py batch --count 10 --seed-start 1 --profile full --quiet-build --out sim/out/full
+
+      # New mazes on every run, to find problems the fixed mazes don't show. The report lists the
+      # seeds, so a bad run can be repeated with: python sim/sim.py run --seed <seed> --moves-limit off
+      - name: New random mazes (different every time, no move limit)
+        run: python3 sim/sim.py batch --count 20 --profile basic --moves-limit off --quiet-build --out sim/out/random
 
       - name: Upload reports
         if: always()
