@@ -30,6 +30,18 @@ void init_color(){
   Serial.println(clear);
 
 }
+// Pure classification of one raw color reading (no I2C, no map side effects) so the web
+// tuner can show exactly what read_color() would decide. Returns:
+// -1 black, 0 white/unknown, 1 blue, 2 red, 3 silver.
+int classifyColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c){
+  if(c == 0) return 0;
+  if((float)c/clear<BLACK_THRESHOLD) return -1; // black
+  if(r>SILVER_THRESHOLD) return 3; // silver reflects more absolute light
+  if((float)c/clear>WHITE_THRESHOLD) return 0;
+  if(b>g+10&&b>r+10) return 1; //blue
+  if(r>g+10&&r>b+10) return 2;
+  return 0;
+}
 int read_color(){
   // [DIAG-COLOR] snapshot the global `clear` divisor the instant this call starts,
   // before touching I2C at all. clear is written exactly once (init_color(), pre-thread)
@@ -60,14 +72,8 @@ int read_color(){
   
   
   //Serial.println((float)c/clear);
-  if(c == 0) return 0;
-  if((float)c/clear<BLACK_THRESHOLD){
-
-
-    return -1; // black
-  }
-  
-  if(r>SILVER_THRESHOLD){ // silver reflects more absolute light
+  int cls = classifyColor(r, g, b, c);
+  if(cls == 3){ // silver: also record the checkpoint on the map
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
     //Serial.print("silver at ");
@@ -77,17 +83,6 @@ int read_color(){
     mapGrid[nx][ny].setType(CHECKPOINT);
     x_checkpoint = nx; y_checkpoint = ny;
     floor_checkpoint = currentFloor; // remember which floor this checkpoint is on
-
-    return 3; 
   }
-  
-  if((float)c/clear>WHITE_THRESHOLD) return 0;
-
-
-  if(b>g+10&&b>r+10) return 1; //blue
-
-  if(r>g+10&&r>b+10) return 2;
-
-  return 0;
-
+  return cls;
 }

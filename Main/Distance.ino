@@ -149,9 +149,11 @@ old robot settings
 // range), average ~100 raw readings, set SENSOR_OFFSET_MM[n] = mean(raw) - D.
 // Positive => sensor reads long; it is subtracted from every reading in measure().
 // Use calibrateSensor(n, D) below to compute these values automatically.
-const int SENSOR_OFFSET_MM[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+// Not const: the web tuner (Tuning.ino) can change these at runtime.
+int SENSOR_OFFSET_MM[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-int measure(int sensor){
+// Raw reading (offset NOT applied). Returns -1 for "no reading" (timeout / 8191 / bad index).
+int measureRaw(int sensor){
   // sensor→mux port mapping
   const int portMap[] = {-1, 1, 0, 6, 4, 5, 3, 2};
   if(sensor < 1 || sensor > 7) return -1;
@@ -164,6 +166,12 @@ int measure(int sensor){
   i2cMutex.unlock();
 
   if(value == -1 || value == 8191) return -1;          // keep the no-reading sentinel
+  return value;
+}
+
+int measure(int sensor){
+  int value = measureRaw(sensor);
+  if(value == -1) return -1;                            // keep the no-reading sentinel
   int corrected = value - SENSOR_OFFSET_MM[sensor];     // apply per-sensor calibration
   return (corrected < 0) ? 0 : corrected;               // clamp: negative distance is nonsense
 }
@@ -505,7 +513,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         break;
       }
       case PARALLEL:{
-        PID pid(1,0,0.1);
+        PID pid(tune.parallel.kp,tune.parallel.ki,tune.parallel.kd);
         if(leftright == 1){
           int a = measure(2); int b = measure(3);
           while(true){
@@ -613,7 +621,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         return _;
       }
       case WIGGLE:{
-        PID pid(8,0,0.1);
+        PID pid(tune.wiggle.kp,tune.wiggle.ki,tune.wiggle.kd);
         Serial.println("wiggle step");
         delay(2000);
         timer myTime;

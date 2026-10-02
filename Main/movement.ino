@@ -14,10 +14,11 @@ void fwd(double dist){ // in mm
   int cnt = 0; // tiles traversed while climbing.
   double difference = 0; // centering distance
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
-  PID climbPID(2,0,0.1); // pid for centering on ramp
-  PID center_PID(2,0,0.5);
-  PID gyroPID(1,0.001,0.03);
-  PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
+  // gains are runtime-tunable (Tunables.cpp holds the defaults)
+  PID climbPID(tune.climb.kp,tune.climb.ki,tune.climb.kd); // pid for centering on ramp
+  PID center_PID(tune.center.kp,tune.center.ki,tune.center.kd);
+  PID gyroPID(tune.gyro.kp,tune.gyro.ki,tune.gyro.kd);
+  PID Scale_PID(tune.scale.kp,tune.scale.ki,tune.scale.kd); // pid for encoder 
   Serial.println("forwarding");
   // allow the camera RTOS thread to flag victims for this move
   fwdActive = true;
@@ -291,7 +292,7 @@ void fwd(double dist){ // in mm
 
 void absoluteturn(double angle){
   // create PID instance.
-  PID myPID(4.5,0,0.3);
+  PID myPID(tune.turn.kp,tune.turn.ki,tune.turn.kd);
   double MOTORSPEED = 0;
   Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
   // allow the camera RTOS thread to flag victims during the turn

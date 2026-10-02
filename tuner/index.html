@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Theseus Tuner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">Theseus <b>Tuner</b></div>
+  <div id="status" class="pill pill-off" role="status">Disconnected</div>
+  <div class="spacer"></div>
+  <button id="btn-connect" class="btn primary">Connect robot</button>
+  <button id="btn-demo" class="btn" title="Try the page with a simulated robot">Demo</button>
+  <button id="btn-exit" class="btn" hidden title="Leave tuning mode; robot goes back to PAUSE">Exit tuning</button>
+  <button id="btn-disconnect" class="btn" hidden>Disconnect</button>
+  <button id="btn-stop" class="btn danger big" title="Stop all motors (Space)">STOP</button>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<nav class="tabs" id="tabs" role="tablist">
+  <button role="tab" data-tab="dashboard" class="active">Dashboard</button>
+  <button role="tab" data-tab="calibrate">Calibrate</button>
+  <button role="tab" data-tab="pid">PID</button>
+  <button role="tab" data-tab="motors">Motors</button>
+  <button role="tab" data-tab="params">Parameters</button>
+  <button role="tab" data-tab="log">Log</button>
+</nav>
+
+<div id="demo-panel" class="demo-panel" hidden>
+  <b>Demo robot</b>
+  <label>Tile under color sensor
+    <select id="demo-tile"><option>white</option><option>black</option><option>silver</option><option>blue</option><option>red</option></select>
+  </label>
+  <span class="hint">Simulated: nothing here talks to hardware.</span>
+</div>
+
+<main>
+
+<!-- ============================ DASHBOARD ============================ -->
+<section id="tab-dashboard" class="tab active">
+  <div class="grid">
+    <div class="card wide">
+      <h2>Distance sensors <span class="hint">top-down view, robot facing up &middot; rays are drawn to scale</span></h2>
+      <div class="split">
+        <svg id="robot-svg" viewBox="-330 -330 660 660" class="robot-svg" aria-label="Distance sensor diagram"></svg>
+        <div class="side">
+          <table class="mini" id="dist-table">
+            <thead><tr><th>#</th><th>Position</th><th>Corrected</th><th>Raw</th><th>Offset</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <h3>Derived <span class="hint">same formulas as Main.ino / Distance.ino</span></h3>
+          <div id="derived" class="kv"></div>
+        </div>
+      </div>
+      <canvas id="chart-dist" class="chart" height="170"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Gyro <span class="hint">BNO055</span></h2>
+      <svg id="compass" viewBox="-70 -70 140 140" class="compass" aria-label="Heading"></svg>
+      <div id="gyro-kv" class="kv"></div>
+      <div id="gyro-cal" class="calpips"></div>
+      <div class="hint">Calibration pips: 3 = fully calibrated. System/gyro/accel/mag.</div>
+    </div>
+
+    <div class="card">
+      <h2>Color <span class="hint">TCS34725</span></h2>
+      <div class="swatch-row"><div id="swatch" class="swatch"></div><div id="color-class" class="bigclass">&ndash;</div></div>
+      <div id="color-kv" class="kv"></div>
+      <div class="ratiobar" id="ratiobar"><div class="mark" id="mk-black"></div><div class="mark" id="mk-white"></div><div class="fill" id="ratio-fill"></div></div>
+      <div class="hint">Bar = clear / baseline ratio (0 &ndash; 1.2). Marks: black and white thresholds.</div>
+    </div>
+
+    <div class="card">
+      <h2>Encoders</h2>
+      <div id="enc-kv" class="kv"></div>
+      <button class="btn" id="btn-encreset">Reset counts</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CALIBRATE ============================ -->
+<section id="tab-calibrate" class="tab">
+  <div class="grid">
+    <div class="card wide">
+      <h2>Distance sensors</h2>
+      <p>Hold a flat, matte target exactly <input id="cal-true" type="number" value="80" min="20" max="1000" step="5" class="num"> mm in front of the sensor, then press <b>Measure</b>.
+         It averages 100 raw readings and suggests the offset that makes the sensor read true. <b>Apply</b> sets it on the robot right away.</p>
+      <table class="tbl" id="cal-dist-table">
+        <thead><tr><th>#</th><th>Position</th><th>Live</th><th>Offset now</th><th>Measured (raw mean)</th><th>Spread</th><th>Suggested</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card wide">
+      <h2>Color thresholds</h2>
+      <ol class="steps">
+        <li>Put the sensor over a <b>white</b> tile and press <b>Set white reference</b>. All ratios are divided by this baseline. (The robot also measures it at boot, so power it on over a white tile.)</li>
+        <li>Put the sensor over each tile type and press its <b>Sample</b> button (collects ~1.5 s of readings).</li>
+        <li>Check the suggested thresholds, then <b>Apply</b>.</li>
+      </ol>
+      <div class="row">
+        <button class="btn primary" id="btn-clearref">Set white reference</button>
+        <span>Baseline now: <b id="cal-clear">&ndash;</b></span>
+        <span class="spacer"></span>
+        <span>Live reading: <b id="cal-live-class">&ndash;</b></span>
+      </div>
+      <table class="tbl" id="cal-color-table">
+        <thead><tr><th>Tile</th><th></th><th>R</th><th>G</th><th>B</th><th>Clear</th><th>Ratio (min&ndash;max)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="cal-color-suggest" class="suggest"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================ PID ================================ -->
+<section id="tab-pid" class="tab">
+  <div class="grid pidgrid">
+    <div class="card">
+      <h2>Test</h2>
+      <p class="hint">Tests mirror <code>absoluteturn()</code> and <code>fwd()</code> without the map, camera or ramp logic. Gains are re-read every tick, so you can change them <b>while a test is running</b>. Keep a hand near the robot.</p>
+      <div class="seg" id="test-kind">
+        <button data-kind="turn" class="active">Turn</button>
+        <button data-kind="fwd-wall">Forward (wall follow)</button>
+        <button data-kind="fwd-gyro">Forward (gyro hold)</button>
+      </div>
+      <div id="test-opts" class="opts"></div>
+      <div class="row">
+        <button id="btn-run" class="btn primary">Run test</button>
+        <button id="btn-test-stop" class="btn danger">Stop</button>
+        <span id="test-status" class="hint"></span>
+      </div>
+      <div id="gains-wrap"></div>
+    </div>
+    <div class="card results">
+      <h2>Response <span id="test-title" class="hint"></span></h2>
+      <div id="test-charts" class="charts"></div>
+      <div id="test-summary" class="summary"></div>
+      <h3>Run history <span class="hint">click a row to overlay it on the next run</span></h3>
+      <table class="tbl" id="run-table"><thead><tr><th>#</th><th>Test</th><th>Gains</th><th>Result</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</section>
+
+<!-- =============================== MOTORS ============================== -->
+<section id="tab-motors" class="tab">
+  <div class="grid">
+    <div class="card">
+      <h2>Drive</h2>
+      <p class="hint">Hold a button (or arrow keys / WASD). The robot stops by itself if the page stops sending. <b>Space</b> = stop.</p>
+      <label class="row">Speed <input type="range" id="drive-speed" min="30" max="255" value="120"> <b id="drive-speed-v">120</b></label>
+      <div class="dpad">
+        <span></span><button class="btn pad" data-dir="fw">&uarr;<small>fwd</small></button><span></span>
+        <button class="btn pad" data-dir="tl">&circlearrowleft;<small>turn L</small></button>
+        <button class="btn pad danger" id="pad-stop">&#9632;<small>stop</small></button>
+        <button class="btn pad" data-dir="tr">&circlearrowright;<small>turn R</small></button>
+        <span></span><button class="btn pad" data-dir="bk">&darr;<small>back</small></button><span></span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Single motors</h2>
+      <p class="hint">Positive speed should drive that wheel <b>forward</b> and make its encoder count <b>up</b>. Use this to check wiring and encoder direction.</p>
+      <div id="motor-rows"></div>
+    </div>
+    <div class="card">
+      <h2>Encoders</h2>
+      <div id="enc-kv2" class="kv"></div>
+      <button class="btn" id="btn-encreset2">Reset counts</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== PARAMETERS ============================ -->
+<section id="tab-params" class="tab">
+  <div class="card">
+    <h2>Profile</h2>
+    <div class="row wrap">
+      <button class="btn" id="btn-save-local">Save to this browser</button>
+      <button class="btn" id="btn-load-local">Apply saved profile</button>
+      <button class="btn" id="btn-dl">Download JSON</button>
+      <label class="btn filebtn">Load JSON<input type="file" id="file-load" accept="application/json" hidden></label>
+      <button class="btn" id="btn-reset-all">Reset all to firmware defaults</button>
+      <span id="profile-info" class="hint"></span>
+    </div>
+    <p class="hint">Values on the robot live in RAM: they reset when it reboots. Save a profile here to re-apply it, or copy the C++ below into the code to make them the new defaults.</p>
+  </div>
+  <div class="card">
+    <h2>Copy into the code</h2>
+    <div class="row"><button class="btn primary" id="btn-copy-cpp">Copy C++</button><span id="copy-info" class="hint"></span></div>
+    <pre id="cpp" class="code"></pre>
+  </div>
+  <div id="params-list"></div>
+</section>
+
+<!-- ================================= LOG ================================ -->
+<section id="tab-log" class="tab">
+  <div class="card">
+    <div class="row wrap">
+      <label><input type="checkbox" id="log-noisy"> show telemetry / pings</label>
+      <label><input type="checkbox" id="log-debug" checked> show robot debug output</label>
+      <button class="btn" id="btn-log-clear">Clear</button>
+      <button class="btn" id="btn-log-dl">Download</button>
+      <span class="spacer"></span>
+      <form id="raw-form" class="row"><input id="raw-cmd" class="rawcmd" placeholder="raw command, e.g. SET center.kp 2.5" autocomplete="off"><button class="btn">Send</button></form>
+    </div>
+    <pre id="log" class="log"></pre>
+  </div>
+</section>
+
+</main>
+
+
+
+<div id="toasts" aria-live="polite"></div>
+
+<script src="charts.js"></script>
+<script src="protocol.js"></script>
+<script src="sim.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -7,6 +7,10 @@ PID::PID(double _kp, double _ki, double _kd){
   kp = _kp; // public kp = inputted _kp
   ki = _ki;
   kd = _kd;
+  // PIDs are created as locals on every fwd()/turn, so these must be zeroed or the first
+  // derivative/integral term is computed from stack garbage (and tuning results aren't repeatable).
+  error = 0; prevError = 0; delta = 0; cumError = 0;
+  currentTime = 0;
   previousTime = micros();
 
 }

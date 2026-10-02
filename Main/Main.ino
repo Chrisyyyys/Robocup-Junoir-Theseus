@@ -22,6 +22,7 @@
 #include "gyro.h"
 #include "dispenser.h"
 #include "motors.h"
+#include "Tunables.h" // runtime-tunable PID gains / color thresholds (see Tuning.ino)
 // movement constants
 #define MIN_DIST 120         // mm (tune this)
 #define OBSTACLE_DIST 90
@@ -36,9 +37,10 @@
 #define LATERAL_TOL_MM 15                                            // mm, lateral correction tolerance (looser than CENTER_TOL_MM)
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
 #define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
-#define BLACK_THRESHOLD 0.1f // color clear-channel threshold ratio for black
-#define SILVER_THRESHOLD 800 // use red value
-#define WHITE_THRESHOLD 0.85f
+// color thresholds are runtime-tunable; defaults (0.1 / 800 / 0.85) live in Tunables.cpp
+#define BLACK_THRESHOLD (tune.colBlack) // color clear-channel threshold ratio for black
+#define SILVER_THRESHOLD (tune.colSilver) // use red value
+#define WHITE_THRESHOLD (tune.colWhite)
 #define MULTIPLER 1.1
 #define WALL_MISMATCH_THRESHOLD 2 // >= this many of the 4 absolute walls disagreeing with the stored tile flags a position mismatch
 
@@ -590,6 +592,8 @@ void loop(){
     }
     case PAUSE: {
       drivetrain.fullstop();
+      // web tuner: if the page asked for tuning mode, hand over until it exits or the switch is flipped to RUN
+      if(tuningPollHandshake()) tuningMode();
       delay(200);
       if(digitalRead(logicswitch)==LOW){
         Pausemaze = false;
