@@ -24,6 +24,7 @@
 #include "motors.h"
 // movement constants
 #define MIN_DIST 120         // mm (tune this)
+#define FRONT_WALL_MAX_MM 200 // a front wall in the current tile is never further than this; the next tile's is >= 360 mm away
 #define OBSTACLE_DIST 90
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define ROBOT_LENGTH_MM 170                                      // mm, robot front-to-back length
@@ -41,6 +42,13 @@
 #define WHITE_THRESHOLD 0.85f
 #define MULTIPLER 1.1
 #define WALL_MISMATCH_THRESHOLD 2 // >= this many of the 4 absolute walls disagreeing with the stored tile flags a position mismatch
+#define HEADING_SYNC_MAX_DEG 20.0      // re-zero the gyro on a wall only if it already agrees this closely (same as the turn check)
+#define HEADING_SYNC_RECOVERY_DEG 40.0 // wider window right after snapping to the nearest axis (turn recovery, LoP resume)
+#define PARALLEL_RECOVERY_TIMEOUT_MS 1500 // squaring time on those paths (normal parallel() gets 500 ms)
+// Serial output. 0 = quiet: the tagged lines the test plan reads ([WALLS], [PLAN], [TURN],
+// [SYNC], [MOVE], ...) and one-off events. 1 = also the per-loop traces (distance travelled,
+// raw colour readings, [CENTER], ramp climbing, detour steps, camera samples).
+#define VERBOSE_DEBUG 0
 
 #define TARGET_WALL_DISTANCE 80
 float clear; 
@@ -110,6 +118,7 @@ int LEDPIN = 51;
 
 //states that the robot will be in
 enum RobotState {
+  WAIT_START,
   SENSE_TILE,
   CENTERING,
   UPDATE_MAP,
@@ -121,6 +130,13 @@ enum RobotState {
   BACKPEDAL,
   PAUSE,
   RETURN
+};
+// Outcome of fwd(). Only MOVE_OK means the robot actually reached the next tile.
+enum MoveResult {
+  MOVE_OK,      // reached the next tile (directly or through an obstacle detour)
+  MOVE_BLOCKED, // stopped short of the next tile; still in the current one
+  MOVE_BLACK,   // black tile ahead; backed off to where the move started
+  MOVE_PAUSED   // the logic switch paused the move
 };
 enum Steps {
   TURN,
@@ -147,12 +163,11 @@ int botchedTurnAttempts = 0;
 const int MAX_BOTCHED_TURN_ATTEMPTS = 3;
 int x_pos = MAP_SIZE/2;
 int y_pos = MAP_SIZE/2;
-RobotState state = SENSE_TILE;
+RobotState state = WAIT_START;
 // maze return to start condition variables
 int medkits = 8;
 timer mazeTime;
-// black blue toggles
-bool blacktoggle = false;
+// blue toggle (black tiles are reported by fwd()'s MOVE_BLACK result)
 bool bluetoggle = false;
 bool stairtoggle = false;
 // obstacle toggle
@@ -170,7 +185,7 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 // logic switch pin
 const int logicswitch = 22;
 volatile bool Pausemaze = false; // set by pauseThread, read by loop()
-volatile bool moveInterrupted = false; // fwd() sets true when a pause aborts the move before the tile is completed
+bool startArmed = false; // logic switch seen at PAUSE since power-on (WAIT_START needs PAUSE -> RUN)
 int x_checkpoint = MAP_SIZE/2, y_checkpoint = MAP_SIZE/2;
 int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
 bool tilecheck = false;
@@ -210,10 +225,12 @@ void cameraTask(){
       //if(encoderCount>=0.3*pulsesForDistanceMm(TILE_MM)||encoderCount<=0.7*pulsesForDistanceMm(TILE_MM)){
         if(readSerial1() != -1){        // left camera (Serial4)
           if(fwdActive) victimTileFromEncoder(TILE_MM,encoderCount,nx,ny);
-          Serial.println("nx, ny");
-          Serial.println(nx);
-          Serial.println(ny);
-          Serial.println(mapGrid[nx][ny].getVictim());
+          if(VERBOSE_DEBUG){
+            Serial.println("nx, ny");
+            Serial.println(nx);
+            Serial.println(ny);
+            Serial.println(mapGrid[nx][ny].getVictim());
+          }
           if(mapGrid[nx][ny].getVictim() == false){
             i2cMutex.lock();
             victimSide = 1;
@@ -228,10 +245,12 @@ void cameraTask(){
         }
         else if(readSerial2() != -1){   // right camera (Serial3)
           if(fwdActive) victimTileFromEncoder(TILE_MM,encoderCount,nx,ny);
-          Serial.println("nx, ny");
-          Serial.println(nx);
-          Serial.println(ny);
-          Serial.println(mapGrid[nx][ny].getVictim());
+          if(VERBOSE_DEBUG){
+            Serial.println("nx, ny");
+            Serial.println(nx);
+            Serial.println(ny);
+            Serial.println(mapGrid[nx][ny].getVictim());
+          }
           if(mapGrid[nx][ny].getVictim() == false){
             i2cMutex.lock();
             victimSide = 2;
@@ -272,12 +291,13 @@ bool turnCompletedSuccessfully(Direction intendedDir) {
   double targetHeading = turnNeededDeg(intendedDir);
   double actualHeading = myGyro.heading();
   double err = headingErrorDeg(targetHeading, actualHeading);
-  Serial.print("turn target=");
+  Serial.print("[CHECK] turn target=");
   Serial.print(targetHeading);
   Serial.print(", actual=");
   Serial.print(actualHeading);
   Serial.print(", err=");
-  Serial.println(err);
+  Serial.print(err);
+  Serial.println(err <= TURN_SUCCESS_TOLERANCE_DEG ? ", ok=1" : ", ok=0");
   return err <= TURN_SUCCESS_TOLERANCE_DEG;
 }
 void setup(){
@@ -296,8 +316,11 @@ void setup(){
   Wire.begin();
   disableAllCall();
   myMux.begin();
-  calibrateSensor(2,80);
   init_dist(); // initialize mux before distance sensors.
+  // calibrateSensor() reads a sensor, so it may only run after init_dist() has started them.
+  // Before, it ran first and froze the robot after a cold power-on. Its result isn't used yet
+  // (SENSOR_OFFSET_MM is all zero), so it stays off; turn it on here when calibrating.
+  //calibrateSensor(2,80);
   scanAllPorts();
   init_color();
   init_drive();
@@ -313,7 +336,7 @@ void setup(){
   y_pos=MAP_SIZE/2;
   mapGrid[x_pos][y_pos].setDiscovered(true);
   currentDir = NORTH;
-  state = SENSE_TILE;
+  state = WAIT_START;
   // start lcd
   lcd.begin(16, 2);
   // start RTOS threads: camera victim detection + pause-switch watcher.
@@ -350,12 +373,39 @@ void loop(){
   
   static bool wallF, wallR, wallB, wallL;
   switch (state) {
+    case WAIT_START: {
+      // Rule 4.2.8: the run is started with the logic switch. Require PAUSE -> RUN, so a
+      // robot that powers up with the switch already at RUN doesn't drive off by itself.
+      drivetrain.fullstop();
+      static unsigned long lastWaitPrintMs = 0;
+      if(millis() - lastWaitPrintMs >= 500){ // heading readout for bench checks
+        lastWaitPrintMs = millis();
+        Serial.print("[WAIT] armed=");
+        Serial.print(startArmed ? 1 : 0);
+        Serial.print(" heading=");
+        Serial.println(myGyro.heading(), 1);
+      }
+      if(digitalRead(logicswitch) == HIGH){
+        startArmed = true; // switch at PAUSE
+      }
+      else if(startArmed && Pausemaze == false){
+        // Maze NORTH is the way the robot faces on the start tile. Square up on a side
+        // wall if there is one, then define NORTH again from the squared pose.
+        myGyro.setMapHeading(0);
+        if(parallel(NORTH)) myGyro.setMapHeading(0);
+        currentDir = NORTH;
+        Serial.println("[START] run started, heading zeroed to NORTH");
+        state = SENSE_TILE; // read the start tile's walls before planning
+      }
+      delay(20);
+      break;
+    }
     case SENSE_TILE: {
       // reset per-tile toggles
-      blacktoggle = false; bluetoggle = false; victimtoggle = false; obstacle = false;
+      bluetoggle = false; victimtoggle = false; obstacle = false;
       // Read for walls
-      Serial.println("reading walls");
-      readWallsRel(wallF, wallR, wallB, wallL);
+      if(VERBOSE_DEBUG) Serial.println("reading walls");
+      readWallsRel(wallF, wallR, wallB, wallL); // prints the [WALLS] line
       // re-sense: does this tile actually match what the map already recorded for it?
       tilecheck = checkTileMismatch(wallF, wallR, wallB, wallL);
 
@@ -382,14 +432,14 @@ void loop(){
       break;
     }
     case CENTERING: {
-      Serial.println("front/back centering in tile");
+      if(VERBOSE_DEBUG) Serial.println("front/back centering in tile");
       centerFrontBack();
       state = UPDATE_MAP;
       if(Pausemaze == true) state = PAUSE;
       break;
     }
     case UPDATE_MAP: {
-      Serial.println("updating tile");
+      if(VERBOSE_DEBUG) Serial.println("updating tile");
       // skip the write on a mismatch: preserve the already-trusted wall data for
       // this cell rather than overwriting it with a reading taken while the
       // robot's position belief may be wrong.
@@ -402,17 +452,18 @@ void loop(){
     }
     case VICTIM_DETECT: {
       
-      Serial.println("victim detect");
+      if(VERBOSE_DEBUG) Serial.println("victim detect");
       state = PLAN_NEXT;
       if(Pausemaze == true) state = PAUSE;
       break;
     }
     case PLAN_NEXT: {
-      Serial.println("plan next");
+      if(VERBOSE_DEBUG) Serial.println("plan next");
       plannedMoveDir = pickNextDirection();
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
-      Serial.println(plannedTurnDeg);
+      if(VERBOSE_DEBUG) Serial.println(plannedTurnDeg);
+      logPlan(plannedMoveDir);
       state = EXECUTE_MOVE;
       if(Pausemaze == true) state = PAUSE;
       break;
@@ -423,7 +474,7 @@ void loop(){
           absoluteturn(plannedTurnDeg);
         }
         delay(200);
-        parallel();
+        parallel(plannedMoveDir); // currentDir is still the old heading here
         delay(100);
 
         if (turnCompletedSuccessfully(plannedMoveDir) == false) {
@@ -434,15 +485,15 @@ void loop(){
         turnCompletedForMove = true;
         botchedTurnAttempts = 0; // clean turn -> reset the recovery counter
       }
-      fwd(TILE_MM);
+      MoveResult moveResult = fwd(TILE_MM);
       // A pause aborted the move before the tile was completed: don't advance
       // position or write walls/edges (the robot didn't actually traverse the tile).
-      if(moveInterrupted == true){
-        if(Pausemaze == true) state = PAUSE;
+      if(moveResult == MOVE_PAUSED){
+        state = PAUSE;
         break;
       }
-      // update map + robot position only on a successful (non-black) move
-      if(blacktoggle == false){
+      // update map + robot position only when the robot really reached the next tile
+      if(moveResult == MOVE_OK){
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos); // x_pos/y_pos now = new tile
         // read blue only after the move completes, on the tile just entered
@@ -464,14 +515,15 @@ void loop(){
         
       }
       else{
-        
-        state = BACKPEDAL; // black tile ahead (marked BLACK by fwd) -> back off
+        // MOVE_BLACK: black tile ahead (marked BLACK by fwd) -> back off
+        // MOVE_BLOCKED: stopped short of the next tile -> still in this one
+        state = (moveResult == MOVE_BLACK) ? BACKPEDAL : BOTCHED_FWD_RECOVERY;
         turnCompletedForMove = false;
         break;
       }
 
       delay(200);
-      parallel();
+      parallel(currentDir);
       delay(100);
       iterator += 1;
 
@@ -487,11 +539,11 @@ void loop(){
     }
     case BACKPEDAL: {
       plannedMoveDir = pickNextDirection();
-      Serial.println("next direction picked");
+      if(VERBOSE_DEBUG) Serial.println("next direction picked");
+      logPlan(plannedMoveDir);
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
       state = EXECUTE_MOVE;
-      blacktoggle = false;
       if(Pausemaze == true) state = PAUSE;
       delay(200);
       break;
@@ -507,7 +559,10 @@ void loop(){
       Serial.println("botched turn detected, snapping to cardinal");
       absoluteturn(snappedHeading);
       delay(150);
-      parallel();
+      // After snapping to the nearest axis and squaring up, the robot really is on
+      // snappedDir, so accept a larger gyro error here. Otherwise a gyro that is 20-40
+      // degrees off would fail every turn check and loop in this state forever.
+      if(squareToWall(snappedDir, PARALLEL_RECOVERY_TIMEOUT_MS)) syncHeadingToWall(snappedDir, HEADING_SYNC_RECOVERY_DEG);
       delay(100);
       currentDir = snappedDir;
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
@@ -524,6 +579,29 @@ void loop(){
       }
 
       state = EXECUTE_MOVE;
+      break;
+    }
+    case BOTCHED_FWD_RECOVERY: {
+      // fwd() stopped short of the next tile (usually a wall or obstacle the wall check
+      // missed) and backed off, so the robot is still in this tile. Mark the edge blocked
+      // in both tiles so the planner won't drive into it again, then square up and
+      // re-sense before planning.
+      int nx = x_pos, ny = y_pos;
+      stepForward(currentDir, nx, ny);
+      mapGrid[x_pos][y_pos].setBlocked(currentDir, true);
+      if(inBounds(nx, ny)) mapGrid[nx][ny].setBlocked(opposite(currentDir), true);
+      Serial.print("[MOVE] blocked edge recorded x=");
+      Serial.print(x_pos);
+      Serial.print(" y=");
+      Serial.print(y_pos);
+      Serial.print(" dir=");
+      Serial.println((int)currentDir);
+      absoluteturn(turnNeededDeg(currentDir)); // undo any rotation left by an obstacle detour
+      delay(100);
+      parallel(currentDir);
+      turnCompletedForMove = false;
+      state = SENSE_TILE;
+      if(Pausemaze == true) state = PAUSE;
       break;
     }
     case RETURN: {
@@ -560,7 +638,7 @@ void loop(){
         plannedTurnDeg = turnNeededDeg(moveDir);
         absoluteturn(plannedTurnDeg);
         delay(200);
-        parallel();
+        parallel(moveDir);
         delay(100);
         currentDir = moveDir;
         fwd(TILE_MM);
@@ -603,20 +681,33 @@ void loop(){
         else if(currentFloor == 1) mapGrid = m2;
         else if(currentFloor == 2) mapGrid = m3;
         x_pos = x_checkpoint; y_pos = y_checkpoint; // resume from last checkpoint
-        //Direction snapped = (Direction)myGyro.headingToCardinal(myGyro.heading()); // snap to cardinal
-        //absoluteturn(turnNeededDeg(snapped));
-        //currentDir = snapped;
-         // Deterministic reset: rotate to the gyro's zero and declare it NORTH.
-        // Removes the ambiguous headingToCardinal snap (which could bucket a near-45 deg
-        // reading into the wrong cardinal and leave the robot diagonal).
-        absoluteturn(0);        // turnNeededDeg(NORTH) == 0
-        currentDir = NORTH;
-        Serial.println("checkpoint coordinates");
-        Serial.println(x_checkpoint);
-        Serial.println(y_checkpoint);
-        Serial.println(currentDir);
+        // Rule 5.5.2: after a lack of progress the robot may be put down facing any
+        // direction. The gyro keeps running while it is carried and heading() is in the
+        // maze frame, so snap to the nearest axis, turn onto it and square up on a wall.
+        // If it was put down near 45 degrees either axis is fine: the robot turns onto the
+        // one it picked and currentDir matches it. Nearest axis instead of always NORTH is
+        // the same result with less turning.
+        Direction facing = (Direction)myGyro.headingToCardinal(myGyro.heading());
+        absoluteturn(turnNeededDeg(facing));
+        delay(100);
+        if(squareToWall(facing, PARALLEL_RECOVERY_TIMEOUT_MS)) syncHeadingToWall(facing, HEADING_SYNC_RECOVERY_DEG);
+        currentDir = facing;
+        // clear per-move state left over from the interrupted move
+        turnCompletedForMove = false;
+        botchedTurnAttempts = 0;
+        fwdActive = false;
+        isVictim = false;
+        drivetrain.reset_encoderCount(true,true,true);
         steps = TURN; // reset avoidance steps
-        state = PLAN_NEXT;
+        Serial.print("[RESUME] checkpoint x=");
+        Serial.print(x_checkpoint);
+        Serial.print(" y=");
+        Serial.print(y_checkpoint);
+        Serial.print(" floor=");
+        Serial.print(currentFloor);
+        Serial.print(" facing=");
+        Serial.println((int)currentDir);
+        state = SENSE_TILE; // re-read the walls here before planning
       }
       break;
     }

@@ -44,6 +44,7 @@ void init_dist() {
     else{
       Serial.println("Sensor "+String(i)+" is able to initialize");
     }
+    sensors[i].setTimeout(100); // a read gives up after 100 ms instead of waiting forever (library default: no timeout)
     sensors[i].startContinuous(); // start continuous ranging.
   }
     
@@ -226,7 +227,10 @@ int detectWall(int dir){
   if(dir == 0){ // check if there is a wall at north
     int a = measure(1);
     int b = measure(7);
-    if((a<MIN_DIST&&a!=-1&&a!=8191)&&(b<MIN_DIST&&b!=-1&&b!=8191)){
+    // Front: up to FRONT_WALL_MAX_MM. Each move stops a little short, so after a few tiles
+    // without a front wall to centre on, this tile's wall can read 130+ mm and was missed
+    // with MIN_DIST (120).
+    if((a<FRONT_WALL_MAX_MM&&a!=-1&&a!=8191)&&(b<FRONT_WALL_MAX_MM&&b!=-1&&b!=8191)){
       return 0; // there is a wall.
     }
     else{
@@ -268,17 +272,26 @@ int detectWall(int dir){
   return 1;
 }
 
-void parallel(){
+// Squares the robot against a side wall. Returns true only if it actually converged: the
+// robot is then exactly on a maze axis, so the gyro is re-synced to `facing` (the direction
+// the robot is supposed to be facing) if it already agrees within HEADING_SYNC_MAX_DEG.
+bool parallel(Direction facing){
+  return squareToWall(facing, 500);
+}
+
+// parallel() with an explicit time limit. The recovery paths allow longer: after a snap to
+// the nearest axis the robot may have to rotate out a 20-40 degree gyro error, which takes
+// more than 500 ms at PARALLEL_SPEED.
+bool squareToWall(Direction facing, unsigned long timeoutMs){
   const int PARALLEL_TOL_MM = 3;
   const int PARALLEL_SPEED = 90;
-  const unsigned long PARALLEL_TIMEOUT_MS = 500;
   const double MAX_PARALLEL_ROTATION_DEG = 45.0;
   const int PARALLEL_MAX_WALL_MM = TILE_MM; // engage even when the wall is up to one tile away
 
   int sensorA = -1;
   int sensorB = -1;
   int wallDir;
-  Serial.println("paralleling");
+  if(VERBOSE_DEBUG) Serial.println("paralleling");
   
   
   // Prefer aligning to the right wall; otherwise use left wall.
@@ -292,11 +305,12 @@ void parallel(){
     wallDir=3;
   } else {
     drivetrain.fullstop();
-    return;
+    return false;
   }
 
   unsigned long startMs = millis();
   double startHeading = myGyro.heading();
+  bool squared = false;
 
   while (true) {
     // abort the correction on pause so the caller can transition to PAUSE.
@@ -317,7 +331,8 @@ void parallel(){
 
     int diff = a - b;
     if (abs(diff) <= PARALLEL_TOL_MM) {
-      Serial.println("paralleled");
+      if(VERBOSE_DEBUG) Serial.println("paralleled"); // the [SYNC] line follows
+      squared = true;
       break;
     }
     // break out after rotation.
@@ -331,7 +346,7 @@ void parallel(){
       break;
     }
 
-    if ((millis() - startMs) >= PARALLEL_TIMEOUT_MS) {
+    if ((millis() - startMs) >= timeoutMs) {
       Serial.println("parallel: timeout, aborting correction");
       break;
     }
@@ -355,6 +370,29 @@ void parallel(){
   }
   drivetrain.reset_encoderCount(true,true,true);
   drivetrain.fullstop();
+  if (squared) {
+    delay(50); // let the robot stop rotating before reading the heading
+    syncHeadingToWall(facing, HEADING_SYNC_MAX_DEG);
+  }
+  return squared;
+}
+
+// Re-zeroes the gyro against a wall the robot has just squared up to. The robot is on a
+// maze axis now; if the gyro agrees with `facing` to within maxErrDeg, snap the heading to
+// that axis exactly so drift can't build up. A bigger disagreement means the turn really
+// went wrong (or the "wall" was an angled obstacle): leave the gyro alone and let
+// turnCompletedSuccessfully() catch it. Returns true if the heading was re-synced.
+bool syncHeadingToWall(Direction facing, double maxErrDeg){
+  double target = turnNeededDeg(facing);
+  double err = wrap180(myGyro.heading() - target);
+  bool apply = fabs(err) <= maxErrDeg;
+  if (apply) myGyro.setMapHeading(target);
+  Serial.print("[SYNC] facing=");
+  Serial.print((int)facing);
+  Serial.print(" err=");
+  Serial.print(err, 1);
+  Serial.println(apply ? " applied" : " skipped");
+  return apply;
 }
 
 // Self-centers the robot front-to-back within a tile using the front wall (avg of sensors 1+7).
@@ -367,8 +405,8 @@ void centerFrontBack(){
   // MAX_CENTER_CORRECTION_MM is a file-scope #define (Main.ino), shared with the SENSE_TILE trigger gate >> redundant safety abort 
   // -> in case conditions changed between the trigger check and this function actually running.
 
-  Serial.println("centering front-back (front wall)");
-  parallel();
+  if(VERBOSE_DEBUG) Serial.println("centering front-back (front wall)");
+  parallel(currentDir);
 
   if(detectWall(0) != 0){ // 0 == wall present, matches detectWall's convention
     Serial.println("centerFrontBack: no front wall, nothing to center against");
@@ -390,7 +428,7 @@ void centerFrontBack(){
     return;
   }
   if(abs(offset) <= CENTER_TOL_MM){
-    Serial.println("already centered");
+    if(VERBOSE_DEBUG) Serial.println("already centered");
     return;
   }
 
@@ -411,7 +449,7 @@ void centerFrontBack(){
     offset = frontGap - TARGET_GAP_MM;
 
     if(abs(offset) <= CENTER_TOL_MM){
-      Serial.println("centered");
+      if(VERBOSE_DEBUG) Serial.println("centered");
       break;
     }
     // If the live offset flips sign vs. our initial decision >> overshot, stop rather than reversing (avoids oscillation).
@@ -449,10 +487,12 @@ int center(){
 }
 
 
-int obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
-// return distance to wall at front
+MoveResult obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
+// returns how the detour ended: MOVE_OK once the robot has driven on into the next tile
   Serial.println("obstacle avoidance");
-  int _ = -1;
+  int _ = -1; // front distance when the detour started
+  int wiggles = 0;
+  const int MAX_WIGGLES = 2;
   while(true){
     // Single authoritative pause guard: gates every step boundary and transition
     // burst, not just the innermost drive loops. Reset steps so a resume after the
@@ -460,7 +500,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
     if(Pausemaze == true){
       drivetrain.fullstop();
       steps = TURN;
-      return -2;
+      return MOVE_PAUSED;
     }
     switch (steps){
       case TURN:{
@@ -474,7 +514,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
           }
           
@@ -490,7 +530,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
             drivetrain.drive(255,255,255,255);
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
           }
           
@@ -511,14 +551,14 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
             a=measure(2); b = measure(3);
             if(a<=30) break;
-            Serial.println("paralleling step");
+            if(VERBOSE_DEBUG) Serial.println("paralleling step");
             double increment = pid.getPID(a-b); // signed error: positive turns one way, negative the other
             drivetrain.drive(constrain(100+increment,50,170),constrain(100+increment,50,170),constrain(100-increment,50,170),constrain(100-increment,50,170));
-            Serial.println(a-b);
+            if(VERBOSE_DEBUG) Serial.println(a-b);
             
             
             if(abs(b-a)<=15){
@@ -535,7 +575,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(true){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
             int a = measure(6); int b = measure(5);
             if(a<=30) break;
@@ -552,7 +592,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           
         }
         Serial.println("too close, backing up");
-        Serial.println(measure(2));
+        if(VERBOSE_DEBUG) Serial.println(measure(2));
         steps = BACKTRACK; // put switch step in front of end( always meet it)
         break;
         end:
@@ -567,7 +607,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(6)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
             drivetrain.backward(120);
           }
@@ -576,15 +616,17 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
           while(measure(2)<=40&&myTime.getTime()<800000){
             if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
             drivetrain.backward(120);
           }
         }
         drivetrain.fullstop();
         delay(200);
-        Serial.println("sensor 2, now reading");
-        Serial.println(measure(2));
+        if(VERBOSE_DEBUG){
+          Serial.println("sensor 2, now reading");
+          Serial.println(measure(2));
+        }
         steps = PARALLEL;
         break;
       }
@@ -592,12 +634,19 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
       case FWD:{
         
         if(measure(6)<=35&&measure(2)<=35){
+          // Squeezed between the obstacle and a wall: wiggle straight and retry, but give
+          // up after MAX_WIGGLES so a stuck robot reports BLOCKED instead of looping.
+          if(++wiggles > MAX_WIGGLES){
+            Serial.println("[MOVE] obstacle detour stuck, giving up");
+            steps = TURN;
+            return MOVE_BLOCKED;
+          }
           steps = WIGGLE;
-          return -2;
+          break;
         }
         
         Serial.println("fwd step");
-        parallel();
+        parallel(currentDir);
         drivetrain.reset_encoderCount(true,true,true);
         delay(200);
         
@@ -608,9 +657,10 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         int frontNow = measure(1);
         int travelled = (_ != -1 && frontNow != -1) ? (_ - frontNow) : 0;
         int remaining = constrain(TILE_MM - travelled, 0, TILE_MM);
-        fwd(remaining);
+        // Reset before driving on, so an obstacle met during this drive starts a fresh
+        // detour instead of re-entering this step (which recursed without moving).
         steps = TURN;
-        return _;
+        return fwd(remaining);
       }
       case WIGGLE:{
         PID pid(8,0,0.1);
@@ -620,7 +670,7 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         while(abs(measure(2)-measure(6))>=15&&myTime.getTime()<1000000){
           if(Pausemaze == true){
               drivetrain.fullstop();
-              return -2;
+              return MOVE_PAUSED;
             }
           double diff = pid.getPID(measure(2)-measure(6));
           drivetrain.drive(70+diff,70+diff,70-diff,70-diff);

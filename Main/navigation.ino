@@ -66,6 +66,7 @@ void initializeMap() {
         mapGrid[x][y].setWall(d, false);
         mapGrid[x][y].setEdge(d, false);
         mapGrid[x][y].setObstacle(d, false);
+        mapGrid[x][y].setBlocked(d, false);
       }
       mapGrid[x][y].setType(BLANK);
     }
@@ -89,7 +90,7 @@ void updateFullyExploredAt(int x, int y) {
   bool allDone = true;
   t.setVisited(true);
   for (int d = 0; d < 4; d++) {
-    if (t.getWall(d) == false) {     // open
+    if (t.getWall(d) == false && t.getBlocked(d) == false) {     // open
       if (t.getEdge(d) == false) {   // not traveled yet
         allDone = false;
         break;
@@ -104,10 +105,15 @@ void readWallsRel(bool &wallF, bool &wallR, bool &wallB, bool &wallL) { // refer
   wallR = (detectWall(1)==0);
   wallB = (detectWall(2)==0);
   wallL = (detectWall(3)==0);
-  Serial.println(wallF);
-  Serial.println(wallR);
-  Serial.println(wallB);
-  Serial.println(wallL);
+  // one tagged line, relative to the robot: 1 = wall at the (F)ront, (R)ight, (B)ack, (L)eft
+  Serial.print("[WALLS] F=");
+  Serial.print(wallF ? 1 : 0);
+  Serial.print(" R=");
+  Serial.print(wallR ? 1 : 0);
+  Serial.print(" B=");
+  Serial.print(wallB ? 1 : 0);
+  Serial.print(" L=");
+  Serial.println(wallL ? 1 : 0);
 }
 //get the wall from L,R(local) into N W(global)
 // absF is the absolute heading the the robot front is heading.
@@ -161,7 +167,7 @@ Direction pickNextDirection() {
   // Plan directly in absolute map directions.
   const Direction priority[3] = {absF,absR, absL};
 
-  auto open  = [&](Direction d){ return t.getWall(d) == false; };
+  auto open  = [&](Direction d){ return t.getWall(d) == false && t.getBlocked(d) == false; }; // blocked: a move that way stopped short
   auto untr  = [&](Direction d){ return t.getEdge(d) == false; };
   auto isBlueTile = [&](int nx, int ny){
     return mapGrid[nx][ny].getType() == BLUE;
@@ -217,6 +223,21 @@ Direction pickNextDirection() {
   return absB;
 }
 
+// One tagged line per planning decision: where the robot thinks it is, which way it faces
+// and which way it will move next (directions: 0=N, 1=E, 2=S, 3=W).
+void logPlan(Direction next){
+  Serial.print("[PLAN] x=");
+  Serial.print(x_pos);
+  Serial.print(" y=");
+  Serial.print(y_pos);
+  Serial.print(" floor=");
+  Serial.print(currentFloor);
+  Serial.print(" facing=");
+  Serial.print((int)currentDir);
+  Serial.print(" next=");
+  Serial.println((int)next);
+}
+
 int turnNeededDeg(Direction direction) {
   // Convert an absolute direction enum to an absolute heading angle.
   if (direction == 0) return 0;
@@ -241,6 +262,7 @@ void initTile(int x, int y, Grid& map) { //needs update (probably unneeded, smal
         map[x][y].setWall(d, false);
         map[x][y].setEdge(d, false);
         map[x][y].setObstacle(d, false);
+        map[x][y].setBlocked(d, false);
     }
     map[x][y].setType(BLANK);
 }
@@ -465,6 +487,8 @@ std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,
 
                 bool passable = !(*map[z])[x][y].getWall((Direction)i) &&
                                 !(*map[nz])[nx][ny].getWall(opposite((Direction)i)) &&
+                                !(*map[z])[x][y].getBlocked((Direction)i) &&
+                                !(*map[nz])[nx][ny].getBlocked(opposite((Direction)i)) &&
                                 (*map[nz])[nx][ny].getDiscovered() &&
                                 (*map[nz])[nx][ny].getType() != BLACK;
                 if (!allowBlue) {

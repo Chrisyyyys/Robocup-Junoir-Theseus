@@ -5,7 +5,9 @@ void init_drive(){
   myGyro.init_Gyro();
 }
 
-void fwd(double dist){ // in mm
+// Drives one move forward. Returns what actually happened: only MOVE_OK means the robot is
+// now in the next tile, so the caller must not advance the map position on anything else.
+MoveResult fwd(double dist){ // in mm
   double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
@@ -18,24 +20,28 @@ void fwd(double dist){ // in mm
   PID center_PID(2,0,0.5);
   PID gyroPID(1,0.001,0.03);
   PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
-  Serial.println("forwarding");
+  MoveResult result = MOVE_OK;
+  bool detoured = false; // an obstacle detour replaced the normal drive
+  if(VERBOSE_DEBUG) Serial.println("forwarding");
+  drivetrain.reset_encoderCount(true,true,true); // count this move from zero (the back-offs reverse to 0)
   // allow the camera RTOS thread to flag victims for this move
   fwdActive = true;
   isVictim = false;
   victimPending = false;
-  moveInterrupted = false; // becomes true only if a pause aborts this move
   int init_pitch = myGyro.modulus((int)myGyro.pitch_heading());
   int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
-  Serial.println("init_yaw");
-  Serial.println(init_yaw);
-  // [DIAG] round-1 sideswipe instrumentation: show whether init_yaw matches actual heading
-  double _entry_hdg = myGyro.heading();
-  Serial.print("[FWD] entry hdg=");
-  Serial.print(_entry_hdg, 1);
-  Serial.print(" init_yaw=");
-  Serial.print(init_yaw);
-  Serial.print(" offset=");
-  Serial.println(_entry_hdg - init_yaw, 1);
+  if(VERBOSE_DEBUG){
+    Serial.println("init_yaw");
+    Serial.println(init_yaw);
+    // [DIAG] round-1 sideswipe instrumentation: show whether init_yaw matches actual heading
+    double _entry_hdg = myGyro.heading();
+    Serial.print("[FWD] entry hdg=");
+    Serial.print(_entry_hdg, 1);
+    Serial.print(" init_yaw=");
+    Serial.print(init_yaw);
+    Serial.print(" offset=");
+    Serial.println(_entry_hdg - init_yaw, 1);
+  }
   const char* fwdExit = "normal";
   int _fwd_tick = 0;
   int front_left_current=measure(7); int front_right_current=measure(1);
@@ -47,11 +53,10 @@ void fwd(double dist){ // in mm
   // outside loop
     if(front_left<=OBSTACLE_DIST&&front_left!=-1&&front_right>=MIN_DIST&&front_right!=-1){ // trigger obstacleavoidance
       Serial.println("obstacle left");
-      int prevdist = obstacleavoidance(1);
+      result = obstacleavoidance(1);
       drivetrain.fullstop();
       delay(50);
-      if(prevdist != -2) obstacle = true;
-      else moveInterrupted = true; // avoidance aborted by pause -> tile not completed
+      if(result == MOVE_OK) obstacle = true; // only a finished detour counts as a move
       /*
       if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
         int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM); // don't "overmove"
@@ -67,12 +72,12 @@ void fwd(double dist){ // in mm
       }
       drivetrain.fullstop();
       */
-      Serial.println("[FWD] exit=obstacle-left");
-      return;
+      fwdExit = "obstacle-left";
+      detoured = true;
     }
     else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&front_left>=OBSTACLE_DIST&&front_left!=-1){
       Serial.println("obstacle right");
-      int prevdist = obstacleavoidance(0);
+      result = obstacleavoidance(0);
       drivetrain.fullstop();
       delay(50);
       /*
@@ -91,17 +96,18 @@ void fwd(double dist){ // in mm
       
       drivetrain.fullstop();
       */
-      if(prevdist != -2) obstacle = true;
-      else moveInterrupted = true; // avoidance aborted by pause -> tile not completed
-      Serial.println("[FWD] exit=obstacle-right");
-      return;
+      if(result == MOVE_OK) obstacle = true; // only a finished detour counts as a move
+      fwdExit = "obstacle-right";
+      detoured = true;
     }
     
-  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses)&&black!=true){
-    Serial.print("distance travelled: ");
-    Serial.println((((double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3)/5)/195*wheel_diameter*M_PI);
+  while(!detoured&&(climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses)&&black!=true){
+    if(VERBOSE_DEBUG){
+      Serial.print("distance travelled: ");
+      Serial.println((((double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3)/5)/195*wheel_diameter*M_PI);
+    }
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
-    if(Pausemaze==true) {drivetrain.fullstop(); moveInterrupted = true; break;}
+    if(Pausemaze==true) {drivetrain.fullstop(); result = MOVE_PAUSED; break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
     
     if(victimPending){
@@ -122,8 +128,10 @@ void fwd(double dist){ // in mm
     // color: detect black (stop + back off) tiles ahead. Blue is read only
     // after the move completes (in EXECUTE_MOVE), not mid-motion here.
     int color = read_color(); // also marks silver checkpoints internally
-    Serial.println("color");
-    Serial.println(color);
+    if(VERBOSE_DEBUG){
+      Serial.println("color");
+      Serial.println(color);
+    }
     if(color == -1){ // black tile ahead -> stop, mark next tile, back off
       drivetrain.fullstop();
       delay(100);
@@ -131,11 +139,10 @@ void fwd(double dist){ // in mm
       int nx = x_pos; int ny = y_pos;
       stepForward(currentDir,nx,ny);
       mapGrid[nx][ny].setType(BLACK);
-      blacktoggle = true;
-      while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
-        drivetrain.backward(200);
-      }
+      backOffToMoveStart();
+      result = MOVE_BLACK;
       black = true;
+      break; // skip the rest of this pass, which would drive forward again
     }
     // PID centering
 
@@ -148,7 +155,9 @@ void fwd(double dist){ // in mm
       // is closer to the left wall, which correctly steers it back toward center.
     // [DIAG] capture the error fed to PID so it can be logged below
     double _diag_pid_err = center();
-    adjustment = center_PID.getPID(_diag_pid_err);
+    // Limit how hard the wall follower may steer: unlimited, 30 mm off-centre already gave
+    // one side PWM 150 and the other 20 (a ~30 deg/s swerve). Tune on the robot.
+    adjustment = constrain(center_PID.getPID(_diag_pid_err), -40, 40);
     /*
     double yaw = myGyro.heading()-init_yaw;
     if(yaw>180) yaw = yaw-360;
@@ -182,7 +191,6 @@ void fwd(double dist){ // in mm
     
     if((front_left_current<=50&&front_left_current!=-1)&&(front_right_current<=50&&front_right_current!=-1)){
       Serial.println("stopping");
-      // if the robot doesn't make it halfway across the tile, fwd failed.
       Serial.print("[FWD] emergency-stop fl=");
       Serial.print(front_left_current);
       Serial.print(" fr=");
@@ -190,6 +198,16 @@ void fwd(double dist){ // in mm
       fwdExit = "emergency-front";
       drivetrain.fullstop();
       delay(50);
+      // If the robot doesn't make it halfway across the tile, fwd failed: it is still in the
+      // tile it started from (usually a wall or obstacle the wall check missed), so back off
+      // to where the move started. Past halfway it is in the next tile and the far wall is
+      // just close, so the move counts. A move that climbed a ramp has left its tile either
+      // way (and the encoders were rewound to their pre-ramp values), so it always counts.
+      if(!climbed && (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3 < pulses/2){
+        fwdExit = "blocked";
+        backOffToMoveStart();
+        result = MOVE_BLOCKED;
+      }
       break;
     }
     
@@ -201,7 +219,7 @@ void fwd(double dist){ // in mm
       int _encoderCountD = drivetrain.encoderCountD;
       climbtoggle = true; // prevent outer loop from exiting on encoder count
       climbed = true;
-      Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
+      if(VERBOSE_DEBUG) Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
       if(myGyro.modulus(myGyro.pitch_heading())-init_pitch>20) upwards = true; // distinguish between moving up and moving down.
       //drivetrain.reset_encoderCount(true,true,true);
       while(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch) > 20){
@@ -212,9 +230,11 @@ void fwd(double dist){ // in mm
     
         double adjustment = climbPID.getPID(yaw);
         
-        Serial.println("climbing");
-        //Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
-        Serial.println(adjustment);
+        if(VERBOSE_DEBUG){
+          Serial.println("climbing");
+          //Serial.println(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch));
+          Serial.println(adjustment);
+        }
         // center during climbing
         if(upwards == true) drivetrain.drive(180-adjustment,180-adjustment,180+adjustment,180+adjustment);
         if(upwards == false) drivetrain.drive(120-adjustment,120-adjustment,120+adjustment,120+adjustment);
@@ -239,7 +259,7 @@ void fwd(double dist){ // in mm
     // [DIAG] right-wall follower trace. front=sensor2, back=sensor3.
     // Watch: are m2/m3 valid (not -1) and <= SIDE_WALL_MAX_MM? is err non-zero when off-center?
     _fwd_tick++;
-    if((_fwd_tick % 5) == 0){
+    if(VERBOSE_DEBUG && (_fwd_tick % 5) == 0){
       int _diag_front = measure(2);
       int _diag_back  = measure(3);
       Serial.print("[CENTER] m2(front)=");
@@ -255,9 +275,11 @@ void fwd(double dist){ // in mm
     drivetrain.drive(constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120-adjustment),20,150),constrain(Scale*(120+adjustment),20,150),constrain(Scale*(120+adjustment),20,150));
     //drivetrain.drive(150+adjustment,(150+adjustment)*1.25,(150-adjustment)*1.25,150+adjustment);
   }
-  Serial.print("[FWD] exit=");
-  Serial.println(fwdExit);
-  Serial.println("stop- end of fwd");
+  if(VERBOSE_DEBUG){
+    Serial.print("[FWD] exit=");
+    Serial.println(fwdExit);
+    Serial.println("stop- end of fwd");
+  }
   // sometimes it barely makes it over the slope
   if(climbed == true){
     for(int i = 0; i<cnt;i++){
@@ -286,89 +308,106 @@ void fwd(double dist){ // in mm
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true,true);
   victimtoggle = false;
+  Serial.print("[MOVE] result=");
+  Serial.print(moveResultName(result));
+  Serial.print(" exit=");
+  Serial.println(fwdExit);
+  return result;
+}
+
+// Reverses until the wheels are back where the current move started (fwd() zeroes the
+// encoders when it starts), so an abandoned move leaves the robot in the tile the map
+// says it is in.
+void backOffToMoveStart(){
+  unsigned long startMs = millis();
+  while(drivetrain.encoderCountA >= 0 && drivetrain.encoderCountB >= 0 && drivetrain.encoderCountD >= 0){
+    if(Pausemaze == true) break;
+    if(millis() - startMs > 3000){ Serial.println("[MOVE] back-off timeout"); break; }
+    drivetrain.backward(200);
+  }
+  drivetrain.fullstop();
+}
+
+const char* moveResultName(MoveResult r){
+  if(r == MOVE_OK) return "OK";
+  if(r == MOVE_BLOCKED) return "BLOCKED";
+  if(r == MOVE_BLACK) return "BLACK";
+  return "PAUSED";
 }
 // absolute turning
-
-void absoluteturn(double angle){
-  // create PID instance.
-  PID myPID(4.5,0,0.3);
-  double MOTORSPEED = 0;
-  Tile &t = mapGrid[x_pos][y_pos]; // tile object to update
+// Turns in place to an absolute maze-frame heading (0 = NORTH, clockwise positive).
+// The direction is re-chosen every tick from the signed error, so an overshoot is turned
+// back instead of pushed further. Returns true once the heading has stayed within
+// TURN_TOL_DEG for TURN_SETTLE_MS; false if a pause or the safety timeout ended the turn.
+bool absoluteturn(double angle){
+  const double TURN_TOL_DEG = 3.0;
+  const unsigned long TURN_SETTLE_MS = 60; // must stay inside the tolerance this long (catches coasting back out)
+  const double TURN_KP = 4.5;              // PWM per degree of error (the old PID's gain)
+  const int TURN_MIN_PWM = 45;             // lowest PWM that still rotates the robot on the field floor: bench-tune
+  const int TURN_MAX_PWM = 150;
   // allow the camera RTOS thread to flag victims during the turn
   turnActive = true;
   isVictim = false;
   victimPending = false;
-  // Shortest signed-path error, wrapped into [-180, 180]:
-  //   sign of diff  = direction to turn (+CW/turnright, -CCW/turnleft)
-  //   |diff|        = shortest angular distance to target
-  // Replaces the old fasterway + inverse() pair, which had a discontinuity at
-  // 0/360 that caused left-turns through NORTH to go the 270-degree long way.
-  double diff = angle - myGyro.heading();
-  while(diff > 180.0)  diff -= 360.0;
-  while(diff < -180.0) diff += 360.0;
-  bool turn_right = (diff > 0);
-  double init_abs = fabs(diff);
-  const double TURN_TOL_DEG = 3.0;
-  Serial.print("[TURN] target=");
-  Serial.print(angle);
-  Serial.print(" hdg=");
-  Serial.print(myGyro.heading(), 1);
-  Serial.print(" init_diff=");
-  Serial.println(init_abs, 1);
-   // create timer to cut of turning
-  timer myTimer;
-
-  if(turn_right){
-    while(true){
-      if(Pausemaze==true) {drivetrain.fullstop(); break;}
-      if(victimPending){ // service camera victim mid-turn
-        drivetrain.fullstop();
-        myPID.pausePID(1); myTimer.pause(1);
-        while(victimPending==true){
-          rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
-        }
-        myPID.pausePID(2); myTimer.pause(2);
-      }
-      // Recompute the wrapped error every tick.
-      double d = angle - myGyro.heading();
-      while(d > 180.0)  d -= 360.0;
-      while(d < -180.0) d += 360.0;
-      
-      if(myTimer.getTime() > 2.0 * init_abs / 90.0 * 1000000.0) break; // turning limit
-
-      MOTORSPEED = myPID.getPID(fabs(d));
-
-      drivetrain.turnright(constrain(MOTORSPEED,20,150));
-    }
+  // Shortest signed error, wrapped into [-180, 180): the sign is the direction to turn
+  // (+ = clockwise/turnright, - = turnleft), the size is the angle still to go.
+  double d = wrap180(angle - myGyro.heading());
+  // Safety net only: a normal turn ends as soon as it settles.
+  const unsigned long budgetMs = 1000 + (unsigned long)(20.0 * fabs(d));
+  const double startErr = d;
+  if(VERBOSE_DEBUG){
+    Serial.print("[TURN] target=");
+    Serial.print(angle);
+    Serial.print(" start_err=");
+    Serial.println(d, 1);
   }
 
-  else if(!turn_right) {
-    while(true){
-      if(Pausemaze==true) {drivetrain.fullstop(); break;}
-      if(victimPending){ // service camera victim mid-turn
-        drivetrain.fullstop();
-        myPID.pausePID(1); myTimer.pause(1);
-        while(victimPending==true){
-          rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
-        }
-        myPID.pausePID(2); myTimer.pause(2);
+  unsigned long startMs = millis();
+  unsigned long pausedMs = 0; // time spent servicing victims, not counted against the budget
+  bool inTol = false;
+  unsigned long inTolSinceMs = 0;
+  bool reached = false;
+  while(true){
+    if(Pausemaze==true) break;
+    if(victimPending){ // service camera victim mid-turn
+      drivetrain.fullstop();
+      unsigned long pauseStartMs = millis();
+      while(victimPending==true){
+        rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
       }
-      double d = angle - myGyro.heading();
-      while(d > 180.0)  d -= 360.0;
-      while(d < -180.0) d += 360.0;
-      
-      if(myTimer.getTime() > 2.0 * init_abs / 90.0 * 1000000.0) break;
-
-      MOTORSPEED = myPID.getPID(fabs(d));
-
-      drivetrain.turnleft(constrain(MOTORSPEED,20,150));
+      pausedMs += millis() - pauseStartMs;
+      inTol = false;
     }
+    d = wrap180(angle - myGyro.heading());
+    unsigned long now = millis();
+    if(fabs(d) <= TURN_TOL_DEG){
+      drivetrain.fullstop();
+      if(!inTol){ inTol = true; inTolSinceMs = now; }
+      if(now - inTolSinceMs >= TURN_SETTLE_MS){ reached = true; break; }
+    }
+    else{
+      inTol = false;
+      int pwm = constrain((int)(TURN_KP * fabs(d)), TURN_MIN_PWM, TURN_MAX_PWM);
+      if(d > 0) drivetrain.turnright(pwm);
+      else drivetrain.turnleft(pwm);
+    }
+    if(now - startMs - pausedMs > budgetMs) break; // turning limit
   }
   victimtoggle = false;
-  Serial.println("finished turning");
   turnActive = false; // camera thread idles until the next move
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true,true); // reset encoder counters.
+  Serial.print("[TURN] done target=");
+  Serial.print(angle);
+  Serial.print(" start_err=");
+  Serial.print(startErr, 1);
+  Serial.print(" err=");
+  Serial.print(wrap180(angle - myGyro.heading()), 1);
+  Serial.print(" ms=");
+  Serial.print(millis() - startMs);
+  Serial.print(" ok=");
+  Serial.println(reached ? 1 : 0);
+  return reached;
 }
 
 // Corrects left-right position within the tile by turning the robot a small amount before the next forward drive
