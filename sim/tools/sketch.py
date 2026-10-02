@@ -142,6 +142,58 @@ def find_function_definitions(clean):
     return results
 
 
+def _split_top(text, sep):
+    parts, depth, cur = [], 0, ""
+    for ch in text:
+        if ch in "([{<":
+            depth += 1
+        elif ch in ")]}>":
+            depth -= 1
+        if ch == sep and depth == 0:
+            parts.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    parts.append(cur)
+    return parts
+
+
+def top_level_names(clean):
+    """Names declared at file level (globals, objects, prototypes) in cleaned source."""
+    names = set()
+    depth, start = 0, 0
+    for i, c in enumerate(clean):
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                start = i + 1
+        elif c == ";" and depth == 0:
+            stmt = " ".join(clean[start:i].split())
+            start = i + 1
+            if not stmt or stmt.split()[0] in ("typedef", "using", "enum", "struct", "class", "template", "return"):
+                continue
+            for k, part in enumerate(_split_top(stmt, ",")):
+                decl = part.split("=")[0].strip()
+                decl = re.sub(r"\[.*?\]", "", decl)
+                if "(" in decl:
+                    m = re.match(r"(?:.*\W)?([A-Za-z_]\w*)\s*\(", decl)
+                    if m:
+                        names.add(m.group(1))
+                    continue
+                m = re.search(r"([A-Za-z_]\w*)\s*$", decl)
+                if m:
+                    names.add(m.group(1))
+    return names
+
+
+# globals the probe reads only if the sketch has them
+PROBE_OPTIONAL = ("blacktoggle", "bluetoggle", "obstacle", "victimtoggle", "steps", "medkits", "x_checkpoint",
+                  "y_checkpoint", "floor_checkpoint", "currentFloor", "iterator", "fwdActive", "turnActive",
+                  "victimPending", "Pausemaze", "drivetrain", "m1", "m2", "m3")
+
+
 def find_enum(clean, src, name):
     m = re.search(r"\benum\s+" + re.escape(name) + r"\s*\{", clean)
     if not m:
@@ -191,12 +243,14 @@ def merge_sketch(sketch_dir, out_cpp, probe_path, state_names_header, display_ro
         chunks.append((path, text))
 
     prototypes = []
+    declared = set()
     moves_limit = -1  # the "iterator >= N" limit that sends the robot home
     void_fns = []  # functions with signature `void f()`, used to name RTOS threads
     first_def = None  # (chunk index, line number)
     enums = {}
     for ci, (path, text) in enumerate(chunks):
         clean = blank_comments_strings_preproc(text)
+        declared |= top_level_names(clean)
         for start, sig, has_defaults in find_function_definitions(clean):
             if first_def is None:
                 first_def = (ci, text.count("\n", 0, start))
@@ -256,6 +310,8 @@ def merge_sketch(sketch_dir, out_cpp, probe_path, state_names_header, display_ro
             ", ".join('"%s"' % n for n in void_fns) or '"?"'))
         fh.write("static const int SIM_VOID_FN_COUNT = %d;\n" % len(void_fns))
         fh.write("#define SIM_CODE_MOVES_LIMIT %d\n" % moves_limit)
+        for name in PROBE_OPTIONAL:
+            fh.write("#define SIM_HAVE_%s %d\n" % (name, 1 if name in declared else 0))
     return {"ino": files, "prototypes": prototypes, "enums": enums, "void_fns": void_fns}
 
 

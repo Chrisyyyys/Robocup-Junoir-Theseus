@@ -632,6 +632,13 @@ function drawBelief() {
       if (diff && !inMaze && (visited || disc)) {
         ctx.strokeStyle = colors.bad; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.strokeRect(X + 2, Y + 2, S - 4, S - 4); ctx.setLineDash([]); mistakes++;
       }
+      for (let d = 0; d < 4; d++) {  // edges the robot marked blocked (a move that way stopped short)
+        if (!(bits & (1 << (20 + d)))) continue;
+        const side = (d + sd) % 4, L = X, R = X + S, Tp = Y, B = Y + S;
+        const seg = side === 0 ? [L, Tp, R, Tp] : side === 2 ? [L, B, R, B] : side === 1 ? [R, Tp, R, B] : [L, Tp, L, B];
+        ctx.strokeStyle = colors.warn; ctx.lineWidth = 5; ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(seg[0], seg[1]); ctx.lineTo(seg[2], seg[3]); ctx.stroke(); ctx.setLineDash([]);
+      }
       if (!visited) continue;
       for (let d = 0; d < 4; d++) {
         const robotWall = !!(bits & (1 << d));
@@ -875,7 +882,7 @@ function buildLegends() {
   $("legendField").innerHTML = [sw("var(--accent)", "robot"), sw("var(--ray)", "distance beams"), sw("var(--ghost)", "where it thinks it is"),
     sw("var(--hole)", "black (hole)"), sw("var(--swamp)", "blue"), sw("var(--silver)", "checkpoint"), sw("#d8342a", "victim")].join("");
   $("legendMap").innerHTML = [sw("var(--wall)", "wall it recorded"), sw("var(--bad)", "wrong wall / missed wall (dashed)"),
-    sw("var(--ghost)", "tiles it visited")].join("");
+    sw("var(--ghost)", "tiles it visited"), sw("var(--warn)", "blocked edge")].join("");
   const used = [...new Set(T.frames.map((f) => f[F.state]))];
   $("stateLegend").innerHTML = used.map((s) => sw(stateColor(T.states[s]), T.states[s].replace(/_/g, " ").toLowerCase())).join("");
 }

@@ -106,6 +106,7 @@ std::string g_hang_reason;
 double g_setup_done = -1;
 
 int g_iter_seen = 0, g_moves_counted = 0;
+bool g_start_pending = false;  // flip the logic switch PAUSE -> RUN once setup() is done
 
 std::string jesc(const std::string& s) {
   std::string o;
@@ -446,8 +447,18 @@ void rec_init(const std::string& trace_path, const std::string& result_path) {
   g_progress_x = robot.x;
   g_progress_y = robot.y;
   g_progress_th = robot.th;
-  for (int i = 0; i < sim_probe_state_count(); i++)
+  bool has_wait_start = false;
+  for (int i = 0; i < sim_probe_state_count(); i++) {
     if (std::string(sim_probe_state_name(i)) == "RETURN") g_state_return = i;
+    if (std::string(sim_probe_state_name(i)) == "WAIT_START") has_wait_start = true;
+  }
+  // Code that waits for the logic switch at the start (WAIT_START) needs someone to flip it:
+  // the switch is at PAUSE when the robot is switched on and goes to RUN after setup().
+  std::string start_mode = cfg.str("sim.start_switch", "auto");
+  if (start_mode == "on" || (start_mode == "auto" && has_wait_start)) {
+    g_start_pending = true;
+    pin_set_input(g_switch_pin, 1);
+  }
   for (const auto& w : world.warnings) rec_warning("maze:" + w, "maze file: " + w);
 }
 
@@ -482,6 +493,13 @@ void rec_on_tick(int64_t t_us) {
   g_last_contact = robot.contact;
 
   if (g_lop_state) lop_update();
+  if (g_start_pending && g_setup_done >= 0 && t >= g_setup_done + cfg.num("sim.start_switch_delay_s", 0.5)) {
+    g_start_pending = false;
+    pin_set_input(g_switch_pin, 0);
+    event("start", "logic switch flipped from PAUSE to RUN to start the run");
+    g_last_motor = t;
+    g_progress_t = t;
+  }
   if (t_us >= g_next_lcd_poll) {
     g_next_lcd_poll = t_us + 10000;
     poll_lcd();

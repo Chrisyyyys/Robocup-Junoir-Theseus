@@ -360,14 +360,17 @@ def lost_cause(trace_path):
         return None
     tl = lost[0]["t"]
     serial = t.get("serial", [])
-    starts = [s[0] for s in serial if s[0] < tl and s[1].startswith("[FWD] entry")]
+    starts = [s[0] for s in serial if s[0] < tl and (s[1].startswith("[FWD] entry") or s[1].startswith("[PLAN]"))]
     ts = starts[-1] if starts else 0
     window = [s[1] for s in serial if ts <= s[0] <= tl]
     text = "\n".join(window)
     lops = [e for e in t["events"] if e["k"] == "lop" and tl - 12 <= e["t"] <= tl]
     if lops:
         return "after a lack-of-progress restart"
-    if "exit=emergency-front" in text:
+    if "[MOVE] result=" in text:  # newer robot code reports how each move ended
+        if "[MOVE] result=OK exit=emergency-front" in text:
+            return "move ended by the front emergency stop past half a tile, counted as a tile"
+    elif "exit=emergency-front" in text:
         return "move stopped early by the front emergency stop, still counted as a tile"
     if "exit=obstacle" in text or "obstacle avoidance" in text:
         return "obstacle avoidance"

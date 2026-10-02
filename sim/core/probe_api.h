@@ -21,6 +21,7 @@ enum {
   SIMT_ELEVATE = 12,
   SIMT_DESCEND = 13,
   SIMT_OBST0 = 16,     // bits 16..19 obstacle per direction
+  SIMT_BLOCK0 = 20,    // bits 20..23 blocked edge per direction (newer robot code)
   SIMT_TYPE0 = 24      // bits 24..25 tile type (0 blank, 1 blue, 2 checkpoint, 3 black)
 };
 
