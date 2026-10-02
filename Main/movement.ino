@@ -155,7 +155,9 @@ MoveResult fwd(double dist){ // in mm
       // is closer to the left wall, which correctly steers it back toward center.
     // [DIAG] capture the error fed to PID so it can be logged below
     double _diag_pid_err = center();
-    adjustment = center_PID.getPID(_diag_pid_err);
+    // Limit how hard the wall follower may steer: unlimited, 30 mm off-centre already gave
+    // one side PWM 150 and the other 20 (a ~30 deg/s swerve). Tune on the robot.
+    adjustment = constrain(center_PID.getPID(_diag_pid_err), -40, 40);
     /*
     double yaw = myGyro.heading()-init_yaw;
     if(yaw>180) yaw = yaw-360;

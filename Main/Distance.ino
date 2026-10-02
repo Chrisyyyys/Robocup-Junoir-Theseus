@@ -227,7 +227,10 @@ int detectWall(int dir){
   if(dir == 0){ // check if there is a wall at north
     int a = measure(1);
     int b = measure(7);
-    if((a<MIN_DIST&&a!=-1&&a!=8191)&&(b<MIN_DIST&&b!=-1&&b!=8191)){
+    // Front: up to FRONT_WALL_MAX_MM. Each move stops a little short, so after a few tiles
+    // without a front wall to centre on, this tile's wall can read 130+ mm and was missed
+    // with MIN_DIST (120).
+    if((a<FRONT_WALL_MAX_MM&&a!=-1&&a!=8191)&&(b<FRONT_WALL_MAX_MM&&b!=-1&&b!=8191)){
       return 0; // there is a wall.
     }
     else{

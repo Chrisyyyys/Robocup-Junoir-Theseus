@@ -24,6 +24,7 @@
 #include "motors.h"
 // movement constants
 #define MIN_DIST 120         // mm (tune this)
+#define FRONT_WALL_MAX_MM 200 // a front wall in the current tile is never further than this; the next tile's is >= 360 mm away
 #define OBSTACLE_DIST 90
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define ROBOT_LENGTH_MM 170                                      // mm, robot front-to-back length
