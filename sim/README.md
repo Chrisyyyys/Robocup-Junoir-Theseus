@@ -19,8 +19,8 @@ What you get from a run:
 - batch reports over many random RCJ-style mazes, so you can see how often something goes wrong
   and compare before/after a code change
 
-**[FINDINGS.md](FINDINGS.md)** lists what the simulator found in the current robot code, with a patch
-to try ([examples/suggested-fixes.patch](examples/suggested-fixes.patch)).
+**[FINDINGS.md](FINDINGS.md)** lists what the simulator found in the robot code, what is fixed on
+`main` since then, what is still open, and before/after numbers.
 
 Results are **only as realistic as the numbers in `sim/config/robot.cfg`**. Several of them are
 guesses (marked `GUESS`). See [Calibrating the simulator](#calibrating-the-simulator).
@@ -75,7 +75,7 @@ Useful combinations:
 python sim/sim.py batch --count 50 --moves-limit off          # how well does it explore and map?
 python sim/sim.py batch --count 50                            # does the return to start work?
 python sim/sim.py batch --count 20 --profile full             # ramps, obstacles, stairs, bumps, debris
-python sim/sim.py run --maze sim/mazes/simple.txt --boot cold # reproduce the start-up freeze
+python sim/sim.py run --maze sim/mazes/simple.txt --boot cold # fresh power-on (finding 1)
 ```
 
 ### New mazes or the same mazes
@@ -95,7 +95,7 @@ and after. You can keep your current code and try the change on a copy:
 
 ```sh
 mkdir -p /tmp/fixed && cp -r Main /tmp/fixed/        # keep the folder name Main (like Main.ino)
-patch -d /tmp/fixed -p1 < sim/examples/suggested-fixes.patch   # or edit /tmp/fixed/Main by hand
+# now edit the code in /tmp/fixed/Main
 python sim/sim.py batch --count 40 --moves-limit off --seed-start 1                          # current code
 python sim/sim.py batch --count 40 --moves-limit off --seed-start 1 --sketch /tmp/fixed/Main # the changed copy
 ```

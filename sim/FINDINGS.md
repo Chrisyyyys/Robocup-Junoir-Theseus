@@ -1,17 +1,20 @@
 # What the simulator found in the robot code
 
 Findings from running the code in `Main/` (as of commit 423e4e6) through the simulator on random
-RCJ-style mazes and on the scenario mazes in `sim/mazes/scenarios/`. Nothing in `Main/` was changed.
-The suggested changes are collected in [`examples/suggested-fixes.patch`](examples/suggested-fixes.patch),
-so you can review them and apply them with `git apply sim/examples/suggested-fixes.patch` if you
-agree.
+RCJ-style mazes and on the scenario mazes in `sim/mazes/scenarios/`. The suggested changes are
+collected in [`examples/suggested-fixes.patch`](examples/suggested-fixes.patch), which applies to
+`Main/` as of that commit.
 
-**Update:** branch `claude/practical-brahmagupta-y7saan` already fixed findings 2, 4 and 9 in its own
-way. The other suggested changes (findings 1, 3, 5, 6 and 10) were added there in commits `7b01ff6`
-(bug fixes) and `5dbae59` (front-wall range and steering limit, to tune on the robot). On the same 40
-exploration mazes that branch went from 32 runs getting lost to 5. Still open: the turn/return
-problems (finding 8 and the return trip ignoring failed turns and moves), ramps (12-13), phantom
-obstacles (11) and the camera byte check (14).
+**Update (2 October 2026):** `main` now includes branch `claude/practical-brahmagupta-y7saan` (merge
+`b1acd52`). That branch fixed findings 2, 4 and 9 in its own way and has the other suggested changes
+(findings 1, 3, 5, 6 and 10) in commits `7b01ff6` (bug fixes) and `5dbae59` (front-wall range and
+steering limit, to tune on the robot). On the same 40 exploration mazes, `main` now gets lost in 5
+runs instead of 39. Still open: the turn/return problems (finding 8 and the return trip ignoring
+failed turns and moves), ramps (12-13), phantom obstacles (11) and the camera byte check (14).
+
+The "See it" commands for findings 1-6, 9 and 10 now only show the problem on the older code. To
+run that, extract it with `mkdir -p /tmp/old && git archive 423e4e6 Main | tar -x -C /tmp/old` and
+add `--sketch /tmp/old/Main` to the command.
 
 **How much to trust this.** The program logic (state machine, map, planner, timing, threads) runs
 exactly as written, so logic findings are solid. Anything about motion depends on the motor and
@@ -23,24 +26,28 @@ the robot. Each finding says which kind it is. Every finding can be reproduced w
 Same mazes, same seeds, same noise, so the only difference is the code. 8-minute runs on `basic`
 mazes (walls, black / blue / silver tiles, victims) unless noted.
 
-| | Original code | With the suggested changes |
-|---|---:|---:|
-| **Exploring** (40 mazes, move limit off): runs that got lost | 39 of 40 | 13 of 40 |
-| runs with no problem at all | 1 | 11 |
-| runs with wrong walls in the map | 39 | 28 |
-| average tiles explored / victims found / estimated score | 71% / 55% / 99 | 79% / 61% / 114 |
-| **Returning home** (40 mazes, the code's 25-move limit): ended on the start tile | 11 of 40 | 20 of 40 |
-| runs that got lost | 35 | 10 |
-| **Full field** (20 mazes with ramps, obstacles, stairs, bumps, debris): runs that got lost | 19 of 20 | 16 of 20 |
-| ended on the start tile | 4 | 9 |
-| runs where `loop()` used far too much stack (finding 2) | 3 | 0 |
+| | Original code (423e4e6) | With the suggested changes | `main` now (b1acd52) |
+|---|---:|---:|---:|
+| **Exploring** (40 mazes, move limit off): runs that got lost | 39 of 40 | 13 of 40 | 5 of 40 |
+| runs with no problem at all | 1 | 11 | 20 |
+| runs with wrong walls in the map | 39 | 28 | 16 |
+| average tiles explored / victims found / estimated score | 71% / 57% / 99 | 79% / 62% / 114 | 77% / 60% / 110 |
+| **Returning home** (40 mazes, the code's 25-move limit): ended on the start tile | 11 of 40 | 20 of 40 | 17 of 40 |
+| runs that got lost | 35 | 10 | 4 |
+| **Full field** (20 mazes with ramps, obstacles, stairs, bumps, debris): runs that got lost | 19 of 20 | 16 of 20 | 13 of 20 |
+| ended on the start tile | 4 | 9 | 3 |
+| runs where `loop()` used far too much stack (finding 2) | 3 | 0 | 0 |
 
 The changes in the patch cover findings 1-6 and 10. What is left is mostly findings 8 (turning next to a
 wall), 12-13 (ramps) and the tuning of the wall follower (6), which need work on the robot itself.
+`main` now gets lost far less often, but it returns home less often than the patch did: its return
+trip carries on after a turn or move fails, and can report that it is home while still a tile away.
 
-Reproduce: `python sim/sim.py batch --count 40 --moves-limit off --seed-start 1`, then the same with
-`--sketch <a copy of Main with the patch applied>`. All the batches here used `--seed-start 1`;
-without it, every batch gets new random mazes.
+Reproduce: `python sim/sim.py batch --count 40 --moves-limit off --seed-start 1` gives the exploring
+rows of the last column; leave out `--moves-limit off` for returning home, and use `--count 20
+--profile full` for the full field. For the first two columns, add `--sketch /tmp/old/Main` (the older
+code, see above), or `--sketch` with a copy of it that has the patch applied. All the batches here used
+`--seed-start 1`; without it, every batch gets new random mazes.
 
 "Lost" means that on arriving at a tile, the robot's belief (`x_pos`, `y_pos`, `currentDir`) did
 not match the tile it was really on.
