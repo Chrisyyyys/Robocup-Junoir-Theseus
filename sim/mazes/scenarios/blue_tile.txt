@@ -1,0 +1,10 @@
+# Scenario: a blue tile in a corridor. Expected: the robot stops 5 s on it and marks it blue.
+name Blue tile in a corridor
++---+
+|   |
++   +
+| B |
++   +
+| S |
++---+
+start_dir N

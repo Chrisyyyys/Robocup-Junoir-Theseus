@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maze Replay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Chakra+Petch:wght@500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: replay workbench. Two maze views side by side (what really happened | what the robot believes),
+   a live readout column, a state-coloured timeline, then serial monitor / events / results tabs. */
+:root {
+  --bg: #eceff3;
+  --panel: #ffffff;
+  --ink: #17202b;
+  --mut: #5b6676;
+  --line: #d3d9e1;
+  --floor: #fbfbf8;
+  --grid: #e4e8ed;
+  --wall: #26303d;
+  --accent: #dd7418;
+  --ray: #0c8f7d;
+  --ghost: #6f42f5;
+  --hole: #101215;
+  --swamp: #3576dd;
+  --silver: #aab4c1;
+  --ok: #1d8548;
+  --bad: #d23f2c;
+  --warn: #b67c00;
+  --st-sense: #0c8f7d;
+  --st-center: #2aa1b8;
+  --st-think: #8a94a3;
+  --st-move: #dd7418;
+  --st-botch: #d23f2c;
+  --st-back: #9b4fd6;
+  --st-pause: #5b6676;
+  --st-return: #3576dd;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --panel: #1a2029; --ink: #e5e9ef; --mut: #98a3b2; --line: #2d3643; --floor: #222a34; --grid: #2c3540;
+    --wall: #cbd4df; --accent: #f5993d; --ray: #2fd2bb; --ghost: #a78bfa; --hole: #050607; --swamp: #5d97f2; --silver: #6f7b8c;
+    --ok: #4cc47f; --bad: #ff6f5c; --warn: #e3ae2f; --st-sense: #2fd2bb; --st-center: #58c4d8; --st-think: #7e8898;
+    --st-move: #f5993d; --st-botch: #ff6f5c; --st-back: #c084fc; --st-pause: #98a3b2; --st-return: #5d97f2; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --panel: #1a2029; --ink: #e5e9ef; --mut: #98a3b2; --line: #2d3643; --floor: #222a34; --grid: #2c3540;
+  --wall: #cbd4df; --accent: #f5993d; --ray: #2fd2bb; --ghost: #a78bfa; --hole: #050607; --swamp: #5d97f2; --silver: #6f7b8c;
+  --ok: #4cc47f; --bad: #ff6f5c; --warn: #e3ae2f; --st-sense: #2fd2bb; --st-center: #58c4d8; --st-think: #7e8898;
+  --st-move: #f5993d; --st-botch: #ff6f5c; --st-back: #c084fc; --st-pause: #98a3b2; --st-return: #5d97f2; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font-body); }
+.app { max-width: 1480px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 40px; display: grid; gap: 12px; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+header h1 { font: 600 22px/1.1 var(--font-display); letter-spacing: .01em; margin: 0; }
+header .maze { color: var(--mut); min-width: 0; }
+header .spacer { flex: 1; }
+button, select, input[type="text"] { font: inherit; color: var(--ink); }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 11px; cursor: pointer; }
+.btn:hover { border-color: var(--mut); }
+.btn:focus-visible, select:focus-visible, input:focus-visible, .ev:focus-visible, .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font: 600 13px/1.6 var(--font-display); letter-spacing: .04em; text-transform: uppercase; border: 1px solid currentColor; }
+.pill.ok { color: var(--ok); } .pill.bad { color: var(--bad); } .pill.warn { color: var(--warn); }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.strip div { background: var(--panel); padding: 8px 12px; min-width: 0; }
+.strip b { display: block; font: 600 20px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.strip span { color: var(--mut); font-size: 13px; }
+.strip .bad b { color: var(--bad); } .strip .ok b { color: var(--ok); }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 280px; gap: 12px; align-items: start; }
+.view { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; min-width: 0; display: grid; gap: 8px; }
+.view h2 { font: 600 14px/1.2 var(--font-display); letter-spacing: .06em; text-transform: uppercase; margin: 0; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.view h2 small { font: 400 13px var(--font-body); letter-spacing: 0; text-transform: none; color: var(--mut); }
+.canvas-wrap { position: relative; width: 100%; }
+canvas.maze { width: 100%; display: block; border-radius: 4px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--mut); font-size: 13px; }
+.toggles label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--mut); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -2px; margin-right: 4px; }
+.readouts { display: grid; gap: 12px; font-size: 14px; }
+.ro-block { display: grid; gap: 4px; }
+.ro-label { font: 600 11px/1.3 var(--font-display); letter-spacing: .09em; text-transform: uppercase; color: var(--mut); }
+.big { font: 600 26px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-variant-numeric: tabular-nums; }
+.kv dt { color: var(--mut); } .kv dd { margin: 0; min-width: 0; }
+.match { font-weight: 700; } .match.ok { color: var(--ok); } .match.bad { color: var(--bad); }
+.flags { display: flex; flex-wrap: wrap; gap: 4px; }
+.flag { font: 12px/1.5 var(--font-mono); padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--mut); }
+.flag.on { color: var(--panel); background: var(--ink); border-color: var(--ink); }
+.bars { display: grid; gap: 3px; font: 12px/1.4 var(--font-mono); font-variant-numeric: tabular-nums; }
+.bar { display: grid; grid-template-columns: 72px 1fr 44px; align-items: center; gap: 6px; }
+.bar .track { position: relative; height: 8px; background: var(--grid); border-radius: 2px; overflow: hidden; }
+.bar .fill { position: absolute; top: 0; bottom: 0; background: var(--ray); }
+.bar.motor .fill { background: var(--accent); }
+.bar .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--mut); }
+.bar .val { text-align: right; }
+.timeline { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls .time { font: 600 18px var(--font-mono); font-variant-numeric: tabular-nums; min-width: 9ch; }
+#ribbon { width: 100%; height: 46px; display: block; cursor: pointer; }
+#scrub { width: 100%; accent-color: var(--accent); margin: 0; }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { border: 0; background: none; padding: 8px 14px; cursor: pointer; color: var(--mut); border-bottom: 2px solid transparent; font: 600 14px var(--font-display); letter-spacing: .05em; text-transform: uppercase; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 var(--r) var(--r); padding: 12px; min-width: 0; }
+.serial { font: 12.5px/1.5 var(--font-mono); height: 340px; overflow: auto; white-space: pre; background: var(--bg); border-radius: 6px; padding: 8px 10px; }
+.serial .ts { color: var(--mut); }
+.serial .cur { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.serial-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; color: var(--mut); font-size: 13px; }
+.serial-bar input { padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); min-width: 0; flex: 1 1 200px; }
+.events { display: grid; gap: 2px; max-height: 360px; overflow: auto; }
+.ev { display: grid; grid-template-columns: 70px 90px 1fr; gap: 10px; padding: 5px 8px; border-radius: 4px; cursor: pointer; text-align: left; border: 0; background: none; color: var(--ink); font: inherit; }
+.ev:hover { background: var(--bg); }
+.ev .t { font: 12.5px var(--font-mono); color: var(--mut); font-variant-numeric: tabular-nums; }
+.ev .k { font: 600 12px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+.ev.past { opacity: .55; }
+.results { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px 28px; }
+.results h3 { font: 600 13px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--mut); margin: 0 0 6px; }
+.results ul { margin: 0; padding-left: 18px; }
+.results table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.results td, .results th { border-bottom: 1px solid var(--line); padding: 3px 6px; text-align: left; }
+.empty { background: var(--panel); border: 2px dashed var(--line); border-radius: var(--r); padding: 40px 24px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+.empty h2 { font: 600 22px var(--font-display); margin: 0; }
+.empty p { max-width: 60ch; margin: 0; color: var(--mut); }
+.empty code { font-family: var(--font-mono); background: var(--bg); padding: 1px 6px; border-radius: 4px; }
+.drop-hint { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 80%, transparent); display: grid; place-items: center; font: 600 24px var(--font-display); z-index: 10; pointer-events: none; }
+.err { color: var(--bad); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 1150px) { .stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .readouts { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } }
+@media (max-width: 720px) { .stage { grid-template-columns: minmax(0, 1fr); } .ev { grid-template-columns: 58px 1fr; } .ev .k { grid-column: 2; } .ev .m { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Maze Replay</h1>
+    <div class="maze" id="mazeName">Theseus robot simulator</div>
+    <span id="outcomePill" class="pill" hidden></span>
+    <div class="spacer"></div>
+    <label class="btn" for="fileInput">Open trace…</label>
+    <input id="fileInput" type="file" accept=".json,application/json" hidden>
+  </header>
+
+  <section class="empty" id="empty">
+    <h2>Load a simulator run</h2>
+    <p>Drop a <code>trace.json</code> file anywhere on this page, or use <b>Open trace…</b>. Make one with
+      <code>python sim/sim.py run</code>; each run also writes a <code>view.html</code> with the replay built in.</p>
+    <p id="loadError" class="err" hidden></p>
+  </section>
+
+  <div id="main" hidden>
+    <div class="strip" id="summary"></div>
+  </div>
+
+  <div class="stage" id="stage" hidden>
+    <section class="view">
+      <h2>What really happened <small id="fieldNote"></small></h2>
+      <div class="canvas-wrap"><canvas class="maze" id="field"></canvas></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tRays" checked> sensor beams</label>
+        <label><input type="checkbox" id="tTrail" checked> path</label>
+        <label><input type="checkbox" id="tGhost" checked> where the robot thinks it is</label>
+      </div>
+      <div class="legend" id="legendField"></div>
+    </section>
+    <section class="view">
+      <h2>What the robot believes <small id="mapNote"></small></h2>
+      <div class="canvas-wrap"><canvas class="maze" id="belief"></canvas></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tDiff" checked> mark mistakes</label>
+        <label><input type="checkbox" id="tTruth" checked> show real maze faintly</label>
+      </div>
+      <div class="legend" id="legendMap"></div>
+    </section>
+    <aside class="view readouts" id="readouts">
+      <div class="ro-block">
+        <div class="ro-label">State</div>
+        <div><span class="pill" id="statePill">-</span></div>
+        <div class="flags" id="flags"></div>
+      </div>
+      <div class="ro-block">
+        <div class="ro-label">Position</div>
+        <dl class="kv" id="posKv"></dl>
+      </div>
+      <div class="ro-block">
+        <div class="ro-label">Motors (PWM, + = forward)</div>
+        <div class="bars" id="motorBars"></div>
+      </div>
+      <div class="ro-block">
+        <div class="ro-label">Distance sensors (mm)</div>
+        <div class="bars" id="tofBars"></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="timeline" id="timeline" hidden>
+    <div class="controls">
+      <button class="btn" id="play" aria-label="Play">▶ Play</button>
+      <label for="speed" class="sr">Speed</label>
+      <select id="speed" class="btn">
+        <option value="0.5">0.5×</option><option value="1">1×</option><option value="2">2×</option>
+        <option value="5" selected>5×</option><option value="10">10×</option><option value="25">25×</option>
+      </select>
+      <button class="btn" id="prevTile" title="Previous arrival on a tile ( [ )">◀ tile</button>
+      <button class="btn" id="nextTile" title="Next arrival on a tile ( ] )">tile ▶</button>
+      <span class="time" id="clock">0:00.0</span>
+      <span id="stateLegend" class="legend"></span>
+    </div>
+    <canvas id="ribbon" aria-label="Timeline of robot states and events"></canvas>
+    <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Time">
+  </section>
+
+  <section id="tabsSection" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="serial">Serial monitor</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="events">Events</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="results">Results</button>
+    </div>
+    <div class="panel" data-panel="serial">
+      <div class="serial-bar">
+        <input type="text" id="serialFilter" placeholder="Filter lines, e.g. [TURN] or black">
+        <label><input type="checkbox" id="serialFollow" checked> follow playback</label>
+        <span id="serialCount"></span>
+      </div>
+      <div class="serial" id="serial"></div>
+    </div>
+    <div class="panel" data-panel="events" hidden><div class="events" id="events"></div></div>
+    <div class="panel" data-panel="results" hidden><div class="results" id="results"></div></div>
+  </section>
+</div>
+<div class="drop-hint" id="dropHint" hidden>Drop the trace.json</div>
+
+<script type="application/json" id="embedded-trace"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const DIRS = "NESW";
+let T = null;          // loaded trace
+let F = null;          // field index
+let cur = 0;           // current time (s)
+let playing = false;
+let arrivals = [];
+let mapTimes = [];
+let colors = {};
+let fieldGeo = null, beliefGeo = null;
+
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ["bg","panel","ink","mut","line","floor","grid","wall","accent","ray","ghost","hole","swamp","silver","ok","bad","warn",
+                   "st-sense","st-center","st-think","st-move","st-botch","st-back","st-pause","st-return"]) {
+    colors[k] = cs.getPropertyValue("--" + k).trim();
+  }
+}
+
+function stateColor(name) {
+  const map = { SENSE_TILE: "st-sense", CENTERING: "st-center", UPDATE_MAP: "st-think", PLAN_NEXT: "st-think", VICTIM_DETECT: "st-think",
+    EXECUTE_MOVE: "st-move", BOTCHED_TURN_RECOVERY: "st-botch", BOTCHED_FWD_RECOVERY: "st-botch", BACKPEDAL: "st-back",
+    PAUSE: "st-pause", RETURN: "st-return" };
+  return colors[map[name] || "st-think"];
+}
+
+function fmtTime(t) {
+  const m = Math.floor(t / 60), s = t - 60 * m;
+  return m + ":" + (s < 10 ? "0" : "") + s.toFixed(1);
+}
+
+// ---------------------------------------------------------------- loading
+function load(trace) {
+  if (!trace || trace.format !== "theseus-sim-trace") throw new Error("This file is not a simulator trace (trace.json from sim/sim.py).");
+  T = trace;
+  F = {};
+  T.frame_fields.forEach((k, i) => F[k] = i);
+  arrivals = [];
+  const iSense = T.states.indexOf("SENSE_TILE");
+  let prev = -1;
+  for (const fr of T.frames) {
+    const st = fr[F.state];
+    if (st === iSense && prev !== iSense) arrivals.push(fr[F.t]);
+    prev = st;
+  }
+  mapTimes = T.maps.map((m) => m.t);
+  $("empty").hidden = true;
+  for (const id of ["main", "stage", "timeline", "tabsSection"]) $(id).hidden = false;
+  $("mazeName").textContent = T.maze.name || "maze";
+  cur = 0;
+  buildSummary();
+  buildEvents();
+  buildResults();
+  buildLegends();
+  resize();
+  setTime(0);
+}
+
+function loadText(text) {
+  try {
+    load(JSON.parse(text));
+    $("loadError").hidden = true;
+  } catch (e) {
+    $("empty").hidden = false;
+    $("loadError").hidden = false;
+    $("loadError").textContent = "Could not open the file: " + e.message;
+  }
+}
+
+// ---------------------------------------------------------------- geometry
+function mazeToWorldTile(bx, by) {
+  const n = T.robot.map_size, sd = T.maze.start.dir;
+  let dx = bx - Math.floor(n / 2), dy = by - Math.floor(n / 2);
+  for (let k = 0; k < sd; k++) { const t = dx; dx = dy; dy = -t; }
+  return [T.maze.start.x + dx, T.maze.start.y + dy];
+}
+function tileLabel(x, y) { return "(" + x + "," + (T.maze.h - 1 - y) + ")"; }
+function wallAt(x, y, d) {
+  const m = T.maze;
+  if (x < 0 || y < 0 || x >= m.w || y >= m.h) return true;
+  if (d === 0) return m.hwall[(y + 1) * m.w + x] === 1;
+  if (d === 2) return m.hwall[y * m.w + x] === 1;
+  if (d === 1) return m.vwall[y * (m.w + 1) + x + 1] === 1;
+  return m.vwall[y * (m.w + 1) + x] === 1;
+}
+
+function makeGeo(canvas, x0, y0, x1, y1) {
+  const wrap = canvas.parentElement;
+  const cssW = Math.max(200, wrap.clientWidth);
+  const wmm = x1 - x0, hmm = y1 - y0;
+  const s = (cssW - 16) / wmm;
+  const cssH = Math.min(hmm * s + 16, window.innerHeight * 0.72);
+  const sc = Math.min(s, (cssH - 16) / hmm);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.height = (hmm * sc + 16) + "px";
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round((hmm * sc + 16) * dpr);
+  const ox = (cssW - wmm * sc) / 2;
+  return { s: sc, dpr, x0, y0, x1, y1, ox, oy: 8,
+    X: (x) => (ox + (x - x0) * sc), Y: (y) => (8 + (y1 - y) * sc) };
+}
+
+function beliefBounds() {
+  const tile = T.maze.tile;
+  let minx = 0, miny = 0, maxx = T.maze.w, maxy = T.maze.h;
+  for (const m of T.maps) for (const [bx, by] of m.tiles) {
+    const [wx, wy] = mazeToWorldTile(bx, by);
+    minx = Math.min(minx, wx); miny = Math.min(miny, wy); maxx = Math.max(maxx, wx + 1); maxy = Math.max(maxy, wy + 1);
+  }
+  return [minx * tile, miny * tile, maxx * tile, maxy * tile];
+}
+
+function resize() {
+  if (!T) return;
+  readColors();
+  const W = T.maze.w * T.maze.tile, H = T.maze.h * T.maze.tile;
+  fieldGeo = makeGeo($("field"), 0, 0, W, H);
+  const b = beliefBounds();
+  beliefGeo = makeGeo($("belief"), b[0], b[1], b[2], b[3]);
+  const r = $("ribbon");
+  r.width = Math.round(r.clientWidth * (window.devicePixelRatio || 1));
+  r.height = Math.round(46 * (window.devicePixelRatio || 1));
+  render();
+}
+
+// ---------------------------------------------------------------- frames
+function frameIndex(t) {
+  const fr = T.frames;
+  let lo = 0, hi = fr.length - 1;
+  if (t <= fr[0][F.t]) return 0;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (fr[mid][F.t] <= t) lo = mid; else hi = mid - 1;
+  }
+  return lo;
+}
+function lerpAngle(a, b, u) { let d = ((b - a + 540) % 360) - 180; return a + d * u; }
+function poseAt(t) {
+  const i = frameIndex(t), fr = T.frames;
+  const a = fr[i], b = fr[Math.min(i + 1, fr.length - 1)];
+  const span = b[F.t] - a[F.t];
+  const u = span > 0 ? Math.max(0, Math.min(1, (t - a[F.t]) / span)) : 0;
+  return { i, f: a, x: a[F.x] + (b[F.x] - a[F.x]) * u, y: a[F.y] + (b[F.y] - a[F.y]) * u, h: lerpAngle(a[F.h], b[F.h], u) };
+}
+function mapAt(t) {
+  let lo = 0, hi = mapTimes.length - 1, best = -1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (mapTimes[mid] <= t) { best = mid; lo = mid + 1; } else hi = mid - 1; }
+  return best >= 0 ? T.maps[best] : null;
+}
+
+// ---------------------------------------------------------------- drawing
+function drawMaze(ctx, g, faint) {
+  const m = T.maze, tile = m.tile;
+  ctx.save();
+  ctx.globalAlpha = faint ? 0.28 : 1;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    const i = y * m.w + x, type = m.type[i], feat = m.feature[i];
+    const X = g.X(x * tile), Y = g.Y((y + 1) * tile), S = tile * g.s;
+    let fill = colors.floor;
+    if (type === 1) fill = colors.hole;
+    if (type === 2) fill = colors.swamp;
+    if (type === 3) fill = colors.silver;
+    if (type === 4) fill = colors.grid;
+    ctx.fillStyle = fill;
+    ctx.fillRect(X, Y, S, S);
+    if (faint) continue;
+    ctx.strokeStyle = colors.grid; ctx.lineWidth = 1;
+    ctx.strokeRect(X + .5, Y + .5, S - 1, S - 1);
+    if (type === 4) { // void: hatch
+      ctx.save(); ctx.beginPath(); ctx.rect(X, Y, S, S); ctx.clip();
+      ctx.strokeStyle = colors.line; ctx.lineWidth = 1;
+      for (let k = -S; k < S; k += 8) { ctx.beginPath(); ctx.moveTo(X + k, Y + S); ctx.lineTo(X + k + S, Y); ctx.stroke(); }
+      ctx.restore();
+    }
+    ctx.fillStyle = colors.mut;
+    ctx.font = "600 " + Math.max(9, S * 0.16) + "px " + getComputedStyle(document.body).getPropertyValue("--font-mono");
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    if (feat === 1) { // ramp arrow (up direction)
+      const r = m.ramps.find((rr) => rr.tiles.includes(i));
+      const d = r ? r.dir : 0;
+      ctx.save(); ctx.translate(X + S / 2, Y + S / 2); ctx.rotate(d * Math.PI / 2);
+      ctx.strokeStyle = colors.mut; ctx.lineWidth = Math.max(1.5, S * 0.03);
+      for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(-S * .22, S * .1 + k * S * .2); ctx.lineTo(0, -S * .08 + k * S * .2); ctx.lineTo(S * .22, S * .1 + k * S * .2); ctx.stroke(); }
+      ctx.restore();
+    } else if (feat === 2) {
+      ctx.fillText("stairs", X + S / 2, Y + S / 2);
+    } else if (feat === 3) {
+      ctx.save(); ctx.strokeStyle = colors.warn; ctx.lineWidth = Math.max(2, S * 0.06); ctx.setLineDash([S * .06, S * .05]);
+      ctx.beginPath();
+      if (m.axis[i] === 0) { ctx.moveTo(X + 4, Y + S / 2); ctx.lineTo(X + S - 4, Y + S / 2); } else { ctx.moveTo(X + S / 2, Y + 4); ctx.lineTo(X + S / 2, Y + S - 4); }
+      ctx.stroke(); ctx.restore();
+    } else if (feat === 4) {
+      ctx.fillStyle = colors.mut;
+      for (let k = 0; k < 9; k++) { const px = X + S * ((k * 37 % 100) / 100 * .7 + .15), py = Y + S * ((k * 61 % 100) / 100 * .7 + .15); ctx.fillRect(px, py, 2.5, 2.5); }
+    }
+    if (m.start.x === x && m.start.y === y) {
+      ctx.strokeStyle = colors.ok; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+      ctx.strokeRect(X + 5, Y + 5, S - 10, S - 10); ctx.setLineDash([]);
+      ctx.fillStyle = colors.ok; ctx.fillText("START", X + S / 2, Y + S * 0.16);
+    }
+    if (type === 3) { ctx.fillStyle = colors.ink; ctx.fillText("CHECK", X + S / 2, Y + S * 0.16); }
+  }
+  // walls
+  ctx.fillStyle = colors.wall;
+  const wt = Math.max(2, m.wall_t * g.s);
+  for (let j = 0; j <= m.h; j++) for (let x = 0; x < m.w; x++) if (m.hwall[j * m.w + x]) {
+    ctx.fillRect(g.X(x * tile) - wt / 2, g.Y(j * tile) - wt / 2, tile * g.s + wt, wt);
+  }
+  for (let y = 0; y < m.h; y++) for (let i = 0; i <= m.w; i++) if (m.vwall[y * (m.w + 1) + i]) {
+    ctx.fillRect(g.X(i * tile) - wt / 2, g.Y((y + 1) * tile) - wt / 2, wt, tile * g.s + wt);
+  }
+  if (!faint) {
+    for (const o of m.obstacles) {
+      ctx.fillStyle = colors.wall;
+      if (o.kind === 1) ctx.fillRect(g.X(o.x - o.w / 2), g.Y(o.y + o.h / 2), o.w * g.s, o.h * g.s);
+      else { ctx.beginPath(); ctx.arc(g.X(o.x), g.Y(o.y), o.r * g.s, 0, Math.PI * 2); ctx.fill(); }
+    }
+    drawVictims(ctx, g);
+  }
+  ctx.restore();
+}
+
+function victimColor(t) {
+  return t === "R" ? "#d8342a" : t === "Y" ? "#e6b800" : t === "G" ? "#2f9e4f" : colors.bad;
+}
+function drawVictims(ctx, g, identified) {
+  const m = T.maze, tile = m.tile, res = T.result && T.result.victims ? T.result.victims.list : [];
+  m.victims.forEach((v, i) => {
+    const cx = (v.x + 0.5) * tile, cy = (v.y + 0.5) * tile, half = tile / 2 - m.wall_t / 2 - 14;
+    const dx = [0, 1, 0, -1][v.side], dy = [1, 0, -1, 0][v.side];
+    const px = g.X(cx + dx * half), py = g.Y(cy + dy * half);
+    const r = Math.max(7, 22 * g.s);
+    ctx.fillStyle = victimColor(v.type);
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    if (v.floating) { ctx.strokeStyle = colors.ghost; ctx.lineWidth = 2; ctx.stroke(); }
+    if ("HSU".includes(v.type)) {
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "700 " + Math.round(r * 1.2) + "px " + getComputedStyle(document.body).getPropertyValue("--font-display");
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(v.type, px, py + 1);
+    }
+    const st = res[i];
+    if (st && st.identified) {
+      ctx.strokeStyle = colors.ok; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(px, py, r + 3, 0, Math.PI * 2); ctx.stroke();
+    }
+  });
+}
+
+function robotCorners(x, y, hDeg, hw, hl) {
+  const th = hDeg * Math.PI / 180, s = Math.sin(th), c = Math.cos(th);
+  const pts = [[-hw, hl], [hw, hl], [hw, -hl], [-hw, -hl]];
+  return pts.map(([rx, ry]) => [x + rx * c + ry * s, y - rx * s + ry * c]);
+}
+function toWorld(x, y, hDeg, rx, ry) {
+  const th = hDeg * Math.PI / 180, s = Math.sin(th), c = Math.cos(th);
+  return [x + rx * c + ry * s, y - rx * s + ry * c];
+}
+
+function drawField() {
+  const cv = $("field"), g = fieldGeo, ctx = cv.getContext("2d");
+  ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  drawMaze(ctx, g, false);
+  const p = poseAt(cur), fr = p.f;
+  // path so far
+  if ($("tTrail").checked) {
+    ctx.strokeStyle = colors.accent; ctx.globalAlpha = 0.45; ctx.lineWidth = 2; ctx.beginPath();
+    for (let k = 0; k <= p.i; k++) { const f = T.frames[k]; if (k === 0) ctx.moveTo(g.X(f[F.x]), g.Y(f[F.y])); else ctx.lineTo(g.X(f[F.x]), g.Y(f[F.y])); }
+    ctx.lineTo(g.X(p.x), g.Y(p.y)); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  // belief ghost
+  if ($("tGhost").checked) {
+    const [wx, wy] = mazeToWorldTile(fr[F.bx], fr[F.by]);
+    const tile = T.maze.tile;
+    const ax = Math.floor(p.x / tile), ay = Math.floor(p.y / tile);
+    const wrong = wx !== ax || wy !== ay;
+    const X = g.X(wx * tile), Y = g.Y((wy + 1) * tile), S = tile * g.s;
+    ctx.strokeStyle = wrong ? colors.bad : colors.ghost; ctx.lineWidth = 2.5; ctx.setLineDash(wrong ? [6, 4] : []);
+    ctx.strokeRect(X + 3, Y + 3, S - 6, S - 6); ctx.setLineDash([]);
+    const bd = (fr[F.bdir] + T.maze.start.dir) % 4, dx = [0, 1, 0, -1][bd], dy = [1, 0, -1, 0][bd];
+    const cx = X + S / 2, cy = Y + S / 2;
+    ctx.fillStyle = wrong ? colors.bad : colors.ghost;
+    ctx.beginPath();
+    ctx.moveTo(cx + dx * S * .38, cy - dy * S * .38);
+    ctx.lineTo(cx + dx * S * .2 - dy * S * .09, cy - dy * S * .2 - dx * S * .09);
+    ctx.lineTo(cx + dx * S * .2 + dy * S * .09, cy - dy * S * .2 + dx * S * .09);
+    ctx.fill();
+  }
+  // sensor beams
+  if ($("tRays").checked) {
+    for (const s of T.robot.tof) {
+      const v = fr[F["tof" + s.n]];
+      if (v === undefined || v < 0) continue;
+      const [sx, sy] = toWorld(p.x, p.y, p.h, s.x, s.y);
+      const a = (p.h + s.a) * Math.PI / 180;
+      const far = v >= 8000 || v > 2000;
+      const len = far ? 450 : v;
+      ctx.strokeStyle = colors.ray; ctx.lineWidth = 1.6; ctx.setLineDash(far ? [3, 4] : []);
+      ctx.globalAlpha = far ? 0.45 : 0.9;
+      ctx.beginPath(); ctx.moveTo(g.X(sx), g.Y(sy)); ctx.lineTo(g.X(sx + Math.sin(a) * len), g.Y(sy + Math.cos(a) * len)); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      if (!far) { ctx.fillStyle = colors.ray; ctx.beginPath(); ctx.arc(g.X(sx + Math.sin(a) * len), g.Y(sy + Math.cos(a) * len), 2.5, 0, Math.PI * 2); ctx.fill(); }
+    }
+  }
+  // robot body
+  const hw = T.robot.width / 2, hl = T.robot.length / 2;
+  const pts = robotCorners(p.x, p.y, p.h, hw, hl);
+  ctx.fillStyle = colors.accent; ctx.globalAlpha = (fr[F.flags] & 64) ? 0.35 : 0.88;
+  ctx.beginPath(); pts.forEach(([x, y], k) => k ? ctx.lineTo(g.X(x), g.Y(y)) : ctx.moveTo(g.X(x), g.Y(y))); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = (fr[F.flags] & 32) ? colors.bad : colors.ink; ctx.lineWidth = (fr[F.flags] & 32) ? 3 : 1.5; ctx.stroke();
+  const [nx, ny] = toWorld(p.x, p.y, p.h, 0, hl - 18);
+  ctx.fillStyle = colors.panel; ctx.beginPath(); ctx.arc(g.X(nx), g.Y(ny), Math.max(3, 14 * g.s), 0, Math.PI * 2); ctx.fill();
+  const [cx2, cy2] = toWorld(p.x, p.y, p.h, T.robot.color[0], T.robot.color[1]);
+  ctx.fillStyle = colors.ink; ctx.fillRect(g.X(cx2) - 2, g.Y(cy2) - 2, 4, 4);
+  if (fr[F.flags] & 16) { ctx.fillStyle = "#ffd400"; ctx.beginPath(); ctx.arc(g.X(p.x), g.Y(p.y), Math.max(4, 16 * g.s), 0, Math.PI * 2); ctx.fill(); }
+}
+
+function drawBelief() {
+  const cv = $("belief"), g = beliefGeo, ctx = cv.getContext("2d");
+  ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const tile = T.maze.tile, sd = T.maze.start.dir, m = T.maze;
+  // background grid over the whole area
+  for (let x = Math.floor(g.x0 / tile); x < g.x1 / tile; x++) for (let y = Math.floor(g.y0 / tile); y < g.y1 / tile; y++) {
+    ctx.strokeStyle = colors.grid; ctx.lineWidth = 1;
+    ctx.strokeRect(g.X(x * tile) + .5, g.Y((y + 1) * tile) + .5, tile * g.s - 1, tile * g.s - 1);
+  }
+  if ($("tTruth").checked) drawMaze(ctx, g, true);
+  const snap = mapAt(cur);
+  const fr = poseAt(cur).f;
+  let mistakes = 0;
+  if (snap) {
+    const S = tile * g.s, diff = $("tDiff").checked;
+    for (const [bx, by, bits] of snap.tiles) {
+      const [wx, wy] = mazeToWorldTile(bx, by);
+      const X = g.X(wx * tile), Y = g.Y((wy + 1) * tile);
+      const visited = bits & (1 << 11), disc = bits & (1 << 8), type = (bits >> 24) & 3;
+      const inMaze = wx >= 0 && wy >= 0 && wx < m.w && wy < m.h && m.type[wy * m.w + wx] !== 4;
+      if (visited || disc) {
+        ctx.fillStyle = colors.ghost; ctx.globalAlpha = visited ? 0.16 : 0.07; ctx.fillRect(X, Y, S, S); ctx.globalAlpha = 1;
+      }
+      if (type) {
+        ctx.fillStyle = type === 3 ? colors.hole : type === 1 ? colors.swamp : colors.silver;
+        ctx.fillRect(X + S * .18, Y + S * .18, S * .64, S * .64);
+        if (diff && inMaze) {
+          const tt = m.type[wy * m.w + wx];
+          const ok = (type === 3 && tt === 1) || (type === 1 && tt === 2) || (type === 2 && tt === 3);
+          if (!ok) { ctx.strokeStyle = colors.bad; ctx.lineWidth = 3; ctx.strokeRect(X + S * .18, Y + S * .18, S * .64, S * .64); mistakes++; }
+        }
+      }
+      if (bits & (1 << 10)) { ctx.fillStyle = colors.bad; ctx.beginPath(); ctx.arc(X + S * .78, Y + S * .22, Math.max(3, S * .07), 0, Math.PI * 2); ctx.fill(); }
+      if (diff && !inMaze && (visited || disc)) {
+        ctx.strokeStyle = colors.bad; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.strokeRect(X + 2, Y + 2, S - 4, S - 4); ctx.setLineDash([]); mistakes++;
+      }
+      if (!visited) continue;
+      for (let d = 0; d < 4; d++) {
+        const robotWall = !!(bits & (1 << d));
+        const side = (d + sd) % 4;
+        const truth = inMaze ? wallAt(wx, wy, side) : robotWall;
+        if (!robotWall && !(diff && truth)) continue;
+        let x1, y1, x2, y2;
+        const L = X, R = X + S, Tp = Y, B = Y + S;
+        if (side === 0) { x1 = L; y1 = Tp; x2 = R; y2 = Tp; } else if (side === 2) { x1 = L; y1 = B; x2 = R; y2 = B; }
+        else if (side === 1) { x1 = R; y1 = Tp; x2 = R; y2 = B; } else { x1 = L; y1 = Tp; x2 = L; y2 = B; }
+        if (robotWall) {
+          const wrong = diff && !truth;
+          ctx.strokeStyle = wrong ? colors.bad : colors.wall; ctx.lineWidth = wrong ? 4 : 3.5; ctx.setLineDash([]);
+          if (wrong) mistakes++;
+        } else {
+          ctx.strokeStyle = colors.bad; ctx.lineWidth = 2.5; ctx.setLineDash([5, 4]); mistakes++;
+        }
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
+  }
+  // the robot's believed position
+  const [wx, wy] = mazeToWorldTile(fr[F.bx], fr[F.by]);
+  const X = g.X(wx * tile), Y = g.Y((wy + 1) * tile), S = tile * g.s;
+  const bd = (fr[F.bdir] + sd) % 4, dx = [0, 1, 0, -1][bd], dy = [1, 0, -1, 0][bd];
+  ctx.fillStyle = colors.ghost;
+  const cx = X + S / 2, cy = Y + S / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx + dx * S * .34, cy - dy * S * .34);
+  ctx.lineTo(cx - dx * S * .2 - dy * S * .2, cy + dy * S * .2 - dx * S * .2);
+  ctx.lineTo(cx - dx * S * .2 + dy * S * .2, cy + dy * S * .2 + dx * S * .2);
+  ctx.closePath(); ctx.fill();
+  $("mapNote").textContent = (snap ? "floor " + (snap.floor + 1) + " · " : "") + (mistakes ? mistakes + " mistake" + (mistakes > 1 ? "s" : "") + " shown in red" : "no mistakes so far");
+}
+
+function drawRibbon() {
+  const cv = $("ribbon"), ctx = cv.getContext("2d"), dpr = window.devicePixelRatio || 1;
+  const W = cv.width / dpr, H = 46;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const tEnd = T.frames[T.frames.length - 1][F.t] || 1;
+  const xs = (t) => t / tEnd * W;
+  let segStart = 0, st = T.frames[0][F.state];
+  for (let k = 1; k <= T.frames.length; k++) {
+    const f = T.frames[k];
+    if (!f || f[F.state] !== st) {
+      const t1 = f ? f[F.t] : tEnd;
+      ctx.fillStyle = stateColor(T.states[st]);
+      ctx.fillRect(xs(T.frames[segStart][F.t]), 18, Math.max(1, xs(t1) - xs(T.frames[segStart][F.t])), 16);
+      if (f) { segStart = k; st = f[F.state]; }
+    }
+  }
+  // lost periods: belief != reality
+  ctx.fillStyle = colors.bad;
+  let lostStart = -1;
+  for (let k = 0; k < T.frames.length; k++) {
+    const f = T.frames[k];
+    const [wx, wy] = mazeToWorldTile(f[F.bx], f[F.by]);
+    const lost = (f[F.state] === T.states.indexOf("SENSE_TILE")) && (wx !== Math.floor(f[F.x] / T.maze.tile) || wy !== Math.floor(f[F.y] / T.maze.tile));
+    if (lost && lostStart < 0) lostStart = f[F.t];
+    if (!lost && lostStart >= 0) { ctx.fillRect(xs(lostStart), 36, Math.max(2, xs(f[F.t]) - xs(lostStart)), 5); lostStart = -1; }
+  }
+  for (const e of T.events) {
+    const col = { lost: colors.bad, lop: colors.warn, victim: colors.ok, checkpoint: colors.silver, warning: colors.warn, contact: colors.mut, kit: colors.ok, ramp: colors.ray, end: colors.ink }[e.k];
+    if (!col) continue;
+    ctx.fillStyle = col;
+    const x = xs(e.t);
+    ctx.beginPath(); ctx.moveTo(x, 14); ctx.lineTo(x - 5, 4); ctx.lineTo(x + 5, 4); ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle = colors.ink; ctx.fillRect(xs(cur) - 1, 0, 2, H);
+}
+
+function bar(label, value, max, signed, cls) {
+  const pct = Math.max(0, Math.min(1, Math.abs(value) / max)) * (signed ? 50 : 100);
+  const left = signed ? (value >= 0 ? 50 : 50 - pct) : 0;
+  return '<div class="bar ' + (cls || "") + '"><span>' + label + '</span><div class="track">' + (signed ? '<i class="mid"></i>' : "") +
+    '<i class="fill" style="left:' + left + '%;width:' + pct + '%"></i></div><span class="val">' + value + "</span></div>";
+}
+
+function tofName(s) {
+  const a = ((s.a % 360) + 360) % 360;
+  const side = a < 45 || a >= 315 ? "front" : a < 135 ? "right" : a < 225 ? "back" : "left";
+  let pos = "";
+  if (side === "front" || side === "back") pos = s.x > 10 ? "R" : s.x < -10 ? "L" : "";
+  else pos = s.y > 10 ? "F" : s.y < -10 ? "B" : "";
+  return s.n + " " + side + (pos ? "-" + pos : "");
+}
+
+function updateReadouts() {
+  const p = poseAt(cur), fr = p.f, tile = T.maze.tile;
+  const name = T.states[fr[F.state]] || "?";
+  const pill = $("statePill");
+  pill.textContent = name.replace(/_/g, " ");
+  pill.style.color = stateColor(name);
+  const fl = fr[F.flags];
+  const flagDefs = [[1, "fwd()"], [2, "turning"], [4, "victim pending"], [8, "paused"], [16, "LED"], [32, "touching wall"], [64, "held by referee"], [128, "black tile"]];
+  $("flags").innerHTML = flagDefs.map(([b, n]) => '<span class="flag' + ((fl & b) ? " on" : "") + '">' + n + "</span>").join("") +
+    ((T.steps_names && fr[F.steps] > 0) ? '<span class="flag on">avoid: ' + T.steps_names[fr[F.steps]] + "</span>" : "");
+  const [wx, wy] = mazeToWorldTile(fr[F.bx], fr[F.by]);
+  const ax = Math.floor(p.x / tile), ay = Math.floor(p.y / tile);
+  const okPos = wx === ax && wy === ay;
+  const rel = ((p.h - T.maze.start.dir * 90) % 360 + 360) % 360;
+  const realDir = (Math.round(rel / 90) % 4 + T.maze.start.dir) % 4;
+  const thinkDir = (fr[F.bdir] + T.maze.start.dir) % 4;
+  const moving = (fl & 3) !== 0;  // during a move the belief is only updated at the end
+  const okDir = realDir === thinkDir || moving;
+  const verdict = okPos && okDir ? '<span class="match ok">✓ match</span>'
+    : '<span class="match bad">✗ ' + (!okPos ? "wrong tile" : "wrong heading") + "</span>";
+  $("posKv").innerHTML =
+    "<dt>Thinks</dt><dd>tile " + tileLabel(wx, wy) + " facing " + DIRS[thinkDir] + "</dd>" +
+    "<dt>Really</dt><dd>tile " + tileLabel(ax, ay) + " facing " + DIRS[realDir] + " " + (moving ? '<span class="match">(moving: belief updates when the move ends)</span>' : verdict) + "</dd>" +
+    "<dt>Gyro</dt><dd>" + rel.toFixed(1) + "° (pitch " + fr[F.pitch].toFixed(1) + "°)</dd>" +
+    "<dt>Encoders</dt><dd>" + fr[F.enc] + " counts · moves " + fr[F.iter] + "</dd>";
+  const mn = ["A (1, left)", "B (2, right)", "C (3, left)", "D (4, right)"];
+  $("motorBars").innerHTML = [0, 1, 2, 3].map((k) => bar(mn[k].split(" ")[0] + " " + mn[k].split(" ")[2].replace(")", ""), fr[F["m" + (k + 1)]], 255, true, "motor")).join("");
+  $("tofBars").innerHTML = T.robot.tof.slice().sort((a, b) => a.n - b.n).map((s) => {
+    const v = fr[F["tof" + s.n]];
+    return bar(tofName(s), v < 0 ? "off" : (v >= 8000 ? "far" : v), 600, false);
+  }).join("");
+}
+
+function render() {
+  if (!T) return;
+  drawField();
+  drawBelief();
+  drawRibbon();
+  updateReadouts();
+  $("clock").textContent = fmtTime(cur);
+  const tEnd = T.frames[T.frames.length - 1][F.t];
+  $("scrub").value = Math.round(cur / tEnd * 1000);
+  $("fieldNote").textContent = "t = " + cur.toFixed(1) + " s";
+  updateSerial();
+  markEvents();
+}
+
+// ---------------------------------------------------------------- panels
+function buildSummary() {
+  const r = T.result || {};
+  const good = { returned: "ok", stopped: "warn", time_limit: "warn", idle: "warn" };
+  const pill = $("outcomePill");
+  pill.hidden = false;
+  pill.textContent = (r.outcome || "?").replace(/_/g, " ");
+  pill.className = "pill " + (good[r.outcome] || "bad");
+  if (!r.map) { $("summary").innerHTML = ""; return; }
+  const mapErr = r.map.walls_missed + r.map.walls_phantom + r.map.tiles_outside_maze;
+  const cells = [
+    [Math.round(100 * r.coverage) + "%", "explored (" + r.tiles_visited + " of " + r.tiles_reachable + " tiles)", r.coverage >= 0.999 ? "ok" : ""],
+    [r.first_lost_s == null ? "never" : r.first_lost_s.toFixed(0) + " s", "first wrong position", r.first_lost_s == null ? "ok" : "bad"],
+    [String(mapErr), "wrong walls / tiles in map", mapErr ? "bad" : "ok"],
+    [r.victims.identified + " / " + r.victims.total, "victims identified", ""],
+    [String(r.holes_entered + r.lack_of_progress), "holes + lack of progress", (r.holes_entered + r.lack_of_progress) ? "bad" : "ok"],
+    [String(r.score.total), "estimated score", ""],
+  ];
+  $("summary").innerHTML = cells.map(([b, s, c]) => '<div class="' + c + '"><b>' + b + "</b><span>" + s + "</span></div>").join("");
+}
+
+function buildEvents() {
+  const box = $("events");
+  box.innerHTML = "";
+  const kindCol = { lost: "bad", lop: "warn", victim: "ok", warning: "warn", end: "bad", contact: "mut" };
+  T.events.forEach((e, i) => {
+    const b = document.createElement("button");
+    b.className = "ev"; b.dataset.t = e.t; b.dataset.i = i;
+    b.innerHTML = '<span class="t">' + fmtTime(e.t) + '</span><span class="k" style="color:var(--' + (kindCol[e.k] || "ink") + ')">' + e.k + '</span><span class="m"></span>';
+    b.querySelector(".m").textContent = e.m;
+    b.addEventListener("click", () => setTime(e.t));
+    box.appendChild(b);
+  });
+  if (!T.events.length) box.textContent = "No events in this run.";
+}
+function markEvents() {
+  for (const b of $("events").children) if (b.dataset) b.classList.toggle("past", +b.dataset.t > cur + 1e-6 ? false : true);
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+
+function buildResults() {
+  const r = T.result;
+  if (!r || !r.map) { $("results").textContent = "No result data in this trace."; return; }
+  const v = r.victims;
+  const sec = (title, body) => "<section><h3>" + title + "</h3>" + body + "</section>";
+  const li = (arr) => "<ul>" + arr.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>";
+  let html = "";
+  html += sec("Run", li([
+    "Outcome: " + r.outcome + (r.detail ? " (" + r.detail + ")" : ""),
+    "Simulated time " + r.sim_time_s.toFixed(1) + " s, setup " + r.setup_s.toFixed(1) + " s",
+    r.moves + " moves, " + r.distance_m.toFixed(1) + " m driven",
+    "Ended in state " + r.end.state + (r.end.on_start_tile ? ", on the start tile" : ", not on the start tile"),
+    "Options: boot " + r.options.boot + ", move limit " + r.options.moves_limit + ", lack of progress " + (r.options.lop ? "on" : "off"),
+  ]));
+  html += sec("Navigation", li([
+    r.position_checks + " arrivals checked: position wrong " + r.position_errors + "×, heading wrong " + r.heading_errors + "×",
+    "Off-centre on arrival: " + r.center_err_mm.mean + " mm average, " + r.center_err_mm.max + " mm worst",
+    "Heading error on arrival: " + r.heading_err_deg.mean + "° average, " + r.heading_err_deg.max + "° worst",
+    "Wall contacts: " + r.contacts + " (" + r.contact_time_s + " s)",
+    "Holes entered: " + r.holes_entered + ", lack of progress: " + r.lack_of_progress,
+  ]));
+  html += sec("Map accuracy", li([
+    r.map.tiles + " tiles mapped: " + r.map.walls_correct + " walls right, " + r.map.walls_missed + " missed, " + r.map.walls_phantom + " phantom",
+    r.map.tiles_outside_maze + " tiles placed outside the maze",
+    "Black tiles marked right/wrong: " + r.map.black_correct + "/" + r.map.black_wrong + ", checkpoints " + r.map.checkpoint_correct + "/" + r.map.checkpoint_wrong + ", blue " + r.map.blue_correct + "/" + r.map.blue_wrong,
+  ].concat(r.map.notes)));
+  html += sec("Victims (" + v.identified + " of " + v.total + ")", '<div style="overflow-x:auto"><table><tr><th>tile</th><th>wall</th><th>type</th><th>found</th><th>kits</th></tr>' +
+    v.list.map((x) => "<tr><td>" + x.tile + "</td><td>" + x.side + (x.floating ? " (floating)" : "") + "</td><td>" + x.type + "</td><td>" +
+      (x.identified ? "yes" : x.claimed ? "said " + esc(x.claimed) : "no") + "</td><td>" + x.kits + "</td></tr>").join("") + "</table></div>");
+  const s = r.score;
+  html += sec("Estimated score: " + s.total, li(Object.keys(s).filter((k) => k !== "total" && s[k]).map((k) => k.replace(/_/g, " ") + ": " + s[k])) +
+    '<p style="color:var(--mut);font-size:13px;margin:6px 0 0">Approximate RCJ rules; point values are in sim/config/robot.cfg.</p>');
+  if (r.warnings && r.warnings.length) html += sec("Warnings", li(r.warnings.map((w) => w.message + (w.count > 1 ? " (×" + w.count + ")" : ""))));
+  $("results").innerHTML = html;
+}
+
+let serialFilterText = "";
+let lastSerialKey = "";
+function updateSerial() {
+  if ($("tabsSection").hidden || document.querySelector('[data-panel="serial"]').hidden) return;
+  const lines = T.serial || [];
+  const box = $("serial");
+  const key = serialFilterText + "|" + cur.toFixed(2);
+  if (key === lastSerialKey) return;
+  lastSerialKey = key;
+  // last line at or before the current time
+  let lo = 0, hi = lines.length - 1, idx = -1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (lines[mid][0] <= cur) { idx = mid; lo = mid + 1; } else hi = mid - 1; }
+  let out = [];
+  if (serialFilterText) {
+    const f = serialFilterText.toLowerCase();
+    for (let k = idx; k >= 0 && out.length < 250; k--) if (lines[k][1].toLowerCase().includes(f)) out.push(k);
+    out.reverse();
+  } else {
+    for (let k = Math.max(0, idx - 249); k <= idx; k++) out.push(k);
+  }
+  box.innerHTML = out.map((k, j) => '<div' + (j === out.length - 1 ? ' class="cur"' : "") + '><span class="ts">' + lines[k][0].toFixed(3).padStart(9) + "</span>  " + esc(lines[k][1]) + "</div>").join("") ||
+    '<div class="ts">' + (lines.length ? "No lines yet at this time." : "This trace has no serial output.") + "</div>";
+  if ($("serialFollow").checked) box.scrollTop = box.scrollHeight;
+  $("serialCount").textContent = lines.length.toLocaleString() + " lines" + (T.serial_truncated ? " (truncated)" : "");
+}
+
+function buildLegends() {
+  const sw = (c, t) => '<span><i style="background:' + c + '"></i>' + t + "</span>";
+  $("legendField").innerHTML = [sw("var(--accent)", "robot"), sw("var(--ray)", "distance beams"), sw("var(--ghost)", "where it thinks it is"),
+    sw("var(--hole)", "black (hole)"), sw("var(--swamp)", "blue"), sw("var(--silver)", "checkpoint"), sw("#d8342a", "victim")].join("");
+  $("legendMap").innerHTML = [sw("var(--wall)", "wall it recorded"), sw("var(--bad)", "wrong wall / missed wall (dashed)"),
+    sw("var(--ghost)", "tiles it visited")].join("");
+  const used = [...new Set(T.frames.map((f) => f[F.state]))];
+  $("stateLegend").innerHTML = used.map((s) => sw(stateColor(T.states[s]), T.states[s].replace(/_/g, " ").toLowerCase())).join("");
+}
+
+// ---------------------------------------------------------------- time control
+function setTime(t) {
+  const tEnd = T.frames[T.frames.length - 1][F.t];
+  cur = Math.max(0, Math.min(tEnd, t));
+  render();
+}
+let lastTs = null;
+function tick(ts) {
+  if (!playing) { lastTs = null; return; }
+  if (lastTs != null) {
+    const dt = (ts - lastTs) / 1000 * parseFloat($("speed").value);
+    const tEnd = T.frames[T.frames.length - 1][F.t];
+    setTime(cur + dt);
+    if (cur >= tEnd) { setPlaying(false); return; }
+  }
+  lastTs = ts;
+  requestAnimationFrame(tick);
+}
+function setPlaying(p) {
+  playing = p;
+  $("play").textContent = p ? "❚❚ Pause" : "▶ Play";
+  $("play").setAttribute("aria-label", p ? "Pause" : "Play");
+  if (p) {
+    const tEnd = T.frames[T.frames.length - 1][F.t];
+    if (cur >= tEnd) cur = 0;
+    requestAnimationFrame(tick);
+  }
+}
+function jumpTile(dir) {
+  if (!arrivals.length) return;
+  if (dir > 0) { const n = arrivals.find((t) => t > cur + 0.05); if (n != null) setTime(n + 0.01); }
+  else { const p = arrivals.filter((t) => t < cur - 0.2).pop(); setTime(p != null ? p + 0.01 : 0); }
+}
+
+$("play").addEventListener("click", () => setPlaying(!playing));
+$("prevTile").addEventListener("click", () => jumpTile(-1));
+$("nextTile").addEventListener("click", () => jumpTile(1));
+$("scrub").addEventListener("input", (e) => { const tEnd = T.frames[T.frames.length - 1][F.t]; setTime(+e.target.value / 1000 * tEnd); });
+$("ribbon").addEventListener("click", (e) => {
+  const r = e.target.getBoundingClientRect(), tEnd = T.frames[T.frames.length - 1][F.t];
+  setTime((e.clientX - r.left) / r.width * tEnd);
+});
+for (const id of ["tRays", "tTrail", "tGhost", "tDiff", "tTruth"]) $(id).addEventListener("change", render);
+$("serialFilter").addEventListener("input", (e) => { serialFilterText = e.target.value.trim(); lastSerialKey = ""; updateSerial(); });
+$("serialFollow").addEventListener("change", () => { lastSerialKey = ""; updateSerial(); });
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach((x) => x.setAttribute("aria-selected", x === b ? "true" : "false"));
+  document.querySelectorAll(".panel").forEach((p) => p.hidden = p.dataset.panel !== b.dataset.tab);
+  lastSerialKey = ""; updateSerial();
+}));
+document.addEventListener("keydown", (e) => {
+  if (!T || e.target.tagName === "INPUT" && e.target.type === "text") return;
+  if (e.key === " ") { e.preventDefault(); setPlaying(!playing); }
+  else if (e.key === "ArrowRight") setTime(cur + (e.shiftKey ? 10 : 1));
+  else if (e.key === "ArrowLeft") setTime(cur - (e.shiftKey ? 10 : 1));
+  else if (e.key === "]") jumpTile(1);
+  else if (e.key === "[") jumpTile(-1);
+});
+$("fileInput").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => loadText(rd.result);
+  rd.readAsText(f);
+});
+let dragDepth = 0;
+window.addEventListener("dragenter", (e) => { e.preventDefault(); dragDepth++; $("dropHint").hidden = false; });
+window.addEventListener("dragleave", () => { if (--dragDepth <= 0) { dragDepth = 0; $("dropHint").hidden = true; } });
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => {
+  e.preventDefault(); dragDepth = 0; $("dropHint").hidden = true;
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => loadText(rd.result);
+  rd.readAsText(f);
+});
+let resizeTimer = 0;
+window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 120); });
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+if (mq.addEventListener) mq.addEventListener("change", () => { readColors(); render(); });
+new MutationObserver(() => { readColors(); render(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+readColors();
+const embedded = $("embedded-trace").textContent.trim();
+if (embedded) loadText(embedded);
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Small test maze: walls, one black tile, one blue tile, one checkpoint, two victims.
+# Draw tiles 3 characters wide between '+' corners. Middle character of a tile:
+#   S start   X black (hole)   B blue   C silver checkpoint   . or space = white
+# A victim letter (H S U, or R Y G for colours) left/right of the middle character
+# sits on that tile's west/east wall. Victims on north/south walls: use "victim" lines.
+name Simple test maze
++---+---+---+---+---+
+| S             |   |
++   +---+---+   +   +
+|   |       |       |
++   +   +   +---+   +
+|H      |       | C |
++---+   +---+   +   +
+| X     |   B       |
++---+---+---+---+---+
+victim 2 1 N S
+start_dir E

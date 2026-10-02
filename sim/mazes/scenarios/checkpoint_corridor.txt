@@ -1,0 +1,15 @@
+# Scenario: drive north along a corridor through one silver checkpoint (C).
+# Expected: the robot marks only the C tile as a checkpoint.
+name Checkpoint in a corridor
++---+
+|   |
++   +
+|   |
++   +
+| C |
++   +
+|   |
++   +
+| S |
++---+
+start_dir N
