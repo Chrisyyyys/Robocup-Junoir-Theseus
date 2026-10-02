@@ -148,7 +148,7 @@ void fwd(double dist){ // in mm
       // is closer to the left wall, which correctly steers it back toward center.
     // [DIAG] capture the error fed to PID so it can be logged below
     double _diag_pid_err = center();
-    adjustment = center_PID.getPID(_diag_pid_err);
+    adjustment = constrain(center_PID.getPID(_diag_pid_err), -40, 40); // limit how hard the wall follower may steer
     /*
     double yaw = myGyro.heading()-init_yaw;
     if(yaw>180) yaw = yaw-360;
@@ -188,6 +188,7 @@ void fwd(double dist){ // in mm
       Serial.print(" fr=");
       Serial.println(front_right_current);
       fwdExit = "emergency-front";
+      if((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3 < pulses/2) moveCutShort = true;
       drivetrain.fullstop();
       delay(50);
       break;

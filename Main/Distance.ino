@@ -44,6 +44,7 @@ void init_dist() {
     else{
       Serial.println("Sensor "+String(i)+" is able to initialize");
     }
+    sensors[i].setTimeout(100); // never wait forever for a reading (the library default is no timeout)
     sensors[i].startContinuous(); // start continuous ranging.
   }
     
@@ -226,7 +227,7 @@ int detectWall(int dir){
   if(dir == 0){ // check if there is a wall at north
     int a = measure(1);
     int b = measure(7);
-    if((a<MIN_DIST&&a!=-1&&a!=8191)&&(b<MIN_DIST&&b!=-1&&b!=8191)){
+    if((a<FRONT_WALL_MAX_MM&&a!=-1&&a!=8191)&&(b<FRONT_WALL_MAX_MM&&b!=-1&&b!=8191)){
       return 0; // there is a wall.
     }
     else{
@@ -608,8 +609,8 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
         int frontNow = measure(1);
         int travelled = (_ != -1 && frontNow != -1) ? (_ - frontNow) : 0;
         int remaining = constrain(TILE_MM - travelled, 0, TILE_MM);
+        steps = TURN; // reset BEFORE fwd(): if fwd() sees the obstacle again it must start a new manoeuvre, not recurse into this step
         fwd(remaining);
-        steps = TURN;
         return _;
       }
       case WIGGLE:{

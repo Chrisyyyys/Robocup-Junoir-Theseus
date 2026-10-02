@@ -67,7 +67,10 @@ int read_color(){
     return -1; // black
   }
   
-  if(r>SILVER_THRESHOLD){ // silver reflects more absolute light
+  // Only count silver for the NEXT tile once the sensor is over it (second half of a move);
+  // otherwise driving off a checkpoint marks the tile after it as a checkpoint.
+  bool overNextTile = fwdActive && (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3 > pulsesForDistanceMm(TILE_MM/2);
+  if(r>SILVER_THRESHOLD && overNextTile){ // silver reflects more absolute light
     int nx = x_pos; int ny = y_pos;
     stepForward(currentDir,nx,ny);
     //Serial.print("silver at ");

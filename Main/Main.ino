@@ -24,6 +24,7 @@
 #include "motors.h"
 // movement constants
 #define MIN_DIST 120         // mm (tune this)
+#define FRONT_WALL_MAX_MM 200 // a front wall in the current tile is never further than this; the next tile's wall is >= 360 mm
 #define OBSTACLE_DIST 90
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
 #define ROBOT_LENGTH_MM 170                                      // mm, robot front-to-back length
@@ -171,6 +172,7 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
 const int logicswitch = 22;
 volatile bool Pausemaze = false; // set by pauseThread, read by loop()
 volatile bool moveInterrupted = false; // fwd() sets true when a pause aborts the move before the tile is completed
+bool moveCutShort = false; // fwd() sets true when the front emergency stop ends the move before half a tile
 int x_checkpoint = MAP_SIZE/2, y_checkpoint = MAP_SIZE/2;
 int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
 bool tilecheck = false;
@@ -296,8 +298,8 @@ void setup(){
   Wire.begin();
   disableAllCall();
   myMux.begin();
-  calibrateSensor(2,80);
   init_dist(); // initialize mux before distance sensors.
+  //calibrateSensor(2,80); // only after init_dist(): before it, sensor 2 is not measuring yet
   scanAllPorts();
   init_color();
   init_drive();
@@ -439,6 +441,13 @@ void loop(){
       // position or write walls/edges (the robot didn't actually traverse the tile).
       if(moveInterrupted == true){
         if(Pausemaze == true) state = PAUSE;
+        break;
+      }
+      // The robot did not reach the next tile: don't move the position, look again from here.
+      if(moveCutShort == true){
+        moveCutShort = false;
+        turnCompletedForMove = false;
+        state = SENSE_TILE;
         break;
       }
       // update map + robot position only on a successful (non-black) move
