@@ -225,14 +225,28 @@ def load_result(path, rc, log):
         return {"outcome": "crashed", "detail": "simulator exit code %s: %s" % (rc, log.strip()[-800:])}
 
 
-def write_viewer(trace_path, out_html, title="Theseus run"):
+def write_viewer(trace_path, out_html, title="Theseus run", compare=None, artifact=False, note=None):
+    """Replay page with the trace built in. compare: list of (label, trace_path) to switch between."""
     with open(VIEWER, encoding="utf-8") as fh:
         page = fh.read()
-    with open(trace_path, encoding="utf-8") as fh:
-        data = fh.read().replace("</", "<\\/")
+    if compare:
+        parts = []
+        for label, path in compare:
+            with open(path, encoding="utf-8") as fh:
+                parts.append('{"label":%s,"trace":%s}' % (json.dumps(label), fh.read().strip()))
+        data = '{"note":%s,"runs":[' % json.dumps(note or "") + ",".join(parts) + "]}"
+    else:
+        with open(trace_path, encoding="utf-8") as fh:
+            data = fh.read()
+    data = data.replace("</", "<\\/")
     tag = '<script type="application/json" id="embedded-trace">'
     page = page.replace(tag + "</script>", tag + data + "</script>")
     page = page.replace("<title>Maze Replay</title>", "<title>%s</title>" % html.escape(title))
+    if artifact:  # page body only: the artifact host adds doctype, html, head and body
+        for tag in ("<!doctype html>\n", '<html lang="en">\n', "<head>\n", '<meta charset="utf-8">\n',
+                    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n',
+                    "</head>\n", "<body>\n", "</body>\n", "</html>\n"):
+            page = page.replace(tag, "", 1)
     with open(out_html, "w", encoding="utf-8") as fh:
         fh.write(page)
     return out_html
@@ -554,8 +568,13 @@ def cmd_gen(args):
 
 
 def cmd_view(args):
-    out = args.output or os.path.splitext(args.trace)[0] + ".html"
-    write_viewer(args.trace, out, "Theseus replay")
+    traces = args.trace
+    out = args.output or os.path.splitext(traces[0])[0] + ".html"
+    compare = None
+    if len(traces) > 1:
+        labels = args.labels or [os.path.basename(os.path.dirname(os.path.abspath(t))) or t for t in traces]
+        compare = list(zip(labels, traces))
+    write_viewer(traces[0], out, args.title or "Theseus replay", compare=compare, artifact=args.artifact, note=args.note)
     print("wrote", out)
     if not args.no_open:
         import webbrowser
@@ -618,8 +637,12 @@ def main():
     p.add_argument("-o", "--output")
     p.set_defaults(func=cmd_gen)
 
-    p = sub.add_parser("view", help="turn a trace.json into a replay page")
-    p.add_argument("trace")
+    p = sub.add_parser("view", help="turn one or more trace.json files into a replay page")
+    p.add_argument("trace", nargs="+", help="trace.json; give several to switch between them on the page")
+    p.add_argument("--labels", nargs="+", help="names for the traces, in the same order")
+    p.add_argument("--title", help="page title")
+    p.add_argument("--note", help="one line shown under the header (for pages with several traces)")
+    p.add_argument("--artifact", action="store_true", help="write only the page body (for hosts that add their own <head>)")
     p.add_argument("-o", "--output")
     p.add_argument("--no-open", action="store_true")
     p.set_defaults(func=cmd_view)
