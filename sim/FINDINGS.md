@@ -6,6 +6,13 @@ The suggested changes are collected in [`examples/suggested-fixes.patch`](exampl
 so you can review them and apply them with `git apply sim/examples/suggested-fixes.patch` if you
 agree.
 
+**Update:** branch `claude/practical-brahmagupta-y7saan` already fixed findings 2, 4 and 9 in its own
+way. The other suggested changes (findings 1, 3, 5, 6 and 10) were added there in commits `7b01ff6`
+(bug fixes) and `5dbae59` (front-wall range and steering limit, to tune on the robot). On the same 40
+exploration mazes that branch went from 32 runs getting lost to 5. Still open: the turn/return
+problems (finding 8 and the return trip ignoring failed turns and moves), ramps (12-13), phantom
+obstacles (11) and the camera byte check (14).
+
 **How much to trust this.** The program logic (state machine, map, planner, timing, threads) runs
 exactly as written, so logic findings are solid. Anything about motion depends on the motor and
 sensor numbers in `sim/config/robot.cfg`, several of which are guesses until they are measured on
