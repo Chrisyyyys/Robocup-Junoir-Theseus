@@ -76,12 +76,25 @@ def run_compiler(cmd, what):
     return r.stderr
 
 
+def build_dir_for(sketch_dir):
+    """sim/build for Main/, a separate folder for any other sketch (e.g. a copy with a fix to try)."""
+    if os.path.abspath(sketch_dir) == os.path.join(REPO, "Main"):
+        return BUILD
+    tag = hashlib.sha1(os.path.abspath(sketch_dir).encode()).hexdigest()[:8]
+    return os.path.join(BUILD, "sketch-" + tag)
+
+
 def build(sketch_dir, quiet=False):
     """Compile the simulator core and the robot sketch. Returns the executable path."""
     cxx = find_compiler()
-    obj = os.path.join(BUILD, "obj")
+    sketch_dir = os.path.abspath(sketch_dir)
+    if not os.path.isdir(sketch_dir) or not sketch.ino_files(sketch_dir):
+        sys.exit("No Arduino sketch (.ino files) found in %s" % sketch_dir)
+    bdir = build_dir_for(sketch_dir)
+    exe = os.path.join(bdir, "theseus_sim" + (".exe" if os.name == "nt" else ""))
+    obj = os.path.join(bdir, "obj")
     os.makedirs(obj, exist_ok=True)
-    cache_path = os.path.join(BUILD, "flags.json")
+    cache_path = os.path.join(bdir, "flags.json")
     try:
         with open(cache_path) as fh:
             cache = json.load(fh)
@@ -92,7 +105,7 @@ def build(sketch_dir, quiet=False):
     base = ["-std=gnu++17", "-g", "-I" + os.path.join(SIM_DIR, "stubs"), "-I" + os.path.join(SIM_DIR, "core")]
     # Robot code: like the Arduino build (-fpermissive), unoptimised so the code behaves like the robot's
     # older compiler; uninitialised locals start at zero so runs repeat exactly.
-    robot_flags = base + ["-O0", "-fpermissive", "-I" + BUILD, "-I" + sketch_dir]
+    robot_flags = base + ["-O0", "-fpermissive", "-I" + bdir, "-I" + sketch_dir]
     for f in ("-ftrivial-auto-var-init=zero", "-fno-unreachable-traps", "-fno-strict-return"):
         if flag_ok(cxx, f, cache):
             robot_flags.append(f)
@@ -111,8 +124,8 @@ def build(sketch_dir, quiet=False):
         objects.append(o)
 
     # merge the .ino files like the Arduino IDE
-    merged = os.path.join(BUILD, "sketch_merged.cpp")
-    names_h = os.path.join(BUILD, "sketch_names.h")
+    merged = os.path.join(bdir, "sketch_merged.cpp")
+    names_h = os.path.join(bdir, "sketch_names.h")
     tmp_cpp, tmp_h = merged + ".new", names_h + ".new"
     sketch.merge_sketch(sketch_dir, tmp_cpp, "sim_probe.inc", tmp_h, display_root=REPO)
     for tmp, final in ((tmp_cpp, merged), (tmp_h, names_h)):
@@ -139,17 +152,17 @@ def build(sketch_dir, quiet=False):
         with open(warn_file) as fh:
             warnings.append(fh.read())
         objects.append(o)
-    with open(os.path.join(BUILD, "robot_warnings.txt"), "w") as fh:
+    with open(os.path.join(bdir, "robot_warnings.txt"), "w") as fh:
         fh.write("".join(warnings))
-    if newer(EXE, objects):
+    if newer(exe, objects):
         if not quiet:
-            print("linking", os.path.relpath(EXE, REPO))
-        run_compiler([cxx, "-o", EXE] + objects + ["-pthread"], "the simulator")
-    return EXE
+            print("linking", os.path.relpath(exe, REPO))
+        run_compiler([cxx, "-o", exe] + objects + ["-pthread"], "the simulator")
+    return exe
 
 
-def important_warnings():
-    path = os.path.join(BUILD, "robot_warnings.txt")
+def important_warnings(exe=None):
+    path = os.path.join(os.path.dirname(exe) if exe else BUILD, "robot_warnings.txt")
     if not os.path.exists(path):
         return []
     out, seen = [], set()
@@ -282,9 +295,9 @@ def cmd_run(args):
     with open(maze) as fh:
         print("".join(l for l in fh if not l.startswith("#")))
     print(fmt_summary(r))
-    warn = important_warnings()
+    warn = important_warnings(exe)
     if warn:
-        print("\nCompiler warnings worth a look in the robot code (all in sim/build/robot_warnings.txt):")
+        print("\nCompiler warnings worth a look in the robot code (all in %s):" % os.path.relpath(os.path.join(os.path.dirname(exe), "robot_warnings.txt"), REPO))
         for w in warn[:8]:
             print("  " + w)
     if os.path.exists(trace):
@@ -321,6 +334,44 @@ def classify(r, expect_return):
     return p
 
 
+def lost_cause(trace_path):
+    """Best guess at why the robot's position belief first went wrong (reads the trace)."""
+    try:
+        with open(trace_path) as fh:
+            t = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    lost = [e for e in t["events"] if e["k"] == "lost"]
+    if not lost:
+        return None
+    tl = lost[0]["t"]
+    serial = t.get("serial", [])
+    starts = [s[0] for s in serial if s[0] < tl and s[1].startswith("[FWD] entry")]
+    ts = starts[-1] if starts else 0
+    window = [s[1] for s in serial if ts <= s[0] <= tl]
+    text = "\n".join(window)
+    lops = [e for e in t["events"] if e["k"] == "lop" and tl - 12 <= e["t"] <= tl]
+    if lops:
+        return "after a lack-of-progress restart"
+    if "exit=emergency-front" in text:
+        return "move stopped early by the front emergency stop, still counted as a tile"
+    if "exit=obstacle" in text or "obstacle avoidance" in text:
+        return "obstacle avoidance"
+    if "climbing" in text or any(e["k"] == "ramp" and ts - 1 <= e["t"] <= tl for e in t["events"]):
+        return "ramp"
+    if "black" in text:
+        return "backing off a black tile"
+    fields = {k: i for i, k in enumerate(t["frame_fields"])}
+    fr = min(t["frames"], key=lambda f: abs(f[0] - tl))
+    rel = (fr[fields["h"]] - t["maze"]["start"]["dir"] * 90) % 360
+    off = abs(rel - 90 * round(rel / 90))
+    if off > 20:
+        return "heading went more than 20 deg off during the move"
+    if "botched" in "\n".join(s[1] for s in serial if ts - 10 <= s[0] <= tl):
+        return "turn did not finish (botched turn recovery)"
+    return "move ended in the wrong tile (distance error)"
+
+
 def _batch_job(job):
     exe, maze, seed, args_dict, out_dir, keep = job
     args = argparse.Namespace(**args_dict)
@@ -330,6 +381,8 @@ def _batch_job(job):
     r = load_result(result, rc, log)
     r["_seed"] = seed
     r["_maze"] = os.path.relpath(maze, out_dir)
+    if r.get("first_lost_s") is not None:
+        r["_lost_cause"] = lost_cause(trace)
     return r
 
 
@@ -430,17 +483,28 @@ def batch_report_md(results, args):
     if s["first_lost"]:
         fl = sorted(s["first_lost"])
         lines.append("When runs got lost, the first wrong position came after %.0f s (median)." % fl[len(fl) // 2])
+        causes = {}
+        for r in results:
+            if r.get("_lost_cause"):
+                causes[r["_lost_cause"]] = causes.get(r["_lost_cause"], 0) + 1
+        if causes:
+            lines.append("")
+            lines.append("Likely cause of the first wrong position (a guess from the trace):")
+            lines.append("")
+            for c, k in sorted(causes.items(), key=lambda kv: -kv[1]):
+                lines.append("- %s: %d run%s" % (c, k, "" if k == 1 else "s"))
     lines.append("")
-    lines.append("| seed | outcome | coverage | lost at | map errors | holes | LoP | victims | score | problems |")
-    lines.append("|---:|---|---:|---:|---:|---:|---:|---:|---:|---|")
+    lines.append("| seed | outcome | coverage | lost at | likely cause | map errors | holes | LoP | victims | score | problems |")
+    lines.append("|---:|---|---:|---:|---|---:|---:|---:|---:|---:|---|")
     for r in results:
         if "coverage" not in r:
-            lines.append("| %d | %s | - | - | - | - | - | - | - | %s |" % (r["_seed"], r.get("outcome"), r.get("detail", "")[:80]))
+            lines.append("| %d | %s | - | - | - | - | - | - | - | - | %s |" % (r["_seed"], r.get("outcome"), r.get("detail", "")[:80]))
             continue
         m = r["map"]
-        lines.append("| %d | %s | %d%% | %s | %d | %d | %d | %d/%d | %d | %s |" % (
+        lines.append("| %d | %s | %d%% | %s | %s | %d | %d | %d | %d/%d | %d | %s |" % (
             r["_seed"], r["outcome"], round(100 * r["coverage"]),
             ("%.0f s" % r["first_lost_s"]) if r.get("first_lost_s") is not None else "-",
+            r.get("_lost_cause") or "-",
             m["walls_missed"] + m["walls_phantom"] + m["tiles_outside_maze"], r["holes_entered"], r["lack_of_progress"],
             r["victims"]["identified"], r["victims"]["total"], r["score"]["total"], ", ".join(r["_problems"]) or "ok"))
     return "\n".join(lines) + "\n"
@@ -455,8 +519,8 @@ def batch_report_html(results, args):
         lost = ("%.0f s" % r["first_lost_s"]) if r.get("first_lost_s") is not None else "-"
         probs = ", ".join(r["_problems"]) or "ok"
         cls = "ok" if not r["_problems"] else "bad"
-        rows.append("<tr class='%s'><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><a href='%s'>maze</a> %s</td></tr>" % (
-            cls, r["_seed"], html.escape(r.get("outcome", "")), cov, lost,
+        rows.append("<tr class='%s'><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><a href='%s'>maze</a> %s</td></tr>" % (
+            cls, r["_seed"], html.escape(r.get("outcome", "")), cov, lost, html.escape(r.get("_lost_cause") or "-"),
             r["score"]["total"] if "score" in r else "-", html.escape(probs), html.escape(r["_maze"]), view))
     return """<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Simulator Batch Report</title><style>
@@ -464,13 +528,13 @@ def batch_report_html(results, args):
 @media (prefers-color-scheme:dark){:root{--bg:#191917;--fg:#ecebe6;--mut:#a3a19b;--line:#36352f;--ok:#6cc08b;--bad:#ff8a73}}
 body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;margin:0;padding:24px 16px;max-width:1000px;margin:auto}
 h1{font-size:22px;margin:0 0 4px}p{color:var(--mut);margin:0 0 16px}table{border-collapse:collapse;width:100%%;font-variant-numeric:tabular-nums}
-td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}tr.ok td:nth-child(6){color:var(--ok)}tr.bad td:nth-child(6){color:var(--bad)}
+td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}tr.ok td:nth-child(7){color:var(--ok)}tr.bad td:nth-child(7){color:var(--bad)}
 .k{display:flex;gap:24px;flex-wrap:wrap;margin:16px 0 24px}.k div b{display:block;font-size:24px}a{color:inherit}
 .wrap{overflow-x:auto}</style></head><body>
 <h1>Simulator batch report</h1><p>%d runs on %s mazes, generated %s</p>
 <div class="k"><div><b>%d%%</b>runs with no problems</div><div><b>%d%%</b>average coverage</div><div><b>%d</b>runs got lost</div>
 <div><b>%d</b>runs entered a hole</div><div><b>%.0f</b>average score</div></div>
-<div class="wrap"><table><tr><th>seed</th><th>outcome</th><th>coverage</th><th>first lost</th><th>score</th><th>problems</th><th>files</th></tr>%s</table></div>
+<div class="wrap"><table><tr><th>seed</th><th>outcome</th><th>coverage</th><th>first lost</th><th>likely cause</th><th>score</th><th>problems</th><th>files</th></tr>%s</table></div>
 </body></html>""" % (s["runs"], "given" if args.maze else html.escape(args.profile), datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                      round(100 * s["no_problems"] / max(1, s["runs"])), round(100 * s["coverage"]), s["lost"], s["hole"],
                      s["score"], "".join(rows))
@@ -502,7 +566,7 @@ def cmd_view(args):
 def cmd_build(args):
     exe = build(args.sketch)
     print("built", exe)
-    warn = important_warnings()
+    warn = important_warnings(exe)
     if warn:
         print("\nCompiler warnings worth a look in the robot code:")
         for w in warn:

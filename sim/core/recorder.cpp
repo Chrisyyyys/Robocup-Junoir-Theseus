@@ -687,6 +687,12 @@ void write_result_json(FILE* f, const std::string& outcome, const std::string& d
           "\"blue_tiles\":%d,\"speed_bumps\":%d,\"stairs\":%d,\"ramps\":%d,\"exit_bonus\":%d,\"lack_of_progress\":%d},",
           total, vpoints, kitpoints, misid_points, cp_points, blue_points, bump_points, stair_points, ramp_points,
           exit_points, lop_points);
+  fprintf(f, "\"stack_bytes\":{");
+  {
+    auto su = sched_stack_use();
+    for (size_t i = 0; i < su.size(); i++) fprintf(f, "%s\"%s\":%ld", i ? "," : "", jesc(su[i].first).c_str(), su[i].second);
+  }
+  fprintf(f, "},");
   fprintf(f, "\"warnings\":[");
   for (size_t i = 0; i < g_warning_order.size(); i++) {
     auto& w = g_warnings[g_warning_order[i]];
@@ -762,6 +768,15 @@ void finish(const std::string& outcome, const std::string& detail) {
   static std::atomic<bool> once{false};
   if (once.exchange(true)) {
     for (;;) std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+  for (auto& su : sched_stack_use()) {
+    // The PC build uses roughly 1.5-2x more stack than the GIGA build, so only flag clear excess.
+    double limit = su.first == "loop" ? cfg.num("sim.stack_main_bytes", 32768) : cfg.num("sim.stack_thread_bytes", 4096);
+    if (su.second > 2 * limit)
+      rec_warning("stack_" + su.first, "Thread '" + su.first + "' used " + std::to_string(su.second / 1024) +
+                                           " KB of stack in the simulation (the GIGA gives it about " +
+                                           std::to_string((int)(limit / 1024)) +
+                                           " KB). On the robot this likely overflows the stack and crashes. Look for deep or endless recursion.");
   }
   if (!g_serial_cur.empty()) rec_serial_char('\n');
   if (!detail.empty()) g_events.push_back(EventRec{now_s(), "end", outcome + ": " + detail, robot.x, robot.y});

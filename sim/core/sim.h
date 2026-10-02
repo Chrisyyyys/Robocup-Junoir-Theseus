@@ -70,6 +70,7 @@ void sched_mutex_unlock(int id);
 void sched_set_world_hook(void (*advance)(int64_t to_us));
 void sched_start_watchdog(double wall_seconds);
 std::string sched_describe();
+std::vector<std::pair<std::string, long>> sched_stack_use();  // bytes of stack each thread used (PC build)
 
 // ------------------------------------------------------------------ maze world
 enum TileType { T_WHITE = 0, T_BLACK = 1, T_BLUE = 2, T_SILVER = 3, T_VOID = 4 };

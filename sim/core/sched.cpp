@@ -33,6 +33,8 @@ struct SThread {
   std::condition_variable cv;
   void (*fn)() = nullptr;
   int blocked_on = -1;
+  uintptr_t stack_base = 0;  // stack pointer when the thread started
+  uintptr_t stack_min = 0;   // lowest stack pointer seen (stacks grow down)
 };
 
 struct SMutex {
@@ -173,6 +175,7 @@ void thread_main(SThread* t) {
     t_self = t->id;
     recompute_next_event();
   }
+  t->stack_base = t->stack_min = (uintptr_t)__builtin_frame_address(0);
   t->fn();
   std::unique_lock<std::mutex> lk(g_m);
   g_pending = 0;
@@ -192,6 +195,7 @@ void sched_init_main(const char* name) {
   g_running = 0;
   t_self = 0;
   g_started = true;
+  t->stack_base = t->stack_min = (uintptr_t)__builtin_frame_address(0);
   recompute_next_event();
 }
 
@@ -211,6 +215,11 @@ int64_t sched_committed_now() { return g_now.load(); }
 
 void sched_busy(int64_t us) {
   if (!g_started || g_hook_active || t_self < 0 || us <= 0) return;
+  {
+    SThread* me = g_threads[t_self];
+    uintptr_t sp = (uintptr_t)__builtin_frame_address(0);
+    if (sp < me->stack_min) me->stack_min = sp;
+  }
   g_pending += us;
   if (g_now.load() + g_pending < g_next_event) return;
   std::unique_lock<std::mutex> lk(g_m);
@@ -349,6 +358,12 @@ void sched_mutex_unlock(int id) {
     me->ready_seq = ++g_seq;
     schedule(lk, me);
   }
+}
+
+std::vector<std::pair<std::string, long>> sched_stack_use() {
+  std::vector<std::pair<std::string, long>> out;
+  for (auto* t : g_threads) out.push_back({t->name, (long)(t->stack_base - t->stack_min)});
+  return out;
 }
 
 std::string sched_describe() {

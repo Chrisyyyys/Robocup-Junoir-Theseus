@@ -19,6 +19,9 @@ What you get from a run:
 - batch reports over many random RCJ-style mazes, so you can see how often something goes wrong
   and compare before/after a code change
 
+**[FINDINGS.md](FINDINGS.md)** lists what the simulator found in the current robot code, with a patch
+to try ([examples/suggested-fixes.patch](examples/suggested-fixes.patch)).
+
 Results are **only as realistic as the numbers in `sim/config/robot.cfg`**. Several of them are
 guesses (marked `GUESS`). See [Calibrating the simulator](#calibrating-the-simulator).
 
@@ -76,7 +79,15 @@ python sim/sim.py run --maze sim/mazes/simple.txt --boot cold # reproduce the st
 ```
 
 To check that a code change helps, run the same batch (same `--seed-start` and `--count`) before
-and after: the mazes and the noise are identical, so differences come from your change.
+and after: the mazes and the noise are identical, so differences come from your change. You can
+keep your current code and try the change on a copy:
+
+```sh
+mkdir -p /tmp/fixed && cp -r Main /tmp/fixed/        # keep the folder name Main (like Main.ino)
+patch -d /tmp/fixed -p1 < sim/examples/suggested-fixes.patch   # or edit /tmp/fixed/Main by hand
+python sim/sim.py batch --count 40 --moves-limit off                          # current code
+python sim/sim.py batch --count 40 --moves-limit off --sketch /tmp/fixed/Main # the changed copy
+```
 
 ## The replay page
 
