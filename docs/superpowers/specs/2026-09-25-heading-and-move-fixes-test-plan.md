@@ -1,8 +1,10 @@
 # Test plan: heading and move fixes
 
 **Branch:** `claude/practical-brahmagupta-y7saan`
-**Fixes under test:** #1 heading frame, #5 turns, #6 wall re-sync, #4 start/resume, #3 move results.
-**Not fixed on this branch:** #2 (checkpoint saved one tile past the silver tile) and the gaps listed at the end.
+**Fixes under test:** #1 heading frame, #5 turns, #6 wall re-sync, #4 start/resume, #3 move results,
+plus the later fixes in section 7: #2 checkpoint tile, start-up freeze, missing `return`, front wall
+range and wall-follower steering limit.
+**Not fixed on this branch:** the gaps listed at the end.
 
 Work through the sections in order. Section 1 tunes the turns, and every later test depends on turns being right.
 
@@ -95,7 +97,7 @@ Then start on a tile that has a side wall.
 **4b. Powered on at RUN.** Power on with the switch already at RUN.
 - **Pass:** the robot doesn't move and the log shows `[WAIT] armed=0`. Flip to PAUSE (`armed=1`), then to RUN, and it starts.
 
-**4c. LoP resume in different directions.** Do this *before* the robot reaches any silver tile. The checkpoint is then still the start tile, so issue #2 can't interfere. During a run:
+**4c. LoP resume in different directions.** Do this *before* the robot reaches any silver tile, so the checkpoint is still the start tile (section 7b tests silver tiles). During a run:
 1. Flip to PAUSE.
 2. Carry the robot back to the start tile and put it down facing one of these ways:
    - the same way it faced before;
@@ -154,9 +156,39 @@ The changes also touch these paths, so check they still work:
 - **Blue tiles:** the robot still waits 5 s.
 - **Obstacles:** a normal obstacle detour still ends with `result=OK`.
 
+## 7. Later fixes
+
+These were found with the maze simulator (`sim/` on branch `claude/sharp-archimedes-xe6o9b`).
+
+**7a. Cold power-on (start-up freeze).** Switch the robot fully off for 10 s, then on with the logic
+switch at PAUSE. Do it 5 times.
+- **Pass:** every time, the boot log reaches `Sensor 6 is able to initialize` and then the `[WAIT]` lines.
+- **Baseline:** on `main`, `calibrateSensor(2,80)` read sensor 2 before `init_dist()` had started it,
+  and without a timeout that read waited forever after a cold power-on: the log stopped before
+  `Mux initialized`. A reset with the button did not show it, because the sensors were still running.
+
+**7b. Checkpoint tile (#2).** Run across a silver tile, then flip to PAUSE one tile after it, carry
+the robot back to the silver tile (the referee's LoP procedure) and flip to RUN.
+- **Pass:** `[RESUME] checkpoint x=… y=…` shows the silver tile's position, and no `tile mismatch
+  detected` follows. Silver is only accepted in the second half of a move now, when the colour sensor
+  is over the tile ahead.
+- **Baseline:** driving off the silver tile marked the *next* tile as the checkpoint.
+
+**7c. Front wall detected from further away.** A front wall now counts up to 200 mm
+(`FRONT_WALL_MAX_MM` in `Main.ino`) instead of 120 mm. Put the robot in a tile facing a wall, about
+5-7 cm short of the tile centre (front sensors read about 110-150 mm), and start a step.
+- **Pass:** `[WALLS] F=1`, the robot centres itself against the wall, and it does not plan a move
+  into it.
+- Also check a tile with no front wall: `F=0` (the next tile's wall reads 360 mm or more).
+
+**7d. Wall-follower steering limit.** The right-wall correction in `fwd()` is limited to ±40. Start
+a straight run along a right-hand wall with the robot 3 cm off-centre.
+- **Pass:** it eases back to its distance from the wall without swinging more than about 10°.
+- If it corrects too slowly or drifts into the wall, raise the limit (the `-40, 40` in `movement.ino`)
+  to 60; if it still swerves, lower it.
+
 ## Known gaps: don't count these as failures of this branch
 
-- **#2:** after a LoP at a real silver tile, the robot resumes one tile off. Expect `tile mismatch detected` right after `[RESUME]`.
 - **Emergency stop:** it still needs **both** front sensors to see the obstruction. If one front sensor has no reading, the robot can still drive into a wall and count the move.
 - **Other known issues:**
   - #7 victim race.
