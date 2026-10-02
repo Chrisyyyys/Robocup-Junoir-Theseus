@@ -1,0 +1,13 @@
+# Scenario: the right-hand wall ends halfway along a straight corridor.
+# Expected: the robot drives straight through; watch the heading in the replay.
+name Right wall ends
++---+---+
+|   |   |
++   +   +
+|       |
++   +---+
+|   |
++   +
+| S |
++---+
+start_dir N

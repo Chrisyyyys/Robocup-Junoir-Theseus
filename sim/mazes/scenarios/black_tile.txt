@@ -1,0 +1,11 @@
+# Scenario: a black tile (hole) two tiles ahead. Expected: the robot sees it with the
+# colour sensor, backs off, marks it black and turns into the side corridor.
+name Black tile ahead
++---+---+
+| X |   |
++   +   +
+|       |
++   +---+
+| S |
++---+
+start_dir N

@@ -1,0 +1,124 @@
+diff --git a/Main/Distance.ino b/Main/Distance.ino
+index d99b911..c537709 100644
+--- a/Main/Distance.ino
++++ b/Main/Distance.ino
+@@ -44,6 +44,7 @@ void init_dist() {
+     else{
+       Serial.println("Sensor "+String(i)+" is able to initialize");
+     }
++    sensors[i].setTimeout(100); // never wait forever for a reading (the library default is no timeout)
+     sensors[i].startContinuous(); // start continuous ranging.
+   }
+     
+@@ -226,7 +227,7 @@ int detectWall(int dir){
+   if(dir == 0){ // check if there is a wall at north
+     int a = measure(1);
+     int b = measure(7);
+-    if((a<MIN_DIST&&a!=-1&&a!=8191)&&(b<MIN_DIST&&b!=-1&&b!=8191)){
++    if((a<FRONT_WALL_MAX_MM&&a!=-1&&a!=8191)&&(b<FRONT_WALL_MAX_MM&&b!=-1&&b!=8191)){
+       return 0; // there is a wall.
+     }
+     else{
+@@ -608,8 +609,8 @@ int obstacleavoidance(int leftright){ // leftright determines to manuver left or
+         int frontNow = measure(1);
+         int travelled = (_ != -1 && frontNow != -1) ? (_ - frontNow) : 0;
+         int remaining = constrain(TILE_MM - travelled, 0, TILE_MM);
++        steps = TURN; // reset BEFORE fwd(): if fwd() sees the obstacle again it must start a new manoeuvre, not recurse into this step
+         fwd(remaining);
+-        steps = TURN;
+         return _;
+       }
+       case WIGGLE:{
+diff --git a/Main/Main.ino b/Main/Main.ino
+index 76efed7..14eb23c 100644
+--- a/Main/Main.ino
++++ b/Main/Main.ino
+@@ -24,6 +24,7 @@
+ #include "motors.h"
+ // movement constants
+ #define MIN_DIST 120         // mm (tune this)
++#define FRONT_WALL_MAX_MM 200 // a front wall in the current tile is never further than this; the next tile's wall is >= 360 mm
+ #define OBSTACLE_DIST 90
+ #define TILE_MM 300         // one tile = 300mm (RCJ tile)
+ #define ROBOT_LENGTH_MM 170                                      // mm, robot front-to-back length
+@@ -171,6 +172,7 @@ dispenser disp(angle_increment,angle_offset,steps_per_revolution);
+ const int logicswitch = 22;
+ volatile bool Pausemaze = false; // set by pauseThread, read by loop()
+ volatile bool moveInterrupted = false; // fwd() sets true when a pause aborts the move before the tile is completed
++bool moveCutShort = false; // fwd() sets true when the front emergency stop ends the move before half a tile
+ int x_checkpoint = MAP_SIZE/2, y_checkpoint = MAP_SIZE/2;
+ int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
+ bool tilecheck = false;
+@@ -296,8 +298,8 @@ void setup(){
+   Wire.begin();
+   disableAllCall();
+   myMux.begin();
+-  calibrateSensor(2,80);
+   init_dist(); // initialize mux before distance sensors.
++  //calibrateSensor(2,80); // only after init_dist(): before it, sensor 2 is not measuring yet
+   scanAllPorts();
+   init_color();
+   init_drive();
+@@ -441,6 +443,13 @@ void loop(){
+         if(Pausemaze == true) state = PAUSE;
+         break;
+       }
++      // The robot did not reach the next tile: don't move the position, look again from here.
++      if(moveCutShort == true){
++        moveCutShort = false;
++        turnCompletedForMove = false;
++        state = SENSE_TILE;
++        break;
++      }
+       // update map + robot position only on a successful (non-black) move
+       if(blacktoggle == false){
+         markEdgeBothWays(x_pos, y_pos, currentDir);
+diff --git a/Main/color.ino b/Main/color.ino
+index f316192..a1e707a 100644
+--- a/Main/color.ino
++++ b/Main/color.ino
+@@ -67,7 +67,10 @@ int read_color(){
+     return -1; // black
+   }
+   
+-  if(r>SILVER_THRESHOLD){ // silver reflects more absolute light
++  // Only count silver for the NEXT tile once the sensor is over it (second half of a move);
++  // otherwise driving off a checkpoint marks the tile after it as a checkpoint.
++  bool overNextTile = fwdActive && (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3 > pulsesForDistanceMm(TILE_MM/2);
++  if(r>SILVER_THRESHOLD && overNextTile){ // silver reflects more absolute light
+     int nx = x_pos; int ny = y_pos;
+     stepForward(currentDir,nx,ny);
+     //Serial.print("silver at ");
+diff --git a/Main/movement.ino b/Main/movement.ino
+index 114a47e..7f2f306 100644
+--- a/Main/movement.ino
++++ b/Main/movement.ino
+@@ -148,7 +148,7 @@ void fwd(double dist){ // in mm
+       // is closer to the left wall, which correctly steers it back toward center.
+     // [DIAG] capture the error fed to PID so it can be logged below
+     double _diag_pid_err = center();
+-    adjustment = center_PID.getPID(_diag_pid_err);
++    adjustment = constrain(center_PID.getPID(_diag_pid_err), -40, 40); // limit how hard the wall follower may steer
+     /*
+     double yaw = myGyro.heading()-init_yaw;
+     if(yaw>180) yaw = yaw-360;
+@@ -188,6 +188,7 @@ void fwd(double dist){ // in mm
+       Serial.print(" fr=");
+       Serial.println(front_right_current);
+       fwdExit = "emergency-front";
++      if((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3 < pulses/2) moveCutShort = true;
+       drivetrain.fullstop();
+       delay(50);
+       break;
+diff --git a/Main/timer.cpp b/Main/timer.cpp
+index 47a219f..e2fabaf 100644
+--- a/Main/timer.cpp
++++ b/Main/timer.cpp
+@@ -15,6 +15,7 @@ double timer::delta_time(){
+ }
+ double timer::reset_delta_time(){
+   last = current;
++  return last;
+ }
+ void timer::pause(int on){
+   if(on == 1) startTimeStamp = micros();

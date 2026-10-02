@@ -1,2 +1,8 @@
 # Temporary browser profiles left behind when headless Edge/Chrome renders the diagrams
 outputs/diagrams/*-profile/
+
+# Maze simulator build files and run outputs
+sim/build/
+sim/out/
+sim/out-*.txt
+__pycache__/

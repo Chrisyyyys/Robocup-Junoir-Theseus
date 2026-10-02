@@ -1,0 +1,9 @@
+# Scenario: a 2-tile ramp (20 degrees) from the start corridor up to a second level.
+# Expected: the robot climbs, ends centred on the first tile at the top and keeps
+# counting tiles correctly.
+name Ramp up
++---+---+---+---+---+---+
+| S   .   >   >   .   . |
++---+---+---+---+---+---+
+start_dir E
+ramp_angle 20
