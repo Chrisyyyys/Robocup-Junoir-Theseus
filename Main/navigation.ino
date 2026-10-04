@@ -35,8 +35,10 @@ void victimTileFromEncoder(int distanceMm, int encoderCount, int &victimX, int &
 // mark victim of tile based on encoder position (single-core: read encoder directly)
 void markVictimAtEncoderPosition(int distanceMm) {
   int encoderCount = (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3;
-  int victimX, victimY;
-  victimTileFromEncoder(distanceMm, encoderCount, victimX, victimY);
+  // While the robot drives, the encoders say how far into the move it is. During a turn it stays in its tile, but the encoders still
+  // hold the last move (a full tile), so they used to put the victim on the NEXT tile and the camera found it again on the next turn.
+  int victimX = x_pos, victimY = y_pos;
+  if(fwdActive) victimTileFromEncoder(distanceMm, encoderCount, victimX, victimY);
   if(!inBounds(victimX, victimY)) return;
 
   mapGrid[victimX][victimY].setVictim(true);
@@ -387,6 +389,33 @@ void descend(Grid& mapgrid, int xpos, int ypos, Grid& m1, Grid& m2, Grid& m3, in
   writeWallsToCurrentTile(0, 1, 0, 1);
   updateFullyExploredAt(x_pos, y_pos);
   floor--;
+}
+
+// First step of the shortest known route from the current tile to the start tile, as a Direction (0..3), or -1 when
+// the map holds no route even if blue tiles and obstacle-flagged tiles are allowed.
+int stepTowardStart(){
+  if(currentFloor == 0)      m1 = mapGrid;
+  else if(currentFloor == 1) m2 = mapGrid;
+  else if(currentFloor == 2) m3 = mapGrid;
+  std::pair<int, std::pair<int,int>> here = {currentFloor, {x_pos, y_pos}};
+  std::pair<int, std::pair<int,int>> home = {0, {MAP_SIZE/2, MAP_SIZE/2}};
+  std::deque<std::pair<int, std::pair<int,int>>> path = BFS(here, m1, m2, m3, home, false, false);
+  if(path.size() < 2) path = BFS(here, m1, m2, m3, home, true, false);  // allow blue tiles
+  if(path.size() < 2) path = BFS(here, m1, m2, m3, home, true, true);   // allow tiles flagged as obstacles
+  if(path.size() < 2) return -1;
+  int dx = path[1].second.first  - path[0].second.first;
+  int dy = path[1].second.second - path[0].second.second;
+  if(dy == 0) return (dx == 1) ? EAST : WEST;
+  return (dy == 1) ? NORTH : SOUTH;
+}
+
+// Where to go next: toward the start tile once the move limit is reached, otherwise on with exploring.
+Direction planDirection(){
+  if(returning){
+    int toward = stepTowardStart();
+    if(toward >= 0) return (Direction)toward;
+  }
+  return pickNextDirection();
 }
 
 // old 2d bfs

@@ -8,7 +8,7 @@ void init_drive(){
 // Drives one move forward. Returns what actually happened: only MOVE_OK means the robot is
 // now in the next tile, so the caller must not advance the map position on anything else.
 MoveResult fwd(double dist){ // in mm
-  double pulses = dist/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
+  double pulses = (dist + FWD_TRIM_MM)/(wheel_diameter*M_PI)*wheel_cpr*gear_ratio; // easier to make a variable.
   bool black = false; // toggle for black tile
   bool climbtoggle = false; // toggle for climbing
   bool climbed = false; // if climbing occured.
@@ -21,7 +21,7 @@ MoveResult fwd(double dist){ // in mm
   PID gyroPID(1,0.001,0.03);
   PID Scale_PID(0.0045,0,0.0008); // pid for encoder 
   MoveResult result = MOVE_OK;
-  bool detoured = false; // an obstacle detour replaced the normal drive
+  fwdSoftFail = false;
   if(VERBOSE_DEBUG) Serial.println("forwarding");
   drivetrain.reset_encoderCount(true,true,true); // count this move from zero (the back-offs reverse to 0)
   // allow the camera RTOS thread to flag victims for this move
@@ -29,7 +29,7 @@ MoveResult fwd(double dist){ // in mm
   isVictim = false;
   victimPending = false;
   int init_pitch = myGyro.modulus((int)myGyro.pitch_heading());
-  int init_yaw = turnNeededDeg(myGyro.headingToCardinal(myGyro.heading()));
+  int init_yaw = turnNeededDeg((Direction)myGyro.headingToCardinal(myGyro.heading()));
   if(VERBOSE_DEBUG){
     Serial.println("init_yaw");
     Serial.println(init_yaw);
@@ -49,64 +49,27 @@ MoveResult fwd(double dist){ // in mm
   timer myTime;
   myTime.reset_delta_time();
   
-  int front_left = measure(7);int front_right = measure(1);
-  // outside loop
-    if(front_left<=OBSTACLE_DIST&&front_left!=-1&&front_right>=MIN_DIST&&front_right!=-1){ // trigger obstacleavoidance
-      Serial.println("obstacle left");
-      result = obstacleavoidance(1);
-      drivetrain.fullstop();
-      delay(50);
-      if(result == MOVE_OK) obstacle = true; // only a finished detour counts as a move
-      /*
-      if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
-        int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM); // don't "overmove"
-        while(drivetrain.encoderCountA >= -pulses && drivetrain.encoderCountB >= -pulses && drivetrain.encoderCountD >= -pulses){ // too far in front, go back
-          drivetrain.backward(150);
-        }
-      }
-      else if(prevdist - (measure(1)+measure(7))/2 < TILE_MM){
-        int pulses = pulsesForDistanceMm(TILE_MM-(prevdist - (measure(1)+measure(7))/2));
-        while(drivetrain.encoderCountA <= pulses && drivetrain.encoderCountB <= pulses && drivetrain.encoderCountD <= pulses){ // too far in front, go back
-          drivetrain.fw(150);
-        }
-      }
-      drivetrain.fullstop();
-      */
-      fwdExit = "obstacle-left";
-      detoured = true;
-    }
-    else if(front_right<=OBSTACLE_DIST&&front_right!=-1&&front_left>=OBSTACLE_DIST&&front_left!=-1){
-      Serial.println("obstacle right");
-      result = obstacleavoidance(0);
-      drivetrain.fullstop();
-      delay(50);
-      /*
-      if(prevdist - (measure(1)+measure(7))/2 > TILE_MM){
-        int pulses = pulsesForDistanceMm(prevdist - (measure(1)+measure(7))/2-TILE_MM);
-        while(drivetrain.encoderCountA >= -pulses && drivetrain.encoderCountB >= -pulses && drivetrain.encoderCountD >= -pulses){ // too far in front, go back
-          drivetrain.backward(150);
-        }
-      }
-      else if(prevdist - (measure(1)+measure(7))/2 < TILE_MM){
-        int pulses = pulsesForDistanceMm(TILE_MM-(prevdist - (measure(1)+measure(7))/2));
-        while(drivetrain.encoderCountA <= pulses && drivetrain.encoderCountB <= pulses && drivetrain.encoderCountD <= pulses){ // too far in front, go back
-          drivetrain.fw(150);
-        }
-      }
-      
-      drivetrain.fullstop();
-      */
-      if(result == MOVE_OK) obstacle = true; // only a finished detour counts as a move
-      fwdExit = "obstacle-right";
-      detoured = true;
-    }
-    
-  while(!detoured&&(climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses)&&black!=true){
+  // Obstacles are looked for inside the drive loop below. This used to be a single check here, before the move: at
+  // OBSTACLE_DIST (90 mm), when an obstacle in the next tile is still ~175 mm away, so it never fired in time.
+  int obstacleCount = 0;                           // consecutive loop passes with something close in front
+  double mmPerPulse = 1.0 / pulsesForDistanceMm(1.0);
+
+  // Driving time of this move, for the stuck check below. A pass of the loop takes about 30 ms; a much longer pass means the
+  // robot was standing still (the camera thread servicing a victim holds the I2C bus, so measure() blocks for seconds), and
+  // that time is not counted.
+  unsigned long moveStartMs = millis();
+  unsigned long lastPassMs = moveStartMs;
+  unsigned long stalledMs = 0;
+
+  while((climbtoggle==true||(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3<=pulses)&&black!=true){
     if(VERBOSE_DEBUG){
       Serial.print("distance travelled: ");
       Serial.println((((double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3)/5)/195*wheel_diameter*M_PI);
     }
     //Serial.println((drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3);
+    unsigned long nowMs = millis();
+    if(nowMs - lastPassMs > 1000) stalledMs += nowMs - lastPassMs;
+    lastPassMs = nowMs;
     if(Pausemaze==true) {drivetrain.fullstop(); result = MOVE_PAUSED; break;}
     // Service a camera victim flagged by the RTOS thread: stop, pause PID +
     
@@ -157,7 +120,19 @@ MoveResult fwd(double dist){ // in mm
     double _diag_pid_err = center();
     // Limit how hard the wall follower may steer: unlimited, 30 mm off-centre already gave
     // one side PWM 150 and the other 20 (a ~30 deg/s swerve). Tune on the robot.
-    adjustment = constrain(center_PID.getPID(_diag_pid_err), -40, 40);
+    if(centerHasWall){
+      adjustment = constrain(center_PID.getPID(_diag_pid_err), -40, 40);
+    }
+    else{
+      // No right wall to follow, so nothing steers the robot: motor mismatch and wheel slip become heading
+      // drift (3-5 deg per move in the simulator) and then sideways drift, until a wall stops it. Hold the
+      // heading the move started on (the nearest axis) with the gyro instead, with the same steering limit.
+      double yawErr = myGyro.heading() - init_yaw;
+      if(yawErr > 180) yawErr -= 360;
+      if(yawErr < -180) yawErr += 360;
+      _diag_pid_err = yawErr; // shows in the [CENTER] trace
+      adjustment = constrain(gyroPID.getPID(yawErr), -40, 40);
+    }
     /*
     double yaw = myGyro.heading()-init_yaw;
     if(yaw>180) yaw = yaw-360;
@@ -211,6 +186,52 @@ MoveResult fwd(double dist){ // in mm
       break;
     }
     
+    // Obstacle look-ahead. Something close in front that is not the far wall of the tile we are driving into is an
+    // obstacle: stop before touching it, back off to where the move started and report BLOCKED, so the edge is marked
+    // blocked and the planner picks another way. (The emergency stop above needs BOTH sensors under 50 mm, but an obstacle
+    // against a wall is seen by one sensor only, so it used to be driven into and pushed until the encoders ran out.)
+    // Only while flat: a ramp seen from below also reads close.
+    if(!climbtoggle && abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch) < 6){
+      double remainingMm = dist - (drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD)/3.0 * mmPerPulse;
+      if(remainingMm < 0) remainingMm = 0;
+      double farWallMm = remainingMm + FRONT_GAP_AT_CENTER_MM - 45; // the destination tile's own front wall reads about this much
+      bool closeAhead = (front_left_current != -1 && front_left_current < OBSTACLE_STOP_MM && front_left_current < farWallMm)
+                     || (front_right_current != -1 && front_right_current < OBSTACLE_STOP_MM && front_right_current < farWallMm);
+      obstacleCount = closeAhead ? obstacleCount + 1 : 0;
+      if(obstacleCount >= 2){
+        drivetrain.fullstop();
+        delay(100);
+        if(obstacleConfirmed()){
+          fwdExit = "obstacle";
+          backOffToMoveStart();
+          result = MOVE_BLOCKED;
+          break;
+        }
+        obstacleCount = 0; // a false alarm: carry on
+      }
+    }
+
+    // A move whose wheels spin against a wall or an obstacle ends "OK" when the encoders say the tile is done, wherever the robot
+    // really is. Such a move takes much longer than a clean one, so stop it when it does. Not on a ramp (it is slower there).
+    if(!climbtoggle && !climbed && !stuckCheckOff){
+      unsigned long passMs = millis() - lastPassMs; // this pass so far: counts as standing still when it was blocked
+      unsigned long drivingMs = millis() - moveStartMs - stalledMs - (passMs > 1000 ? passMs : 0);
+      if(drivingMs > MOVE_TIMEOUT_MS){
+        drivetrain.fullstop();
+        Serial.print("[MOVE] stuck after ");
+        Serial.print(drivingMs);
+        Serial.println(" ms");
+        fwdExit = "stuck";
+        fwdSoftFail = true; // the pose may be at fault: the edge gets one more try before it is blocked
+        result = MOVE_BLOCKED;
+        if(++stuckStreak >= MOVE_STUCK_LIMIT){
+          stuckCheckOff = true;
+          Serial.println("[MOVE] stuck stops in a row: stuck check switched off, MOVE_TIMEOUT_MS is probably too short");
+        }
+        break;
+      }
+    }
+
     // check pitch: if it is greater than 25, the robot is going up a slope, so the encoder is turned off.
     if(abs(myGyro.modulus(myGyro.pitch_heading())-init_pitch) > 20){
       Serial.println("climbing");
@@ -308,11 +329,130 @@ MoveResult fwd(double dist){ // in mm
   drivetrain.fullstop();
   drivetrain.reset_encoderCount(true,true,true);
   victimtoggle = false;
+  if(result == MOVE_OK && strcmp(fwdExit, "normal") == 0) stuckStreak = 0;
   Serial.print("[MOVE] result=");
   Serial.print(moveResultName(result));
   Serial.print(" exit=");
-  Serial.println(fwdExit);
+  Serial.print(fwdExit);
+  Serial.print(" ms=");
+  Serial.println(millis() - moveStartMs - stalledMs);
   return result;
+}
+
+// ---- Room to turn on the spot ------------------------------------------------------------------
+// The room around the robot before a turn, in mm: the smallest reading of each pair of sensors that is a wall of this tile (within the wall limit), 999 when
+// there is none. The sensors measure all the time, so the six are read in three rounds and averaged: the readings are noisy (about 3 mm) and the room to turn is
+// only a few mm.
+int gapRight = 999, gapLeft = 999, gapFront = 999, gapBack = 999; // result of readTurnGaps()
+void readTurnGaps(){
+  const int sensors[7] = {2, 3, 6, 5, 1, 7, 4};
+  long sum[7] = {0, 0, 0, 0, 0, 0, 0};
+  int n[7] = {0, 0, 0, 0, 0, 0, 0};
+  for(int round = 0; round < 3; round++){
+    for(int i = 0; i < 7; i++){
+      int v = measure(sensors[i]);
+      if(v != -1 && v < 8000){ sum[i] += v; n[i]++; }
+    }
+  }
+  int avg[7];
+  for(int i = 0; i < 7; i++) avg[i] = n[i] ? (int)(sum[i] / n[i]) : -1;
+  auto gap = [&](int a, int b, int maxMm){
+    int g = 999;
+    if(avg[a] != -1 && avg[a] <= maxMm && avg[a] < g) g = avg[a];
+    if(b >= 0 && avg[b] != -1 && avg[b] <= maxMm && avg[b] < g) g = avg[b];
+    return g;
+  };
+  gapRight = gap(0, 1, SIDE_WALL_MAX_MM);   // sensors 2, 3
+  gapLeft = gap(2, 3, SIDE_WALL_MAX_MM);    // sensors 6, 5
+  gapFront = gap(4, 5, FRONT_WALL_MAX_MM);  // sensors 1, 7
+  gapBack = gap(6, -1, FRONT_WALL_MAX_MM);  // sensor 4
+}
+
+// One straight leg of a shift: drives forward (dir = +1) or in reverse (dir = -1) for up to `pulses`
+// encoder counts and returns the counts really driven. Stops early when a front or back sensor reads NUDGE_STOP_GAP_MM.
+double nudgeLeg(int dir, double pulses){
+  unsigned long startMs = millis();
+  drivetrain.reset_encoderCount(true,true,true);
+  while(millis() - startMs < 2500){
+    if(Pausemaze == true) break;
+    double driven = dir * (double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD) / 3.0;
+    if(driven >= pulses) break;
+    if(dir > 0){
+      int fl = measure(7), fr = measure(1);
+      if((fl != -1 && fl < NUDGE_STOP_GAP_MM) || (fr != -1 && fr < NUDGE_STOP_GAP_MM)) break;
+      drivetrain.fw(100);
+    }
+    else{
+      int bk = measure(4);
+      if(bk != -1 && bk < NUDGE_STOP_GAP_MM) break;
+      drivetrain.backward(100);
+    }
+  }
+  drivetrain.fullstop();
+  double driven = dir * (double)(drivetrain.encoderCountA+drivetrain.encoderCountB+drivetrain.encoderCountD) / 3.0;
+  return driven < 0 ? 0 : driven;
+}
+
+// Shifts the robot sideways by shiftMm (+ = right, - = left) without changing where it is along the tile: point NUDGE_ANGLE_DEG away,
+// drive one leg, point the other way, drive the same distance back, square up. A leg of L mm shifts the robot by 2 * L * sin(angle),
+// so the leg length is chosen from the shift asked for. When there is no room ahead (a front wall within about 140 mm) the first leg is
+// the reverse one. The second leg is exactly as long as the first, so the robot ends beside where it started.
+void lateralShift(double shiftMm){
+  int dirSign = shiftMm > 0 ? +1 : -1;
+  double legMm = constrain(fabs(shiftMm) / (2.0 * sin(NUDGE_ANGLE_DEG * 3.14159265 / 180.0)), NUDGE_MIN_LEG_MM, NUDGE_MAX_LEG_MM);
+  double base = turnNeededDeg(currentDir);
+  double pulses = pulsesForDistanceMm(legMm);
+  int fl = measure(7), fr = measure(1);
+  int frontGap = 999;
+  if(fl != -1 && fl < frontGap) frontGap = fl;
+  if(fr != -1 && fr < frontGap) frontGap = fr;
+  int firstDir = (frontGap > 45 + 95) ? +1 : -1; // forward first when there is room ahead, otherwise reverse first
+  absoluteturn(base + firstDir * dirSign * NUDGE_ANGLE_DEG);
+  double first = nudgeLeg(firstDir, pulses);
+  if(first > 0.25 * pulses){ // a leg shorter than this shifts too little to be worth the second leg
+    absoluteturn(base - firstDir * dirSign * NUDGE_ANGLE_DEG);
+    nudgeLeg(-firstDir, first);
+  }
+  absoluteturn(base);
+  parallel(currentDir);
+}
+
+// Call before turning in place. Centres the robot when a wall is closer than the body's swing allows: across the path (the side walls) with a
+// sideways shift, along it (a front or back wall) by driving. Up to three tries, each one measured again. Returns true when it moved the robot.
+bool ensureTurnClearance(){
+  bool acted = false;
+  for(int k = 0; k < 3; k++){
+    readTurnGaps();
+    int right = gapRight, left = gapLeft, front = gapFront, back = gapBack;
+    double lat = 0; // + = move right
+    if(right < TURN_SIDE_GAP_MIN_MM && left < TURN_SIDE_GAP_MIN_MM) lat = (left - right) / 2.0;  // no room on either side: centre
+    else if(right < TURN_SIDE_GAP_MIN_MM) lat = -(TURN_SIDE_GAP_MIN_MM - right + 2);
+    else if(left < TURN_SIDE_GAP_MIN_MM) lat = (TURN_SIDE_GAP_MIN_MM - left + 2);
+    double lon = 0; // + = forward
+    if(front < TURN_END_GAP_MIN_MM && back < TURN_END_GAP_MIN_MM) lon = (front - back) / 2.0;
+    else if(front < TURN_END_GAP_MIN_MM) lon = -(TURN_END_GAP_MIN_MM - front + 2);
+    else if(back < TURN_END_GAP_MIN_MM) lon = (TURN_END_GAP_MIN_MM - back + 2);
+    if(fabs(lat) < 2 && fabs(lon) < 2) return acted;
+    acted = true;
+    Serial.print("[CLEAR] gaps r=");
+    Serial.print(right);
+    Serial.print(" l=");
+    Serial.print(left);
+    Serial.print(" f=");
+    Serial.print(front);
+    Serial.print(" b=");
+    Serial.print(back);
+    Serial.print(" -> shift lat=");
+    Serial.print(lat, 1);
+    Serial.print(" lon=");
+    Serial.println(lon, 1);
+    if(fabs(lon) >= 2){
+      double mm = constrain(lon, -40.0, 40.0);
+      nudgeLeg(mm > 0 ? +1 : -1, pulsesForDistanceMm(fabs(mm)));
+    }
+    if(fabs(lat) >= 2) lateralShift(constrain(lat, -40.0, 40.0));
+  }
+  return acted;
 }
 
 // Reverses until the wheels are back where the current move started (fwd() zeroes the
