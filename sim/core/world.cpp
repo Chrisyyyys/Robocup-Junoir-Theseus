@@ -68,7 +68,7 @@ bool World::wall(int x, int y, int side) const {
 bool World::parse(const std::string& text, std::string* err) {
   source_text = text;
   tile = cfg.num("field.tile_mm", 300);
-  wall_t = cfg.num("field.wall_thickness_mm", 12);
+  wall_t = cfg.num("field.wall_thickness_mm", 20);
   wall_h = cfg.num("field.wall_height_mm", 150);
   double ramp_angle = cfg.num("field.ramp_angle_deg", 20);
 
@@ -151,6 +151,7 @@ bool World::parse(const std::string& text, std::string* err) {
         case 'X': t.type = T_BLACK; break;
         case 'B': t.type = T_BLUE; break;
         case 'C': t.type = T_SILVER; break;
+        case 'R': t.type = T_RED; break;
         case '#': t.type = T_VOID; break;
         case '^': t.feature = F_RAMP; t.axis = DN; break;
         case '>': t.feature = F_RAMP; t.axis = DE; break;
@@ -158,6 +159,7 @@ bool World::parse(const std::string& text, std::string* err) {
         case '<': t.feature = F_RAMP; t.axis = DW; break;
         case 'T': t.feature = F_STAIRS; break;
         case 'b': t.feature = F_BUMP; break;
+        case 'p': t.feature = F_BUMP; t.tall = true; break;  // speed bump inside the dangerous zone (up to 2 cm)
         case 'd': t.feature = F_DEBRIS; break;
         case 'O': obstacle_tiles.push_back(idx(x, y)); break;
         default: warnings.push_back(std::string("unknown tile code '") + code + "' treated as a white tile");
@@ -328,11 +330,11 @@ bool World::finish_build(std::string* err) {
           t.axis = 0;
       }
     }
-  double bump_h = cfg.num("field.bump_height_mm", 20), step_h = cfg.num("field.step_height_mm", 20);
+  double bump_h = cfg.num("field.bump_height_mm", 10), dz_bump_h = cfg.num("field.dz_bump_height_mm", 20), step_h = cfg.num("field.step_height_mm", 10);
   for (auto& t : tiles) {
     if (t.feature == F_RAMP) continue;
     t.zmin = t.z;
-    t.zmax = t.z + (t.feature == F_BUMP ? bump_h : t.feature == F_STAIRS ? 2 * step_h : 0);
+    t.zmax = t.z + (t.feature == F_BUMP ? (t.tall ? dz_bump_h : bump_h) : t.feature == F_STAIRS ? 2 * step_h : 0);
   }
   for (auto& rp : ramps) {
     double slope = std::tan(rp.angle_deg * DEG);
@@ -472,14 +474,37 @@ void World::compute_floating() {
         }
       if (border || near_void) anchored[find(cid(i, j))] = 1;
     }
-  for (auto& v : victims) {
-    int a, b;
-    if (v.side == DN) { a = cid(v.x, v.y + 1); b = cid(v.x + 1, v.y + 1); }
-    else if (v.side == DS) { a = cid(v.x, v.y); b = cid(v.x + 1, v.y); }
-    else if (v.side == DE) { a = cid(v.x + 1, v.y); b = cid(v.x + 1, v.y + 1); }
-    else { a = cid(v.x, v.y); b = cid(v.x, v.y + 1); }
-    v.floating = !anchored[find(a)] && !anchored[find(b)];
+  // 2026 rules (3.3): tiles that lead to the start tile by consistently following the leftmost or rightmost wall are
+  // 'linear tiles', all others are 'floating tiles'; black tiles count as walls. A wall follower leaves the start tile and
+  // keeps one hand on the wall until its state repeats; every tile it passes is linear.
+  std::vector<char> linear(W * H, 0);
+  auto blocked = [&](int x, int y, int d) {
+    if (wall(x, y, d)) return true;
+    int nx = x + dir_dx(d), ny = y + dir_dy(d);
+    return !in(nx, ny) || at(nx, ny).type == T_VOID || at(nx, ny).type == T_BLACK;
+  };
+  for (int hand = -1; hand <= 1; hand += 2) {  // -1 = left hand, +1 = right hand
+    for (int d0 = 0; d0 < 4; d0++) {
+      int x = start_x, y = start_y, d = d0;
+      std::vector<char> seen(W * H * 4, 0);
+      linear[idx(x, y)] = 1;
+      for (int steps = 0; steps < W * H * 8; steps++) {
+        int key = (idx(x, y) * 4) + d;
+        if (seen[key]) break;
+        seen[key] = 1;
+        int order[4] = {(d + hand + 4) % 4, d, (d - hand + 4) % 4, (d + 2) % 4};
+        int nd = -1;
+        for (int k = 0; k < 4; k++)
+          if (!blocked(x, y, order[k])) { nd = order[k]; break; }
+        if (nd < 0) break;
+        d = nd;
+        x += dir_dx(d);
+        y += dir_dy(d);
+        linear[idx(x, y)] = 1;
+      }
+    }
   }
+  for (auto& v : victims) v.floating = !linear[idx(v.x, v.y)];
 }
 
 void World::build_boxes() {
@@ -542,15 +567,15 @@ double World::floor_z(double x, double y) const {
     }
     case F_BUMP: {
       double u = t.axis == 0 ? y - (ty + 0.5) * tile : x - (tx + 0.5) * tile;
-      double hw = cfg.num("field.bump_width_mm", 60) / 2, hh = cfg.num("field.bump_height_mm", 20);
+      double hw = cfg.num("field.bump_width_mm", 60) / 2, hh = t.tall ? cfg.num("field.dz_bump_height_mm", 20) : cfg.num("field.bump_height_mm", 10);
       if (std::fabs(u) < hw) return t.z + hh * std::sqrt(1 - (u / hw) * (u / hw));
       return t.z;
     }
     case F_STAIRS: {
       double u = t.axis == 0 ? y - ty * tile : x - tx * tile;
-      double step = cfg.num("field.step_height_mm", 20), z = 0;
-      if (u >= 0.17 * tile && u < 0.83 * tile) z = step;
-      if (u >= 0.33 * tile && u < 0.67 * tile) z = 2 * step;
+      double step = cfg.num("field.step_height_mm", 10), z = 0;
+      if (u >= 0.10 * tile && u < 0.90 * tile) z = step;
+      if (u >= 0.25 * tile && u < 0.75 * tile) z = 2 * step;  // rules 3.4.6: the top of the stairs is at least 15 cm long
       return t.z + z;
     }
     default:
@@ -613,7 +638,10 @@ double World::raycast(double ox, double oy, double oz, double dx, double dy, dou
     double disc = bq * bq - cc;
     if (disc < 0) continue;
     double t0 = -bq - std::sqrt(disc);
-    if (t0 < 0) t0 = 0;
+    if (t0 < 0) {
+      if (cc > 0) continue;  // the sensor is outside the cylinder and it is behind the beam: the beam's line passes through it, the beam does not
+      t0 = 0;                // the sensor is inside the cylinder
+    }
     if (t0 >= best) continue;
     double z = oz + slope * t0;
     if (z < o.z - 10 || z > o.z + o.height) continue;

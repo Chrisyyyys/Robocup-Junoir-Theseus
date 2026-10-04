@@ -1,0 +1,12 @@
+# Scenario (a stress test, not a legal field: the 2026 rules, 3.4.4, keep at least 20 cm of the tile free): a cylinder in the
+# middle of a corridor. The robot cannot pass it between 280 mm of walls.
+# Expected: the robot stops in front of it without touching it, backs off, marks that way blocked and does
+# not wait there. Before the obstacle look-ahead it drove into the cylinder and pushed it until the encoders ran out.
+# With the V2 robot the front sensors sit 80 mm either side of the centre line, so a cylinder exactly in the middle is
+# only seen from farther than about 18 cm and then lost again: see finding 22 in FINDINGS.md.
+name Obstacle blocks the corridor
++---+---+---+---+---+---+---+
+| S   .   .   .   .   .   . |
++---+---+---+---+---+---+---+
+obstacle 3 0 0 0 40
+start_dir E

@@ -73,7 +73,7 @@ std::string sched_describe();
 std::vector<std::pair<std::string, long>> sched_stack_use();  // bytes of stack each thread used (PC build)
 
 // ------------------------------------------------------------------ maze world
-enum TileType { T_WHITE = 0, T_BLACK = 1, T_BLUE = 2, T_SILVER = 3, T_VOID = 4 };
+enum TileType { T_WHITE = 0, T_BLACK = 1, T_BLUE = 2, T_SILVER = 3, T_VOID = 4, T_RED = 5 };  // red = entrance of the dangerous zone
 enum Feature { F_NONE = 0, F_RAMP = 1, F_STAIRS = 2, F_BUMP = 3, F_DEBRIS = 4 };
 enum Dir { DN = 0, DE = 1, DS = 2, DW = 3 };
 inline int dir_dx(int d) { return d == DE ? 1 : d == DW ? -1 : 0; }
@@ -83,6 +83,7 @@ struct TileInfo {
   TileType type = T_WHITE;
   Feature feature = F_NONE;
   bool start = false;
+  bool tall = false;   // speed bump inside the dangerous zone (higher than a normal one)
   int ramp = -1;       // index into World::ramps
   int axis = 0;        // travel axis for bumps/stairs: 0 = north-south, 1 = east-west
   double z = 0;        // floor height (mm); for ramp tiles the height at the low edge
@@ -90,9 +91,12 @@ struct TileInfo {
   bool reachable = false;
 };
 
+// The OpenMV script reports a cognitive target as the letter of its health status (ring sum 2 = H, 1 = S, 0 = U), exactly like a letter victim.
+inline char reported_letter(char type) { return type == 'R' ? 'H' : type == 'Y' ? 'S' : type == 'G' ? 'U' : type; }
+
 struct Victim {
   int x, y, side;  // tile and the wall of that tile the victim is on
-  char type;       // H S U (letters) or R Y G (colours)
+  char type;       // H S U (letter victims) or R Y G (cognitive targets: harmed, stable, unharmed)
   bool floating = false;
   double wx = 0, wy = 0, wz = 0;  // world position of the victim (on the wall face)
 };
@@ -119,7 +123,7 @@ struct Box {
 class World {
  public:
   int W = 0, H = 0;
-  double tile = 300, wall_t = 12, wall_h = 150;
+  double tile = 300, wall_t = 20, wall_h = 150;
   std::string name;
   std::vector<TileInfo> tiles;  // index y*W + x, y = 0 is the south row
   std::vector<uint8_t> hwall;   // (H+1)*W, hwall[j*W+x]: horizontal wall on line y=j*tile
@@ -164,6 +168,7 @@ struct TofDevice {
   uint8_t address = 0x29;
   bool initialized = false, ranging = false;
   double rx = 0, ry = 0, yaw = 0;  // mount in robot frame (mm, deg; 0 = forward, 90 = right)
+  double rz = -1;                  // height of the beam above the floor (mm); -1 = tof.height_mm
   double bias = 0;
   int64_t next_ready = 0;
   int64_t period = 33000;
@@ -284,6 +289,7 @@ struct Options {
   bool quiet = false;
   double stuck_s = 30;
   double idle_s = 60;
+  double return_idle_s = 40;       // RETURN: wheels may stand still this long before the run counts as "stopped"
 };
 extern Options opt;
 

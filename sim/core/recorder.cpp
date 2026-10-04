@@ -65,7 +65,7 @@ int64_t g_phys_t = 0, g_next_frame = 0, g_frame_us = 50000, g_next_lcd_poll = 0;
 
 int g_cur_tile = -2;
 std::vector<int> g_visits;
-std::set<int> g_cp_visited, g_bump_tiles, g_stair_tiles;
+std::set<int> g_cp_visited, g_bump_tiles, g_stair_tiles, g_ramps_done;
 std::map<int, int> g_blue_visits;
 std::map<int, double> g_blue_best_stop;
 double g_blue_stop_start = -1;
@@ -106,6 +106,8 @@ std::string g_hang_reason;
 double g_setup_done = -1;
 
 int g_iter_seen = 0, g_moves_counted = 0;
+double g_victim_drive_mm = 0, g_vp_x = 0, g_vp_y = 0;  // how far the robot moved while a camera victim was pending (it should stand still)
+bool g_vp_valid = false;
 bool g_start_pending = false;  // flip the logic switch PAUSE -> RUN once setup() is done
 
 std::string jesc(const std::string& s) {
@@ -246,6 +248,7 @@ void on_enter_tile(int from, int to) {
   if (t.feature == F_STAIRS) g_stair_tiles.insert(to);
   if (from >= 0 && world.tiles[from].feature == F_RAMP) {
     const Ramp& r = world.ramps[world.tiles[from].ramp];
+    g_ramps_done.insert(world.tiles[from].ramp);
     if (to == r.high_tile) {
       g_ramp_up++;
       event("ramp", "drove up the ramp to " + tile_name(to));
@@ -261,7 +264,10 @@ void identify_claim(char letter) {
   double bd = 1e9;
   for (int i = 0; i < (int)world.victims.size(); i++) {
     const Victim& v = world.victims[i];
-    double d = std::hypot(v.wx - robot.x, v.wy - robot.y);
+    // distance from the robot's body (its rectangle seen from above) to the victim: the rules say the robot must stop within 15 cm of it
+    double dx = v.wx - robot.x, dy = v.wy - robot.y, sn = std::sin(robot.th), cs = std::cos(robot.th);
+    double lx = dx * cs - dy * sn, ly = dx * sn + dy * cs;
+    double d = std::hypot(std::max(std::fabs(lx) - robot.half_wid, 0.0), std::max(std::fabs(ly) - robot.half_len, 0.0));
     if (d < bd) {
       bd = d;
       best = i;
@@ -281,7 +287,7 @@ void identify_claim(char letter) {
   }
   s.claimed = letter;
   s.t = now_s();
-  bool correct = letter == v.type;
+  bool correct = letter == reported_letter(v.type);
   if (correct && blinked) {
     s.identified = true;
     event("victim", std::string("correctly identified victim ") + v.type + " at " + tile_name(world.idx(v.x, v.y)) +
@@ -335,6 +341,14 @@ void record_frame() {
     if (d.logical >= 1 && d.logical <= 8) f.tof[d.logical - 1] = d.ranging ? d.latest : -1;
   for (int m = 0; m < 4; m++) f.mot[m] = robot.signed_pwm(m);
   g_frames.push_back(f);
+  if (p.victim_pending) {
+    if (g_vp_valid) g_victim_drive_mm += std::hypot(robot.x - g_vp_x, robot.y - g_vp_y);
+    g_vp_x = robot.x;
+    g_vp_y = robot.y;
+    g_vp_valid = true;
+  } else {
+    g_vp_valid = false;
+  }
 
   if (g_medkits_last == INT_MIN) g_medkits_last = p.medkits;
   if (p.medkits < g_medkits_last) {
@@ -520,7 +534,7 @@ void rec_on_tick(int64_t t_us) {
       g_progress_th = robot.th;
     }
     if (!g_hang_reason.empty() && t - g_last_motor > 5) finish("hung", g_hang_reason);
-    if (st == g_state_return && !motors && t - g_last_motor > 8) finish(g_claimed_home ? "returned" : "stopped", "");
+    if (st == g_state_return && !motors && t - g_last_motor > (g_claimed_home ? 8 : opt.return_idle_s)) finish(g_claimed_home ? "returned" : "stopped", "");
     if (!motors && t - g_last_motor > opt.idle_s)
       finish("idle", std::string("motors have been off for ") + std::to_string((int)opt.idle_s) + " s in state " +
                          state_name(st));
@@ -627,16 +641,22 @@ void write_result_json(FILE* f, const std::string& outcome, const std::string& d
   bool returned_home = (outcome == "returned" || outcome == "stopped" || outcome == "idle") && on_start;
 
   // score (approximate RCJ Rescue Maze rules, values in the config file)
-  int victims_ok = 0, misid = 0, vpoints = 0, kitpoints = 0, floating_ok = 0;
+  // RCJ Rescue Maze 2026, section 5.6: letter victims 5 (linear) / 15 (floating), cognitive targets (R Y G here) 10 / 30;
+  // one rescue kit on a victim 10, two kits 30; harmed victims take two kits, stable one, unharmed none
+  int victims_ok = 0, misid = 0, vpoints = 0, kitpoints = 0, floating_ok = 0, kits_ok = 0;
   for (size_t i = 0; i < world.victims.size(); i++) {
     const Victim& v = world.victims[i];
     const VictimState& s = g_vs[i];
     if (s.identified) {
       victims_ok++;
       if (v.floating) floating_ok++;
-      vpoints += (int)cfg.num(v.floating ? "score.victim_floating" : "score.victim_linear", v.floating ? 30 : 10);
-      int need = cfg.integer(std::string("score.kits_") + v.type, v.type == 'H' ? 2 : (v.type == 'S' || v.type == 'R' || v.type == 'Y') ? 1 : 0);
-      kitpoints += std::min(need, s.kits) * cfg.integer("score.kit", 10);
+      bool cog = v.type == 'R' || v.type == 'Y' || v.type == 'G';
+      vpoints += cfg.integer(std::string("score.victim_") + (cog ? "cog_" : "letter_") + (v.floating ? "floating" : "linear"),
+                             cog ? (v.floating ? 30 : 10) : (v.floating ? 15 : 5));
+      int need = cfg.integer(std::string("score.kits_") + v.type, (v.type == 'H' || v.type == 'R') ? 2 : (v.type == 'S' || v.type == 'Y') ? 1 : 0);
+      int got = std::min(need, s.kits);
+      kits_ok += got;
+      kitpoints += got >= 2 ? cfg.integer("score.kits_two", 30) : got == 1 ? cfg.integer("score.kit", 10) : 0;
     }
     if (s.misidentified) misid++;
   }
@@ -646,18 +666,25 @@ void write_result_json(FILE* f, const std::string& outcome, const std::string& d
   for (auto& kv : g_blue_visits)
     blue_points += std::max(0, cfg.integer("score.blue_first", 30) - cfg.integer("score.blue_revisit_penalty", 10) * (kv.second - 1));
   int bump_points = (int)g_bump_tiles.size() * cfg.integer("score.speed_bump", 5);
-  int stair_points = (int)g_stair_tiles.size() * cfg.integer("score.stairs", 5);
-  int ramp_points = (g_ramp_up + g_ramp_down) * cfg.integer("score.ramp", 10);
-  int exit_points = (returned_home && fully_inside) ? victims_ok * cfg.integer("score.exit_per_victim", 10) : 0;
-  int lop_points = g_lops * cfg.integer("score.lop", 0);
-  int total = vpoints + kitpoints + misid_points + cp_points + blue_points + bump_points + stair_points + ramp_points +
-              exit_points + lop_points;
+  int stair_points = (int)g_stair_tiles.size() * cfg.integer("score.stairs", 10);
+  int ramps_done = (int)g_ramps_done.size();  // at most 10 points per ramp, whichever way it was driven
+  int ramp_points = ramps_done * cfg.integer("score.ramp", 10);
+  int blue_tiles_ok = (int)g_blue_visits.size();
+  // exit bonus: back on the start tile (more than half of the robot inside it, the same rule as for a visited tile)
+  int exit_points = returned_home ? victims_ok * cfg.integer("score.exit_per_victim", 10) + blue_tiles_ok * cfg.integer("score.exit_per_blue", 10) +
+                                        (int)g_stair_tiles.size() * cfg.integer("score.exit_per_stairs", 5) + ramps_done * cfg.integer("score.exit_per_ramp", 5)
+                                  : 0;
+  // reliability bonus: 10 per identified victim, rescue kit and blue tile, minus 15 per lack of progress, never below zero
+  int lop_points = std::max(0, victims_ok * cfg.integer("score.reliability_per_victim", 10) + kits_ok * cfg.integer("score.reliability_per_kit", 10) +
+                                   blue_tiles_ok * cfg.integer("score.reliability_per_blue", 10) - g_lops * cfg.integer("score.lop", 15));
+  int total = std::max(0, vpoints + kitpoints + misid_points + cp_points + blue_points + bump_points + stair_points + ramp_points +
+                              exit_points + lop_points);
 
   fprintf(f, "{\"outcome\":\"%s\",\"detail\":\"%s\",\"maze\":\"%s\",\"seed\":%llu,\"sim_time_s\":%.2f,",
           outcome.c_str(), jesc(detail).c_str(), jesc(world.name).c_str(), (unsigned long long)opt.seed, t);
   fprintf(f, "\"setup_s\":%.2f,\"tiles_reachable\":%d,\"tiles_visited\":%d,\"coverage\":%.3f,", g_setup_done, world.reachable_count,
           visited, world.reachable_count ? (double)visited / world.reachable_count : 0.0);
-  fprintf(f, "\"moves\":%d,\"distance_m\":%.2f,", g_moves_counted ? g_moves_counted : p.iterator, robot.odometer_mm / 1000);
+  fprintf(f, "\"moves\":%d,\"distance_m\":%.2f,\"victim_drive_mm\":%.0f,", g_moves_counted ? g_moves_counted : p.iterator, robot.odometer_mm / 1000, g_victim_drive_mm);
   fprintf(f, "\"position_checks\":%d,\"position_errors\":%d,\"heading_errors\":%d,\"first_lost_s\":%s,", g_checks,
           g_pos_errors, g_dir_errors, g_first_lost < 0 ? "null" : std::to_string(g_first_lost).c_str());
   fprintf(f, "\"center_err_mm\":{\"mean\":%.1f,\"max\":%.1f},\"heading_err_deg\":{\"mean\":%.1f,\"max\":%.1f},",
@@ -702,7 +729,7 @@ void write_result_json(FILE* f, const std::string& outcome, const std::string& d
           returned_home ? "true" : "false", state_name(p.state));
   fprintf(f,
           "\"score\":{\"total\":%d,\"victims\":%d,\"rescue_kits\":%d,\"misidentification\":%d,\"checkpoints\":%d,"
-          "\"blue_tiles\":%d,\"speed_bumps\":%d,\"stairs\":%d,\"ramps\":%d,\"exit_bonus\":%d,\"lack_of_progress\":%d},",
+          "\"blue_tiles\":%d,\"speed_bumps\":%d,\"stairs\":%d,\"ramps\":%d,\"exit_bonus\":%d,\"reliability_bonus\":%d},",
           total, vpoints, kitpoints, misid_points, cp_points, blue_points, bump_points, stair_points, ramp_points,
           exit_points, lop_points);
   fprintf(f, "\"stack_bytes\":{");

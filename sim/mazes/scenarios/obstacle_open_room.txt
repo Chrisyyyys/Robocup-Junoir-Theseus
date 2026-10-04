@@ -1,0 +1,14 @@
+# Scenario: an open room with a cylinder on the robot's way, pushed to the north half of its tile.
+# Expected: the robot stops before the cylinder or goes round it, explores the rest of the room and never needs a
+# lack-of-progress restart. A cylinder offset by more than ~55 mm from the robot's path is beside the front sensors
+# rather than in front of them, so a light brush with the robot's front corner can still happen (see docs).
+name Obstacle in an open room
++---+---+---+---+---+
+|                   |
++   +   +   +   +   +
+| S                 |
++   +   +   +   +   +
+|                   |
++---+---+---+---+---+
+obstacle 2 1 0 85 40
+start_dir E

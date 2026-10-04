@@ -1,0 +1,12 @@
+# Scenario: the corridor east is blocked by a cylinder against a wall; a side branch north of the start leads to
+# more tiles.
+# Expected: the robot meets the cylinder, backs off or passes, and still explores the branch (the planner
+# must not stay stuck on the blocked edge). It needs no lack-of-progress restart.
+name Obstacle with a side branch
++---+---+---+---+---+---+---+
+|   |                       |
++   +   +---+---+---+---+---+
+|   | S   .   .   .   .   . |
++---+---+---+---+---+---+---+
+obstacle 3 1 0 -100 40
+start_dir E

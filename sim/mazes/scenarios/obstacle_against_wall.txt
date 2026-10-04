@@ -1,0 +1,12 @@
+# Scenario: a cylinder touching the right wall of a corridor (south side when facing east), the way the rules
+# (2026, 3.4.4) allow it: touching a wall and leaving at least 20 cm of the tile free. Only one front sensor can see
+# it: the other one reads the far wall.
+# Expected: the robot stops before touching it, backs off and marks that way blocked, and needs no
+# lack-of-progress restart. (It cannot pass: the free lane is 200 mm, the V2 robot is 180 mm wide over its wheels and the
+# wall follower would steer it into the far wall.)
+name Obstacle against the right wall
++---+---+---+---+---+---+---+
+| S   .   .   .   .   .   . |
++---+---+---+---+---+---+---+
+obstacle 3 0 0 -100 40
+start_dir E

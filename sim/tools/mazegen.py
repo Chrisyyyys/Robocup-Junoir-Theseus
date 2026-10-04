@@ -1,13 +1,16 @@
 """Random RoboCupJunior Rescue Maze style fields for the simulator.
 
-Follows the field rules (30 cm tiles, walls on tile edges, black holes, blue tiles,
-silver checkpoints, victims on walls, linear and floating walls, ramps of at most
-25 degrees joining two areas, speed bumps, stairs, debris and obstacles).
+Follows the 2026 field rules (30 cm tiles, walls on tile edges, black holes, blue tiles, silver checkpoints, red tile and
+dangerous zone, victims on walls, linear and floating tiles, ramps of at most 25 degrees joining two areas, speed bumps,
+stairs, debris and obstacles that leave at least 20 cm of free path).
 
 Profiles:
   walls  - walls only
   basic  - walls, black / blue / silver tiles and victims (no ramps or obstacles)
-  full   - everything: also speed bumps, stairs, debris, obstacles and a ramp to a second area
+  full   - everything: also speed bumps, stairs, debris, obstacles, a ramp to a second area and a dangerous zone
+
+Tile codes in the maze file: . floor, S start, X black, B blue, C silver (checkpoint), R red (entrance of the dangerous zone),
+# void, ^ > v < ramp, T stairs, b speed bump, p speed bump inside the dangerous zone (up to 2 cm), d debris.
 """
 
 import random
@@ -180,6 +183,37 @@ def place_floor(m, rng, profile, area_cells, used):
             count -= 1
 
 
+def linear_tiles(m):
+    """Tiles a left-hand or right-hand wall follower passes when it starts on the start tile (rules 3.3: 'linear tiles'; the
+    others are 'floating tiles'). Black tiles and void count as walls."""
+    def blocked(x, y, d):
+        if m.wall(x, y, d):
+            return True
+        nx, ny = x + DX[d], y + DY[d]
+        return not m.inside(nx, ny) or m.code[ny][nx] in "X#"
+    lin = {m.start}
+    for hand in (-1, 1):
+        for d0 in (N, E, S, W):
+            x, y = m.start
+            d = d0
+            seen = set()
+            for _ in range(m.w * m.h * 8):
+                if (x, y, d) in seen:
+                    break
+                seen.add((x, y, d))
+                nd = None
+                for cand in ((d + hand) % 4, d, (d - hand) % 4, (d + 2) % 4):
+                    if not blocked(x, y, cand):
+                        nd = cand
+                        break
+                if nd is None:
+                    break
+                d = nd
+                x, y = x + DX[d], y + DY[d]
+                lin.add((x, y))
+    return lin
+
+
 def floating_walls(m):
     """Set of wall segments (x, y, side) not connected to the outer wall."""
     parent = {}
@@ -216,15 +250,16 @@ def floating_walls(m):
 
 
 def place_victims(m, rng, profile, cells, count):
-    is_floating = floating_walls(m)
+    lin = linear_tiles(m)
+    obstacle_tiles = {(o[0], o[1]) for o in m.obstacles}
     faces = []
     for (x, y) in cells:
-        if m.code[y][x] in "X#<>^v":
+        # rules 3.6.3: never on walls facing black, silver, blue or red tiles, tiles with obstacles, speed bumps or stairs, or ramps
+        if m.code[y][x] in "XCBR#<>^vbpT" or (x, y) in obstacle_tiles:
             continue
         for d in (N, E, S, W):
             if m.wall(x, y, d):
-                corner = (x + (1 if d == E else 0), y + (1 if d == N else 0))
-                faces.append((x, y, d, is_floating(corner)))
+                faces.append((x, y, d, (x, y) not in lin))
     rng.shuffle(faces)
     faces.sort(key=lambda f: not f[3])  # put a few victims on floating walls first
     floating_quota = max(1, count // 4)
@@ -241,10 +276,51 @@ def place_victims(m, rng, profile, cells, count):
         chosen.append(f)
         used_tiles.add((f[0], f[1]))
     letters = "HSU"
-    colours = "RYG"
+    colours = "RYG"   # cognitive targets (harmed, stable, unharmed)
     for (x, y, d, fl) in chosen:
         pool = letters if (profile == "basic" and rng.random() < 0.6) or rng.random() < 0.55 else colours
         m.victims.append((x, y, d, rng.choice(pool)))
+
+
+def place_dangerous_zone(m, rng, area_cells, used):
+    """Rules 3.5: a pocket completely surrounded by walls, entered through one red tile, that the rest of the field does not
+    depend on. Here a dead-end corridor of 2-3 tiles: the tile next to the junction is the red entrance, behind it come speed
+    bumps up to 2 cm (code p), debris (d) or stairs (T)."""
+    if rng.random() < 0.3:
+        return
+    cellset = set(area_cells)
+
+    def open_nb(x, y):
+        return [(nx, ny) for d, nx, ny in m.neighbors(x, y) if m.code[ny][nx] != "#"]
+    leaves = [c for c in area_cells if c not in used and m.code[c[1]][c[0]] == "." and len(open_nb(*c)) == 1]
+    rng.shuffle(leaves)
+    for leaf in leaves:
+        chain = [leaf]
+        prev, cur = None, leaf
+        while len(chain) < 3:
+            nbs = [c for c in open_nb(*cur) if c != prev]
+            if not nbs:
+                break
+            nxt = nbs[0]
+            if nxt in used or nxt not in cellset or m.code[nxt[1]][nxt[0]] != "." or len(open_nb(*nxt)) != 2:
+                break
+            chain.append(nxt)
+            prev, cur = cur, nxt
+        # the entrance is the last tile of the chain (the one next to the junction); keep one tile of the pocket behind it
+        if len(chain) < 2:
+            continue
+        entrance, inside = chain[-1], chain[:-1]
+        m.code[entrance[1]][entrance[0]] = "R"
+        used.add(entrance)
+        for (x, y) in inside:
+            used.add((x, y))
+        straight = lambda x, y: (m.wall(x, y, E) and m.wall(x, y, W)) or (m.wall(x, y, N) and m.wall(x, y, S))
+        for (x, y) in inside:
+            kind = rng.choice(["p", "p", "d", "T", "."])
+            if kind in "pT" and not straight(x, y):
+                kind = "d"
+            m.code[y][x] = kind
+        return
 
 
 def generate(seed, profile="basic", width=None, height=None):
@@ -318,6 +394,7 @@ def generate(seed, profile="basic", width=None, height=None):
         if area2:
             place_floor(m, rng, profile, area2, used)
     if profile == "full":
+        place_dangerous_zone(m, rng, area1 + area2, used)
         flat = lambda x, y: m.code[y][x] == "."
         for (x, y) in pick_tiles(m, rng, rng.randint(1, 2), flat, used):
             m.code[y][x] = "b"
@@ -333,7 +410,8 @@ def generate(seed, profile="basic", width=None, height=None):
         open_tile = lambda x, y: flat(x, y) and sum(m.wall(x, y, d) for d in (N, E, S, W)) <= 1
         for (x, y) in pick_tiles(m, rng, rng.randint(1, 2), open_tile, used):
             side = rng.choice([d for d in (N, E, S, W) if m.wall(x, y, d)] or [N])
-            m.obstacles.append((x, y, DX[side] * 85, DY[side] * 85, 40))
+            # rules 3.4.4: touching a wall, so that at least 20 cm of the tile stays free; 100 = 140 (half the 28 cm path) - 40 (radius)
+            m.obstacles.append((x, y, DX[side] * 100, DY[side] * 100, 40))
             used.add((x, y))
     if profile != "walls":
         cells = area1 + area2

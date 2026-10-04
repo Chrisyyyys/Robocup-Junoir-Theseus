@@ -1,0 +1,12 @@
+# Scenario (a known gap with the V2 robot): a cylinder touching the end wall of a dead end, exactly ahead of the robot. The rules
+# allow it (touching a wall, 20 cm free). The V2 robot's two front sensors sit 80 mm either side of the centre line with a +-12 deg
+# cone, so a cylinder of 40 mm radius straight ahead is outside both cones when closer than about 18 cm: both read the end wall
+# behind it and the robot drives into the cylinder.
+# Expected with the hardware as drawn: the robot touches the cylinder and the stuck-move check ends the move after 7 s.
+# Expected with the front sensors toed in by 15 degrees (or a third sensor at the front centre): it stops in front of it.
+name Obstacle dead ahead in a dead end
++---+---+---+---+---+
+| S   .   .   .     |
++---+---+---+---+---+
+obstacle 3 0 100 0 40
+start_dir E

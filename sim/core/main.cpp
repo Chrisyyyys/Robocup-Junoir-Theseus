@@ -99,6 +99,7 @@ int main(int argc, char** argv) {
   opt.quiet = cfg.flag("sim.quiet", false);
   opt.stuck_s = cfg.num("sim.stuck_s", 30);
   opt.idle_s = cfg.num("sim.idle_s", 60);
+  opt.return_idle_s = cfg.num("sim.return_idle_s", 40);
 
   if (!world.load(maze, &err)) {
     fprintf(stderr, "maze error: %s\n", err.c_str());

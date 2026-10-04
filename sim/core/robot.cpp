@@ -14,7 +14,7 @@ static const double DEG = M_PI / 180.0;
 
 // config values used every physics step (read once in init)
 static struct {
-  double vmax, db_straight, db_turn, tau, skid, slip, yaw_noise, slope_k, blocked_spin, counts_per_mm,
+  double slide, vmax, db_straight, db_turn, tau, skid, slip, yaw_noise, slope_k, blocked_spin, counts_per_mm,
       enc_noise, battery, tof_height, tof_noise, tof_noise_frac, tof_max, tof_min, tof_dropout, tof_spike,
       tof_cone, gyro_noise, gyro_offset, pitch_noise, pitch_sign, color_noise, cam_fov, cam_range, cam_height,
       cam_misread, debris_yaw, debris_enc;
@@ -23,8 +23,8 @@ static struct {
 } P;
 
 void Robot::init() {
-  half_len = cfg.num("robot.length_mm", 170) / 2;
-  half_wid = cfg.num("robot.width_mm", 140) / 2;
+  half_len = cfg.num("robot.length_mm", 195) / 2;
+  half_wid = cfg.num("robot.width_mm", 180) / 2;
   wheelbase = cfg.num("drive.wheelbase_mm", 120);
   track = cfg.num("drive.track_mm", 130);
   P.vmax = cfg.num("drive.max_speed_mm_s", 210);
@@ -36,6 +36,7 @@ void Robot::init() {
   P.yaw_noise = cfg.num("drive.yaw_noise_deg_per_m", 1.5);
   P.slope_k = cfg.num("drive.slope_slowdown", 0.8);
   P.blocked_spin = cfg.num("drive.blocked_wheel_spin", 0.3);
+  P.slide = cfg.num("drive.wall_slide_mm", 0);
   P.counts_per_mm = cfg.num("drive.encoder_counts_per_rev", 975) / (M_PI * cfg.num("drive.wheel_diameter_mm", 80));
   P.enc_noise = cfg.num("drive.encoder_noise", 0.01);
   P.battery = cfg.num("drive.battery_factor", 1.0);
@@ -106,6 +107,7 @@ void Robot::init() {
     d.ry = v[1];
     d.yaw = v[2];
     d.port = (int)v[3];
+    d.rz = v.size() >= 5 ? v[4] : -1;  // optional 5th number: height of this sensor above the floor
     d.bias = setup_rng.uniform(-1, 1) * cfg.num("tof.bias_spread_mm", 4);
     d.period = (int64_t)(cfg.num("tof.timing_budget_ms", 33) * 1000) + 600;
     if (cold) {
@@ -232,6 +234,15 @@ void Robot::physics_step(double dt, int64_t t_us) {
     hit = true;
     if (free_at(nx, ny, th)) { x = nx; y = ny; }
     else if (free_at(x, y, nth)) { th = nth; }
+    else if (P.slide > 0 && [&]() {
+               // soft walls: a turn that would swing a corner into a wall pushes the robot sideways instead (the wheels slip), by up to drive.wall_slide_mm
+               for (double r = 1; r <= P.slide; r += 1)
+                 for (int k = 0; k < 16; k++) {
+                   double a = k * M_PI / 8, px = x + r * std::cos(a), py = y + r * std::sin(a);
+                   if (free_at(px, py, nth)) { x = px; y = py; th = nth; return true; }
+                 }
+               return false;
+             }()) {}
     else if (free_at(nx, y, th)) { x = nx; }
     else if (free_at(x, ny, th)) { y = ny; }
   }
@@ -284,7 +295,7 @@ int Robot::tof_measure(const TofDevice& d) {
   // in-between readings, like the real sensor.
   double wx, wy;
   sensor_pose(d.rx, d.ry, &wx, &wy);
-  double wz = z + P.tof_height + d.ry * std::sin(pitch);
+  double wz = z + (d.rz >= 0 ? d.rz : P.tof_height) + d.ry * std::sin(pitch);
   double yaw = th + d.yaw * DEG;
   double slope = std::tan(pitch) * std::cos(d.yaw * DEG);
   const int nmax = 15;
@@ -368,6 +379,7 @@ void Robot::color_raw(uint16_t* r, uint16_t* g, uint16_t* b, uint16_t* c, uint8_
     case T_BLACK: key = "color.black"; break;
     case T_BLUE: key = "color.blue"; break;
     case T_SILVER: key = "color.silver"; break;
+    case T_RED: key = "color.red"; break;
     case T_VOID: key = "color.black"; break;
     default: break;
   }
@@ -419,8 +431,8 @@ void Robot::update_cameras(int64_t t_us) {
       int vi = victim_visible(cam);
       cam.visible_victim = vi;
       if (vi >= 0) {
-        char ch = world.victims[vi].type;
-        if (rng_cam_.chance(P.cam_misread)) ch = codes[rng_cam_.next() % 6];
+        char ch = reported_letter(world.victims[vi].type);
+        if (rng_cam_.chance(P.cam_misread)) ch = codes[rng_cam_.next() % 3];
         serial_rx_push(cam.serial, (uint8_t)ch);
       } else if (P.cam_idle_byte >= 0 && rng_cam_.chance(P.cam_idle_rate * cam.period / 1e6)) {
         serial_rx_push(cam.serial, (uint8_t)P.cam_idle_byte);
