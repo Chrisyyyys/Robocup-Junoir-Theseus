@@ -196,6 +196,11 @@ floor or ramp edges through the vertical part of their cone.
   alphabetically, with generated prototypes) and appends `core/sim_probe.inc`, which gives the
   simulator read access to the sketch's variables (`state`, `x_pos`, `y_pos`, `currentDir`,
   `mapGrid`, …). **If you rename one of those variables, update `core/sim_probe.inc` too.**
+- `tools/mazegen.py` makes the random mazes (2026 rules: 20 mm walls, linear and floating tiles, red tile and dangerous zone, bumps,
+  stairs, obstacles that touch a wall, cognitive targets); `sim.py gen` writes one to a file.
+- `tools/cad_sensors.py` reads the robot's Fusion 360 archive (`pip install zstandard`) and prints the plates, wheels and sensor
+  mounting holes that the numbers in `config/robot.cfg` were worked out from (see
+  [the V2 note](../docs/superpowers/specs/2026-10-04-v2-robot-and-2026-rules.md)).
 - `stubs/` contains PC versions of `Arduino.h`, `Wire.h`, `mbed.h`/`rtos.h` and the libraries
   (VL53L0X, Adafruit TCS34725 / BNO055 / Motor Shield, SparkFun mux, Stepper, LiquidCrystal,
   ArduinoQueue, Vector). If you add a library to the robot, add a stub here.
@@ -203,9 +208,13 @@ floor or ramp edges through the vertical part of their cone.
   between them in virtual time. Runs are deterministic: the same seed gives the same run.
 - `core/robot.cpp` is the robot model, `core/world.cpp` the maze and ray casting,
   `core/hal.cpp` the Arduino/library functions, `core/recorder.cpp` the evaluation and trace.
-- The robot code is compiled with `-fpermissive` (as the Arduino build does), without optimisation, and
-  with uninitialised local variables set to zero, so behaviour is repeatable. Compiler warnings
+- The robot code is compiled with `-fpermissive`, without optimisation, and with uninitialised local
+  variables set to zero, so behaviour is repeatable. The real build does not have to accept what
+  `-fpermissive` lets through: arduino-cli 1.4.1 with the `mbed_giga` core 4.6.0 does not pass it and
+  rejects an `int` where a `Direction` is expected (`movement.ino`; there is a cast now). Compiler warnings
   about the robot code are saved to `sim/build/robot_warnings.txt`; `sim.py run` lists the important ones.
+  Building for the GIGA is a separate check, see section 5 of
+  [the V2 note](../docs/superpowers/specs/2026-10-04-v2-robot-and-2026-rules.md).
 - A watchdog stops a run if the robot code loops forever without calling anything that takes time.
 
 ## Continuous testing

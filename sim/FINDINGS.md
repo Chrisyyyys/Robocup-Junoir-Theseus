@@ -29,11 +29,37 @@ add `--sketch /tmp/old/Main` to the command.
 **How much to trust this.** The program logic (state machine, map, planner, timing, threads) runs
 exactly as written, so logic findings are solid. Anything about motion depends on the motor and
 sensor numbers in `sim/config/robot.cfg`, several of which are guesses until they are measured on
-the robot. That includes where the distance sensors sit on the body: nobody has measured it, and
-[Sensor geometry the simulator assumes](#sensor-geometry-the-simulator-assumes) lists what was assumed and how much
-it changes the results. Each finding says which kind it is. Every finding can be reproduced with the command shown.
+the robot. That includes where the distance sensors sit on the body: `robot.cfg` has the positions the CAD gives (V2),
+nobody has measured the built robot, and [The V2 robot the simulator models](#the-v2-robot-the-simulator-models) lists what
+comes from the CAD, what is assumed and how much it changes the results. Each finding says which kind it is. Every
+finding can be reproduced with the command shown.
 
-> **Update 4 Oct 2026.** The simulator now models the V2 robot from its CAD (195 x 180 mm over the wheels, sensors at their CAD positions) and the 2026 rules. Findings 1-18 and the tables below were measured with the earlier assumed robot (170 x 140 mm, side sensors 70 mm from the centre line); the section "Sensor geometry the simulator assumes" describes that earlier assumption. The current numbers and the new findings are in [the V2 note](../docs/superpowers/specs/2026-10-04-v2-robot-and-2026-rules.md).
+> **Update 4 Oct 2026.** The simulator now models the V2 robot from its CAD (195 x 180 mm over the wheels, sensors at their CAD
+> positions) and the 2026 rules (20 mm walls, red tile and dangerous zone, cognitive targets, 2026 scoring). Findings 1-18 and the
+> two tables after this section were measured with the robot assumed until then (170 x 140 mm, side sensors 70 mm from the centre
+> line); findings 19-22 and the table directly below are for the V2 robot. The method, all numbers and what is still open are in
+> [the V2 note](../docs/superpowers/specs/2026-10-04-v2-robot-and-2026-rules.md).
+
+## Results on the V2 robot and the 2026 rules
+
+120 mazes per kind (three sets of 40, each run once; 360 in all), same seeds and same simulator for both columns, so the only difference is
+the code: "original" is `Main/` from `8fd4316`, "final" is the code of this branch.
+
+| | Original code | Final code |
+|---|---:|---:|
+| **Exploring** (120 mazes, move limit off): runs that lost their position | 13 | 5 |
+| lack-of-progress restarts | 274 | 1 |
+| wall contacts per run / seconds in contact per run | 41.5 / 160 | 2.9 / 6 |
+| estimated score | 106 | 182 |
+| **Returning home** (120 mazes, the code's 25-move limit): ended on the start tile | 35 | 81 |
+| said "home" while somewhere else | 28 | 0 |
+| lack-of-progress restarts | 234 | 1 |
+| **Full field** (120 mazes): runs that lost their position | 45 | 32 |
+| lack-of-progress restarts | 341 | 9 |
+| estimated score | 92 | 161 |
+
+These are the numbers with the V2 body as the CAD draws it; with the side sensors 10 mm further in than the code assumes, the
+final code is worse than the original (the V2 robot section below).
 
 ## Results before and after the suggested changes
 
@@ -162,6 +188,9 @@ and the planner then chooses moves into walls. Re-snapping to the nearest cardin
 
 ### 8. Turning on the spot next to a wall (logic + geometry)
 
+> The numbers below are for the 170 x 140 mm robot assumed until 4 Oct 2026 and for the first version of the fix. For the V2 body
+> (195 x 180 mm: 7 mm of room instead of 34) and the routine in the code now, see finding 19.
+
 A 170 x 140 mm robot (`ROBOT_LENGTH_MM` and `ROBOT_WIDTH_MM` in `Main.ino`; the length was 195 mm until
 2 July, which would make the sweep 120 mm) sweeps a circle of 110 mm radius when it turns on the spot, so it must
 be within about 34 mm of the tile centre to turn without touching a wall. Nothing re-centres the robot sideways
@@ -283,6 +312,9 @@ happened in 34 of 7235 moves and was the largest single cause of lost robots unt
 
 ### 17. Obstacles beside the path are invisible to the front sensors (geometry, in the assumed mounting)
 
+> This is the mounting assumed until 4 Oct 2026 (front pair at +-35 mm, body 140 mm wide). With the V2 positions from the CAD the
+> blind band beside the cones is gone and a blind zone straight ahead is left: finding 22.
+
 In the simulator the two front sensors sit 35 mm either side of the centre line and each sees a cone of about ±12°.
 That position is an assumption, not a measurement (see [Sensor geometry the simulator
 assumes](#sensor-geometry-the-simulator-assumes)). The body reaches 70 mm either side, and a cylinder of 40 mm radius touches it when its centre is less than 110
@@ -305,66 +337,98 @@ range (about 30 mm). Whenever the robot turned its back on an obstacle, its fron
 obstacle in front. Contact counts, avoidance triggers and full-field results that involve obstacles were
 affected; mazes without cylinders (the `basic` profile) were not. Fixed in `core/world.cpp`.
 
-## Sensor geometry the simulator assumes
+### 19. Turning on the spot in the V2 body leaves 7 mm of room (geometry, fixed in the branch)
 
-**Not measured on the robot.** `sim/config/robot.cfg` puts the seven VL53L0X sensors where the comments in the
-code say they are (front pair, right front and back, left front and back, back). The numbers are guesses. The
-repository holds no drawing, photo or measurement of how the sensors really sit on the bot (`docs/mechanical` is
-an empty file), and the only statement from the team is which sensor is on which side
-(`docs/superpowers/specs/2026-07-04-right-wall-follower-center-design.md`, "Sensor layout").
+The V2 robot is 195 x 180 mm over the wheels, so a turn in place swings its corners round a circle of 132.7 mm radius, and the
+free path between two opposite walls is 280 mm: 140 mm from the middle to each wall face. That leaves **7.3 mm of room** on each
+side. A turn started more than about 7 mm off the middle, across the path or along it (in front of a corner or a dead end), stalls
+against a wall at about 47 degrees of the turn: this is finding 8 for the real body, and the "stops at about 45 degrees instead of 90"
+of the team's Sprint #2 notes. The wall follower aims at a side reading, which puts the robot wherever the sensor offsets say.
+In the simulator 3 turns in 5 of the original code failed their check (`[CHECK] turn ... ok=0`) and 106 of 120 explore runs needed a
+lack-of-progress restart. Fixed by `ensureTurnClearance()`, which reads the six side, front and back sensors before a turn and moves
+to the middle when a side reading is under 45 mm or a front or back reading under 38 mm, and by a back-off of 45 mm after a turn
+that failed with room on the sensors.
 
-| `measure(n)` | Where | x mm (right of centre) | y mm (ahead of centre) | Points | Mux port |
-|---:|---|---:|---:|---:|---:|
-| 1 | front right | 35 | 85 | 0° | 1 |
-| 7 | front left | -35 | 85 | 0° | 2 |
-| 2 | right front | 70 | 50 | 90° | 0 |
-| 3 | right back | 70 | -50 | 90° | 6 |
-| 6 | left front | -70 | 50 | 270° | 3 |
-| 5 | left back | -70 | -50 | 270° | 5 |
-| 4 | back | 0 | -85 | 180° | 4 |
+- See it: extract the original with `mkdir -p /tmp/old && git archive 8fd4316 Main | tar -x -C /tmp/old`, add the `(Direction)` cast
+  of the smaller things below, and run `python sim/sim.py run --seed 1101003 --moves-limit off --time-limit 150 --echo --sketch /tmp/old/Main`.
+  At 60.9 s the log shows `[CHECK] turn target=0.00, actual=66.88, err=66.88, ok=0`, then `botched turn detected` three times and
+  `max botched-turn retries reached, re-planning`. In the same 150 s the final code makes 14 turns, none of them fails its check, and
+  the log has 7 `[CLEAR] gaps ...` lines.
 
-The beams are 40 mm above the floor (`tof.height_mm`, a guess) with a 25° cone (the VL53L0X field of view). The body
-is 170 x 140 mm from `Main.ino`, but `ROBOT_LENGTH_MM` was 195 until commit `d5a3640` (2 July, "added pausing in
-obstacle avoidance"; the comment `(52.5)` next to `TARGET_GAP_MM` still matches 195), so one of the two lengths is wrong.
+### 20. A victim seen during a turn is marked on the next tile (logic, fixed in the branch)
 
-What depends on these numbers: the blind band beside the front sensors' cones (finding 17); the 60 mm obstacle stop
-(`OBSTACLE_STOP_MM`, kept below the reading at the foot of a ramp, which is about the beam height divided by the tangent of
-the slope); the 46 mm side clearance before a turn (`TURN_SIDE_GAP_MIN_MM`, from the body size and the side sensors'
-offset); the 59 mm front gap (`FRONT_GAP_AT_CENTER_MM`, from the front sensors' offset); and what every wall reading means.
-The last two gaps are now worked out in `Main.ino` from `ROBOT_LENGTH_MM`, `ROBOT_WIDTH_MM`, `TOF_FRONT_FWD_MM` and
-`TOF_SIDE_OUT_MM`, and come out the same as before at 170 x 140 mm (60 of 60 runs identical).
+During a turn `cameraTask()` checks the robot's own tile, but `markVictimAtEncoderPosition()` took the tile from the encoders. In a
+turn the robot stays in its tile while the encoders still hold the last move, a whole tile, so the victim was marked on the **next**
+tile and the robot's own tile stayed unmarked: the camera reported the same victim again (another stop of 5-9 s, possibly another
+kit), and the marked next tile could hide a different victim there (`cameraTask()` ignores a tile that is already marked). Now the
+robot's tile is used unless a move is in progress (`fwdActive`). In the simulator this made no difference over 120 mazes (runs lost, restarts, score and victims identified were identical),
+but the old line is wrong in principle.
 
-**How much it matters.** The original code and the fixed code on the same 100 mazes (development sets A1-A3: 40
-exploring, 40 returning home, 20 full field), with the mounting changed. Each cell is runs lost / lack-of-progress
-restarts / wall contacts:
+### 21. Simulator: cognitive targets are reported as H, S or U (fixed)
 
-| Real robot | Original | Fixed |
-|---|---:|---:|
-| as assumed above | 28 / 73 / 687 | 4 / 9 / 201 |
-| front sensors at ±55 mm | 25 / 69 / 873 | 9 / 7 / 377 |
-| front sensors at ±20 mm | 26 / 71 / 915 | 11 / 14 / 496 |
-| beams 25 mm above the floor | 32 / 86 / 791 | 9 / 19 / 437 |
-| beams 60 mm above the floor | 34 / 88 / 812 | 9 / 23 / 475 |
-| front sensors toed out 15° | 27 / 82 / 965 | 7 / 9 / 474 |
-| side sensors at ±35 mm along the body | 31 / 94 / 947 | 11 / 21 / 710 |
-| 195 mm long, code still says 170 | 28 / 96 / 1461 | 14 / 16 / 760 |
-| 195 mm long, code constants set to 195 | 25 / 104 / 1420 | 11 / 12 / 562 |
+The first V2 runs showed 4 s waits at every cognitive target that looked like a bug in marking victims: the simulator sent the
+camera byte `R`, `Y` or `G`, which `classifyCamByte()` ignores (it only accepts `H`, `S` and `U`), so the robot stopped,
+waited for a valid sample until the 4 s timeout and went on. The real OpenMV script sends `H`, `S` or `U` for a cognitive target
+too (ring sum 2, 1, 0: harmed, stable, unharmed), so the simulator now does the same (`reported_letter()` in `core/sim.h`). Results
+that involve cognitive targets were measured again.
 
-The fixes beat the original in every row, but they were developed and tuned in the first one. With another mounting the
-fixed code loses 7-14 runs of 100 instead of 4 and touches walls two to four times as often. The body length matters
-most, and the length constants have to match the robot. Measure the robot before relying on the other numbers in this file
-([test plan, step 0](../docs/superpowers/specs/2026-10-02-pose-and-obstacle-fixes-test-plan.md#0-measure-the-robot)).
+### 22. An obstacle straight ahead against a far wall is only touched (geometry, in the V2 mounting)
+
+The two front sensors sit 80 mm either side of the centre line and each sees a cone of about +-12.5 degrees. A cylinder of 40 mm
+radius exactly ahead is outside both cones when it is closer than about 181 mm, so the sensors see it from far away and lose it
+when the robot comes closer: both read the far wall behind it. The look-ahead never fires and the robot drives into it until the
+stuck-move check ends the move after 7 s. The rules allow such an obstacle (it only has to touch a wall and leave 20 cm free). In
+the 120 full-field mazes 19 of the 32 runs that lost their position had a stuck move into one.
+
+- See it: `python sim/sim.py run --maze sim/mazes/scenarios/obstacle_dead_ahead.txt --seed 1 --moves-limit off --time-limit 150`
+  (the robot touches the cylinder 1-8 times and is in contact for about 20 s of the 150 s).
+- Fix: hardware. Toe the two front sensors in by about 15 degrees or add a third sensor at the front centre. In the simulator the
+  toed-in pair cut the runs lost from 9 to 4 of 80 (V2 note, section 6).
+
+## The V2 robot the simulator models
+
+From 4 October 2026 `sim/config/robot.cfg` describes the V2 robot as its CAD draws it (the Fusion archive `V2.f3z` in
+github.com/Arsur24/Theseus, read with `sim/tools/cad_sensors.py`). **It is the CAD, not the built robot:** nobody has measured the
+robot.
+
+| `measure(n)` | Where | x mm (right of centre) | y mm (ahead of centre) | Points | Mux port | Window height mm |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | front right | 80 | 97.5 | 0 deg | 1 | 106 |
+| 7 | front left | -80 | 97.5 | 0 deg | 2 | 106 |
+| 2 | right front | 90 | 88 | 90 deg | 0 | 106 |
+| 3 | right back | 90 | -88 | 90 deg | 6 | 106 |
+| 6 | left front | -90 | 88 | 270 deg | 3 | 106 |
+| 5 | left back | -90 | -88 | 270 deg | 5 | 106 |
+| 4 | back | 0 | -97.5 | 180 deg | 4 | 43 |
+
+The body is 195 x 180 mm over the wheels (the chassis plates are 138 mm wide), the wheels are 80 mm in diameter, the beams have a 25
+degree cone. In `Main.ino` the same numbers are `ROBOT_LENGTH_MM`, `ROBOT_WIDTH_MM`, `TOF_FRONT_FWD_MM` (97.5), `TOF_SIDE_OUT_MM`
+(90.2) and `WALL_THICK_MM` (20, the 2026 rules); the gaps and limits the code uses are worked out from them.
+
+**From the CAD:** the body size and the position of every sensor. **Assumed:** which end of the CAD is the front (the code has two
+sensors at the front, the CAD has two at one end and one at the other), the heights of the windows above the floor (the parts of the
+archive have no shared frame, so the heights were worked out by hand), the position of the sensor chip on its board, and that the robot
+was built as drawn.
+
+**How much it matters.** The V2 note (section 6) runs the original and the final code on 80 mazes with one assumption changed at a
+time: rigid or soft walls, the front pair toed in or at +-60 or +-100 mm, all windows 60 mm lower or 130 mm higher, a body 170 or 190
+mm wide, the side sensors 10 mm further in. The final code loses 4-14 of 80 runs against 24-53 for the original in every variant
+except one: **with the side sensors 10 mm further in than `TOF_SIDE_OUT_MM` says it loses 52 of 80 runs against 26 for the original**.
+The side-sensor offset and the body width are the two numbers to measure before trusting the constants ([test plan, step
+0](../docs/superpowers/specs/2026-10-02-pose-and-obstacle-fixes-test-plan.md#0-check-the-v2-numbers)).
 
 ## Smaller things
 
 - `dispenser.cpp:24`: the `Serial.println("sipensing left")` before the first `case` never runs.
-- `movement.ino:28` passes an `int` where a `Direction` is expected; it only compiles because the
-  Arduino build uses `-fpermissive`. (A cast is added on `claude/pose-and-obstacle-fixes`, because clang,
-  which the simulator can be built with, does not accept it.)
+- `movement.ino:32` (28 in older versions) passes an `int` where a `Direction` is expected. It builds only with `-fpermissive`:
+  clang (the simulator's compiler) rejects it, and so does the GIGA toolchain on the machine where this was checked (arduino-cli
+  1.4.1, `mbed_giga` core 4.6.0, which does not pass `-fpermissive`): `invalid conversion from 'int' to 'Direction'`, so `main` at
+  `8fd4316` did not build there. A cast is added on `claude/pose-and-obstacle-fixes`.
 - `PID` never initialises `prevError` and `cumError`, so the first output of every new `PID` object
   uses whatever was left on the stack. Initialise them in the constructor.
 - The 25-move limit sends the robot home after roughly 200-300 s of an 8-minute run. In the
   simulation the robot managed about 60 moves in 8 minutes. A time-based return (the commented-out
   `mazeTime` check) would use the run better, once the return itself is reliable.
-- Blue tiles are avoided by the planner and the robot waits 5 s on them. The 2026 rules, as far as
-  the search results show, give points for visiting blue tiles. Check the official rules.
+- Blue tiles are avoided by the planner and the robot waits 5 s on them. The 2026 rules (section 5.6) give 30 points for
+  visiting a blue tile once (10 less for each further visit to the same tile), and 10 reliability points and 10 exit-bonus points
+  for every blue tile visited, so a planner that only enters a blue tile as a last resort gives those points up.
