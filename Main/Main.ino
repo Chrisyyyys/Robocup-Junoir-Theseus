@@ -240,8 +240,16 @@ double headingErrorDeg(double targetDeg, double actualDeg) {
 volatile bool fwdActive = false; // true only while inside fwd()
 volatile bool turnActive = false;
 volatile bool victimPending = false; // a camera reported -> movement must service it
+volatile bool victimAck = false;     // fwd()/absoluteturn() set it once the wheels are stopped for a victim; the camera thread waits for it
 volatile int  victimSide = 0;        // 1 = left (Serial3), 2 = right (Serial2)
 volatile bool isVictim = false;      // a victim already handled during current move
+
+// Called by the camera thread after it raised victimPending. True once the movement code has stopped the wheels. False after 300 ms:
+// the move ended meanwhile and nobody will stop, so the victim is skipped (the camera reports it again).
+bool waitForVictimStop(){
+  for(int i = 0; i < 60 && !victimAck; i++) rtos::ThisThread::sleep_for(std::chrono::milliseconds(5));
+  return victimAck;
+}
 
 rtos::Thread cameraThread;
 rtos::Mutex i2cMutex;
@@ -262,15 +270,18 @@ void cameraTask(){
             Serial.println(mapGrid[nx][ny].getVictim());
           }
           if(mapGrid[nx][ny].getVictim() == false){
-            i2cMutex.lock();
             victimSide = 1;
-            drivetrain.fullstop();
-            victimPending = true;
-            i2cMutex.unlock();
-            rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
+            victimAck = false;
             i2cMutex.lock();
-            serviceCameraVictim();
+            drivetrain.fullstop(); // stop at once; the movement code stops too, at its next pass, and acknowledges
             i2cMutex.unlock();
+            victimPending = true;
+            if(waitForVictimStop()){
+              i2cMutex.lock();
+              serviceCameraVictim(); // holds the I2C bus for seconds: the wheels must already be stopped
+              i2cMutex.unlock();
+            }
+            else victimPending = false;
           }
         }
         else if(readSerial2() != -1){   // right camera (Serial3)
@@ -282,15 +293,18 @@ void cameraTask(){
             Serial.println(mapGrid[nx][ny].getVictim());
           }
           if(mapGrid[nx][ny].getVictim() == false){
-            i2cMutex.lock();
             victimSide = 2;
-            drivetrain.fullstop();
-            victimPending = true;
-            i2cMutex.unlock();
-            rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
+            victimAck = false;
             i2cMutex.lock();
-            serviceCameraVictim();
+            drivetrain.fullstop(); // stop at once; the movement code stops too, at its next pass, and acknowledges
             i2cMutex.unlock();
+            victimPending = true;
+            if(waitForVictimStop()){
+              i2cMutex.lock();
+              serviceCameraVictim(); // holds the I2C bus for seconds: the wheels must already be stopped
+              i2cMutex.unlock();
+            }
+            else victimPending = false;
           }
         }
       }

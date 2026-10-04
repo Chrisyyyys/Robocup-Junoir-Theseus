@@ -75,6 +75,7 @@ MoveResult fwd(double dist){ // in mm
     
     if(victimPending){
       drivetrain.fullstop(); // does not overide the thread
+      victimAck = true;      // wheels are stopped: the camera thread may take the I2C bus now
       climbPID.pausePID(1);
       gyroPID.pausePID(1);
       Scale_PID.pausePID(1);
@@ -84,6 +85,7 @@ MoveResult fwd(double dist){ // in mm
       }
       gyroPID.pausePID(2);
       climbPID.pausePID(2);
+      victimAck = false;
       Scale_PID.pausePID(2);
       myTime.pause(2);
     }
@@ -511,10 +513,12 @@ bool absoluteturn(double angle){
     if(Pausemaze==true) break;
     if(victimPending){ // service camera victim mid-turn
       drivetrain.fullstop();
+      victimAck = true;    // wheels are stopped: the camera thread may take the I2C bus now
       unsigned long pauseStartMs = millis();
       while(victimPending==true){
         rtos::ThisThread::sleep_for(std::chrono::milliseconds(1));
       }
+      victimAck = false;
       pausedMs += millis() - pauseStartMs;
       inTol = false;
     }
