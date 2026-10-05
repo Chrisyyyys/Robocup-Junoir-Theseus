@@ -381,9 +381,12 @@ stuck-move check ends the move after 7 s. The rules allow such an obstacle (it o
 the 120 full-field mazes 19 of the 32 runs that lost their position had a stuck move into one.
 
 - See it: `python sim/sim.py run --maze sim/mazes/scenarios/obstacle_dead_ahead.txt --seed 1 --moves-limit off --time-limit 150`
-  (the robot touches the cylinder 1-8 times and is in contact for about 20 s of the 150 s).
-- Fix: hardware. Toe the two front sensors in by about 15 degrees or add a third sensor at the front centre. In the simulator the
-  toed-in pair cut the runs lost from 9 to 4 of 80 (V2 note, section 6).
+  (seeds 1-3: 9, 9 and 15 contacts, 32-47 s in contact, and the position belief wrong at 10 of 13, 10 of 13 and 5 of 8 arrivals; the original
+  code touches the cylinder 4, 3 and 18 times and is restarted in two of the seeds).
+- Not fixed. Tried in the simulator on the same seeds: the front pair toed in by 15 degrees (`--set "tof.1=80 97.5 345 1 106" --set "tof.7=-80 97.5 15 2 106"`),
+  `OBSTACLE_STOP_MM` at 100 or 150 mm, and both. Only toed in with 150 mm stopped the robot in front of the cylinder, in 1 seed of 3. In the pooled tests the
+  toed-in pair lowered the lost runs from 9 to 4 of 80 and raised the wall contacts per run from 3.3 to 6.0 (V2 note, section 6). A third sensor at the front
+  centre has not been simulated.
 
 ## The V2 robot the simulator models
 

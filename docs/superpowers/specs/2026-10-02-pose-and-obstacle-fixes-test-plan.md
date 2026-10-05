@@ -136,7 +136,7 @@ The old code looked for an obstacle once, before a move began, at 90 mm. In the 
 
 **5d. Obstacle straight ahead against a far wall (known gap).** Put the cylinder against the end wall of a dead end, exactly in the middle.
 - **Expected with the sensors as drawn:** the robot touches it. The two front sensors are 80 mm either side of the centre line and each sees a cone of about ±12°, so a cylinder of 40 mm radius straight ahead is outside both cones when closer than about 18 cm: both read the wall behind it. The stuck-move check ends the move after 7 s.
-- **Fix:** hardware. Angle the two front sensors inward by about 15° or add a third sensor at the front centre (V2 note, section 7).
+- **Not fixed:** toeing the two front sensors in by 15° and raising `OBSTACLE_STOP_MM` did not stop the robot reliably in the simulator (V2 note, section 7), and a third sensor at the front centre has not been simulated. Expect a touch, a stuck move of 7 s and a wrong position afterwards.
 
 **5e. No false stops.** Drive 20 tiles of a maze with T-junctions and wall ends (no obstacles).
 - **Pass:** no `[OBST]` lines.
