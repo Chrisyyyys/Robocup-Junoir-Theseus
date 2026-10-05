@@ -475,11 +475,14 @@ void centerFrontBack(){
 //   E_Tot = (ideal - D) + angle,  where D = avg gap, angle = back - front.
 // Positive error steers away from the right wall (matches the old sign convention).
 // Returns 0 when the right wall isn't present on BOTH sensors (no reliable reference).
+// centerHasWall tells the caller which of the two it was: true = a real right wall, false = no reference.
+bool centerHasWall = false;
 int center(){
   int front = measure(2);   // right-front gap (mm)
   int back  = measure(3);   // right-back gap  (mm)
   bool wallPresent = front != -1 && front != 8191 && front <= SIDE_WALL_MAX_MM
                   && back  != -1 && back  != 8191 && back  <= SIDE_WALL_MAX_MM;
+  centerHasWall = wallPresent;
   if(!wallPresent) return 0;
   double D = (front + back) / 2.0;                       // distance term
   double e = (TARGET_SIDE_GAP_MM - D) + (back - front);  // (ideal - D) + angle
@@ -487,6 +490,25 @@ int center(){
 }
 
 
+// Called with the robot stopped: three fresh readings of both front sensors. True when the closest valid one is still
+// close, so a single bad reading doesn't stop a move.
+bool obstacleConfirmed(){
+  int closest = 999;
+  for(int i = 0; i < 3; i++){
+    int fl = measure(7);
+    int fr = measure(1);
+    if(fl != -1 && fl < closest) closest = fl;
+    if(fr != -1 && fr < closest) closest = fr;
+  }
+  Serial.print("[OBST] closest front reading ");
+  Serial.println(closest);
+  return closest < OBSTACLE_STOP_MM + 20;
+}
+
+// NOT CALLED any more. fwd() now looks for obstacles while it drives (OBSTACLE_STOP_MM), stops in front of them, backs
+// off and reports MOVE_BLOCKED, so the planner takes another way, instead of starting this detour at the beginning of a
+// move. It started for walls seen at an angle more often than for obstacles and left the robot rotated and displaced.
+// Kept for reference; remove it once the look-ahead has been confirmed on the robot.
 MoveResult obstacleavoidance(int leftright){ // leftright determines to manuver left or right.
 // returns how the detour ended: MOVE_OK once the robot has driven on into the next tile
   Serial.println("obstacle avoidance");

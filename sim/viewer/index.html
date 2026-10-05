@@ -25,6 +25,7 @@
   --hole: #101215;
   --swamp: #3576dd;
   --silver: #aab4c1;
+  --red: #c8372d;
   --ok: #1d8548;
   --bad: #d23f2c;
   --warn: #b67c00;
@@ -44,14 +45,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #11151b; --panel: #1a2029; --ink: #e5e9ef; --mut: #98a3b2; --line: #2d3643; --floor: #222a34; --grid: #2c3540;
-    --wall: #cbd4df; --accent: #f5993d; --ray: #2fd2bb; --ghost: #a78bfa; --hole: #050607; --swamp: #5d97f2; --silver: #6f7b8c;
+    --wall: #cbd4df; --accent: #f5993d; --ray: #2fd2bb; --ghost: #a78bfa; --hole: #050607; --swamp: #5d97f2; --silver: #6f7b8c; --red: #e0574b;
     --ok: #4cc47f; --bad: #ff6f5c; --warn: #e3ae2f; --st-sense: #2fd2bb; --st-center: #58c4d8; --st-think: #7e8898;
     --st-move: #f5993d; --st-botch: #ff6f5c; --st-back: #c084fc; --st-pause: #98a3b2; --st-return: #5d97f2; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #11151b; --panel: #1a2029; --ink: #e5e9ef; --mut: #98a3b2; --line: #2d3643; --floor: #222a34; --grid: #2c3540;
-  --wall: #cbd4df; --accent: #f5993d; --ray: #2fd2bb; --ghost: #a78bfa; --hole: #050607; --swamp: #5d97f2; --silver: #6f7b8c;
+  --wall: #cbd4df; --accent: #f5993d; --ray: #2fd2bb; --ghost: #a78bfa; --hole: #050607; --swamp: #5d97f2; --silver: #6f7b8c; --red: #e0574b;
   --ok: #4cc47f; --bad: #ff6f5c; --warn: #e3ae2f; --st-sense: #2fd2bb; --st-center: #58c4d8; --st-think: #7e8898;
   --st-move: #f5993d; --st-botch: #ff6f5c; --st-back: #c084fc; --st-pause: #98a3b2; --st-return: #5d97f2; color-scheme: dark;
 }
@@ -263,7 +264,7 @@ let fieldGeo = null, beliefGeo = null;
 
 function readColors() {
   const cs = getComputedStyle(document.documentElement);
-  for (const k of ["bg","panel","ink","mut","line","floor","grid","wall","accent","ray","ghost","hole","swamp","silver","ok","bad","warn",
+  for (const k of ["bg","panel","ink","mut","line","floor","grid","wall","accent","ray","ghost","hole","swamp","silver","red","ok","bad","warn",
                    "st-sense","st-center","st-think","st-move","st-botch","st-back","st-pause","st-return"]) {
     colors[k] = cs.getPropertyValue("--" + k).trim();
   }
@@ -439,6 +440,7 @@ function drawMaze(ctx, g, faint) {
     if (type === 2) fill = colors.swamp;
     if (type === 3) fill = colors.silver;
     if (type === 4) fill = colors.grid;
+    if (type === 5) fill = colors.red;
     ctx.fillStyle = fill;
     ctx.fillRect(X, Y, S, S);
     if (faint) continue;
@@ -880,7 +882,7 @@ function updateSerial() {
 function buildLegends() {
   const sw = (c, t) => '<span><i style="background:' + c + '"></i>' + t + "</span>";
   $("legendField").innerHTML = [sw("var(--accent)", "robot"), sw("var(--ray)", "distance beams"), sw("var(--ghost)", "where it thinks it is"),
-    sw("var(--hole)", "black (hole)"), sw("var(--swamp)", "blue"), sw("var(--silver)", "checkpoint"), sw("#d8342a", "victim")].join("");
+    sw("var(--hole)", "black (hole)"), sw("var(--swamp)", "blue"), sw("var(--silver)", "checkpoint"), sw("var(--red)", "red (dangerous zone)"), sw("#d8342a", "victim")].join("");
   $("legendMap").innerHTML = [sw("var(--wall)", "wall it recorded"), sw("var(--bad)", "wrong wall / missed wall (dashed)"),
     sw("var(--ghost)", "tiles it visited"), sw("var(--warn)", "blocked edge")].join("");
   const used = [...new Set(T.frames.map((f) => f[F.state]))];

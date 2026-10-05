@@ -1,0 +1,8 @@
+# Scenario: a dangerous zone (rules 2026, 3.5): a dead end behind a red tile with a 2 cm speed bump (p) and debris (d).
+# Expected: the red tile is only a floor colour (no checkpoint, no hole, no penalty); the robot may drive into the zone, over the
+# bump and the debris, and come back out, and needs no lack-of-progress restart.
+name Dangerous zone behind a red tile
++---+---+---+---+---+---+
+| S   .   .   R   p   d |
++---+---+---+---+---+---+
+start_dir E

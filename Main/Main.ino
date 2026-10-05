@@ -26,14 +26,38 @@
 #define MIN_DIST 120         // mm (tune this)
 #define FRONT_WALL_MAX_MM 200 // a front wall in the current tile is never further than this; the next tile's is >= 360 mm away
 #define OBSTACLE_DIST 90
+#define MOVE_TIMEOUT_MS 7000    // ms of driving after which a move counts as stuck (a tile takes about 3.6 s, 99% under 4.6 s, a move pinned against a wall 8 s and more; standing still, e.g. for a victim, is not counted). Calibrate on the robot with the ms= field of the [MOVE] result line.
+#define MOVE_STUCK_LIMIT 3      // stuck stops in a row after which the stuck check switches itself off: with a timeout that is too short for this robot every move would be cut off
+#define OBSTACLE_STOP_MM 60       // mm; while driving, a front sensor reading under this that is not the far wall of the tile is an obstacle: stop before touching it. Keep it BELOW the smallest reading seen at the foot of a ramp (beam height / tan(ramp angle): about 227 mm for 25 degrees with the V2 robot's front sensors, about 106 mm above the floor), or ramps get blocked. Calibrate on the robot.
 #define TILE_MM 300         // one tile = 300mm (RCJ tile)
-#define ROBOT_LENGTH_MM 170                                      // mm, robot front-to-back length
-#define TARGET_GAP_MM (((double)TILE_MM - ROBOT_LENGTH_MM) / 2.0) // mm, ideal front/back clearance when centered (52.5)
+// Robot geometry of the V2 robot, read from the CAD in github.com/Arsur24/Theseus (Fusion archive V2.f3z: chassis plates 195 x 138 mm, wheels and side-sensor tabs out to +-90.2 mm,
+// 7 VL53L0X mounting-hole patterns; Mechanical/Sprint1.md: 195 mm chassis, 80 mm wheels). Not measured on the robot: check these against it (docs: test plan, step 0).
+#define WALL_THICK_MM 20          // mm, rules 2026 3.3.3: the free path between two opposite walls is 28 cm
+#define ROBOT_LENGTH_MM 195       // mm, robot front-to-back length (chassis)
+#define ROBOT_WIDTH_MM 180        // mm, robot left-right width over the wheels (their outer faces are at +-90.2 mm; the chassis plates are 138 mm wide)
+#define TOF_FRONT_FWD_MM 97.5     // mm, how far ahead of the body centre the front sensors (1 and 7, at x = +-80 mm) sit: on the front face
+#define TOF_SIDE_OUT_MM 90.2      // mm, how far to the side of the body centre the side sensors (2, 3, 5 and 6) sit: flush with the wheels' outer faces
+#define HALF_PATH_MM ((TILE_MM - WALL_THICK_MM) / 2.0) // mm, from the tile centre to the face of a wall (140)
+#define FRONT_GAP_AT_CENTER_MM ((int)(HALF_PATH_MM - TOF_FRONT_FWD_MM)) // mm, what the front sensors read at the tile centre facing a wall (42)
+#define TARGET_GAP_MM (HALF_PATH_MM - TOF_FRONT_FWD_MM) // mm, ideal front/back sensor reading when centered (42.5)
 #define CENTER_TOL_MM 10                                          // mm, front-back centering tolerance
+#define FWD_TRIM_MM 19 // mm added to every fwd() target. fwd() stops 12 mm early (Scale*120 < 25) and wheel slip costs a few mm more, so a move asked for one tile ends ~19 mm short in the simulator and nothing makes it up. Measure on the robot: ten fwd(TILE_MM) on a flat floor, FWD_TRIM_MM = (3000 - distance driven) / 10
 #define MAX_CENTER_CORRECTION_MM 300.0                            // mm, one tile — offset this large means an unreliable reading or the robot isn't really in-tile; skip/abort centering
-#define ROBOT_WIDTH_MM 140                                          // mm, robot left-right width
-#define TARGET_SIDE_GAP_MM (((double)TILE_MM - ROBOT_WIDTH_MM) / 2.0) // mm, ideal side-wall clearance when centered (80)
+#define TARGET_SIDE_GAP_MM (HALF_PATH_MM - TOF_SIDE_OUT_MM)         // mm, ideal side sensor reading when centered (49.8)
 #define SIDE_WALL_MAX_MM 200                                        // mm; a side reading beyond this is the next tile through a gap, not this tile's wall
+// Turning in place swings the corners of the body around a circle of TURN_SWEEP_MM radius. In a 28 cm path that leaves only
+// HALF_PATH_MM - TURN_SWEEP_MM of slack on each side (7 mm for the V2 robot), so the robot has to be centred before it turns, along the
+// path (a front or back wall) as well as across it. The two limits below are what the distance sensors read when the corners have
+// TURN_MARGIN_MM of room left: a reading under them means the turn would stall against that wall.
+#define TURN_SWEEP_MM (sqrt((double)ROBOT_LENGTH_MM * ROBOT_LENGTH_MM + (double)ROBOT_WIDTH_MM * ROBOT_WIDTH_MM) / 2.0) // mm, 132.7 for 195 x 180
+#define TURN_MARGIN_MM 3.0      // mm, room to keep between a swinging corner and the wall (sensor noise is about 3 mm)
+#define TURN_SIDE_GAP_MIN_MM ((int)(TURN_SWEEP_MM - TOF_SIDE_OUT_MM + TURN_MARGIN_MM))  // mm, side-sensor reading needed before turning in place (45)
+#define TURN_END_GAP_MIN_MM ((int)(TURN_SWEEP_MM - TOF_FRONT_FWD_MM + TURN_MARGIN_MM))  // mm, front or back sensor reading needed before turning in place (38)
+#define BOTCH_BACKOFF_MM 45     // mm, how far the robot backs off after a failed turn the sensors saw no reason for
+#define NUDGE_STOP_GAP_MM 32    // mm, a shift along the path stops when a front or back sensor reads this (the VL53L0X cannot measure under 30 mm)
+#define NUDGE_ANGLE_DEG 9.0     // deg, how far the robot points away from the wall while shifting sideways
+#define NUDGE_MIN_LEG_MM 20.0   // mm, shortest and longest leg of a sideways shift: a leg of L mm shifts the robot by 2 * L * sin(NUDGE_ANGLE_DEG)
+#define NUDGE_MAX_LEG_MM 130.0
 #define LATERAL_TOL_MM 15                                            // mm, lateral correction tolerance (looser than CENTER_TOL_MM)
 #define MAX_LATERAL_OFFSET_MM 90.0                                   // mm, sanity cap — offset this large means an unreliable reading; skip
 #define LATERAL_CORRECTION_GAIN 1                                // multiplier on the computed turn angle; bench-tune upward since fwd() partially fights the pre-turn (pulls back toward cardinal)
@@ -189,6 +213,12 @@ bool startArmed = false; // logic switch seen at PAUSE since power-on (WAIT_STAR
 int x_checkpoint = MAP_SIZE/2, y_checkpoint = MAP_SIZE/2;
 int floor_checkpoint = 0; // floor the last checkpoint was recorded on (0..2)
 bool tilecheck = false;
+bool fwdSoftFail = false;           // set by fwd() when a move failed in a way that may be the robot's own pose or driving, not a thing in the way
+bool softFailPending = false;       // a soft failure happened and its edge has not been tried again yet
+int softFailX = 0, softFailY = 0;   // the edge it happened on: tile and direction
+Direction softFailDir = NORTH;
+int stuckStreak = 0;                // stuck stops in a row (any normal move resets it)
+bool stuckCheckOff = false;         // set after MOVE_STUCK_LIMIT of them in a row: MOVE_TIMEOUT_MS is probably too short for this robot
 
 // Forward declaration: Arduino can't auto-prototype template return types.
 std::deque<std::pair<int, std::pair<int,int>>> BFS(std::pair<int, std::pair<int,int>> currentpos, Grid& m1, Grid& m2, Grid& m3, std::pair<int, std::pair<int,int>> endpos, bool allowBlue = false, bool allowObstacle = false);
@@ -210,8 +240,16 @@ double headingErrorDeg(double targetDeg, double actualDeg) {
 volatile bool fwdActive = false; // true only while inside fwd()
 volatile bool turnActive = false;
 volatile bool victimPending = false; // a camera reported -> movement must service it
+volatile bool victimAck = false;     // fwd()/absoluteturn() set it once the wheels are stopped for a victim; the camera thread waits for it
 volatile int  victimSide = 0;        // 1 = left (Serial3), 2 = right (Serial2)
 volatile bool isVictim = false;      // a victim already handled during current move
+
+// Called by the camera thread after it raised victimPending. True once the movement code has stopped the wheels. False after 300 ms:
+// the move ended meanwhile and nobody will stop, so the victim is skipped (the camera reports it again).
+bool waitForVictimStop(){
+  for(int i = 0; i < 60 && !victimAck; i++) rtos::ThisThread::sleep_for(std::chrono::milliseconds(5));
+  return victimAck;
+}
 
 rtos::Thread cameraThread;
 rtos::Mutex i2cMutex;
@@ -232,15 +270,18 @@ void cameraTask(){
             Serial.println(mapGrid[nx][ny].getVictim());
           }
           if(mapGrid[nx][ny].getVictim() == false){
-            i2cMutex.lock();
             victimSide = 1;
-            drivetrain.fullstop();
-            victimPending = true;
-            i2cMutex.unlock();
-            rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
+            victimAck = false;
             i2cMutex.lock();
-            serviceCameraVictim();
+            drivetrain.fullstop(); // stop at once; the movement code stops too, at its next pass, and acknowledges
             i2cMutex.unlock();
+            victimPending = true;
+            if(waitForVictimStop()){
+              i2cMutex.lock();
+              serviceCameraVictim(); // holds the I2C bus for seconds: the wheels must already be stopped
+              i2cMutex.unlock();
+            }
+            else victimPending = false;
           }
         }
         else if(readSerial2() != -1){   // right camera (Serial3)
@@ -252,15 +293,18 @@ void cameraTask(){
             Serial.println(mapGrid[nx][ny].getVictim());
           }
           if(mapGrid[nx][ny].getVictim() == false){
-            i2cMutex.lock();
             victimSide = 2;
-            drivetrain.fullstop();
-            victimPending = true;
-            i2cMutex.unlock();
-            rtos::ThisThread::sleep_for(std::chrono::milliseconds(10));
+            victimAck = false;
             i2cMutex.lock();
-            serviceCameraVictim();
+            drivetrain.fullstop(); // stop at once; the movement code stops too, at its next pass, and acknowledges
             i2cMutex.unlock();
+            victimPending = true;
+            if(waitForVictimStop()){
+              i2cMutex.lock();
+              serviceCameraVictim(); // holds the I2C bus for seconds: the wheels must already be stopped
+              i2cMutex.unlock();
+            }
+            else victimPending = false;
           }
         }
       }
@@ -348,6 +392,7 @@ void setup(){
   
 }
 int iterator = 0;
+bool returning = false; // set after the move limit: the planner heads for the start tile instead of exploring
 
 
 
@@ -459,7 +504,7 @@ void loop(){
     }
     case PLAN_NEXT: {
       if(VERBOSE_DEBUG) Serial.println("plan next");
-      plannedMoveDir = pickNextDirection();
+      plannedMoveDir = planDirection();
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
       if(VERBOSE_DEBUG) Serial.println(plannedTurnDeg);
@@ -471,6 +516,7 @@ void loop(){
     case EXECUTE_MOVE: {
       if (turnCompletedForMove == false) {
         if(plannedMoveDir != currentDir){
+          ensureTurnClearance(); // a turn from too close to a wall stalls: shift away from it first
           absoluteturn(plannedTurnDeg);
         }
         delay(200);
@@ -494,6 +540,7 @@ void loop(){
       }
       // update map + robot position only when the robot really reached the next tile
       if(moveResult == MOVE_OK){
+        softFailPending = false;
         markEdgeBothWays(x_pos, y_pos, currentDir);
         stepForward(currentDir, x_pos, y_pos); // x_pos/y_pos now = new tile
         // read blue only after the move completes, on the tile just entered
@@ -534,11 +581,18 @@ void loop(){
       if(Pausemaze == true) state = PAUSE;
       //if(mazeTime.getTime() >= 1000000*60*6) state = RETURN;
       //if(medkits <= 0) state = RETURN;
-      if(iterator >= 25) state = RETURN;
+      if(iterator >= 25 && !returning){
+        returning = true;
+        Serial.println("[RETURN] move limit reached, heading for the start tile");
+      }
+      // On the way home the robot only finishes on the start tile: every tile is planned, turned for, driven and
+      // checked like in exploring (so failed turns and moves are recovered from), and it announces "back to start"
+      // only when its own position says it is there.
+      if(returning && x_pos == MAP_SIZE/2 && y_pos == MAP_SIZE/2 && currentFloor == 0) state = RETURN;
       break;
     }
     case BACKPEDAL: {
-      plannedMoveDir = pickNextDirection();
+      plannedMoveDir = planDirection();
       if(VERBOSE_DEBUG) Serial.println("next direction picked");
       logPlan(plannedMoveDir);
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
@@ -565,6 +619,14 @@ void loop(){
       if(squareToWall(snappedDir, PARALLEL_RECOVERY_TIMEOUT_MS)) syncHeadingToWall(snappedDir, HEADING_SYNC_RECOVERY_DEG);
       delay(100);
       currentDir = snappedDir;
+      // Change the pose before the retry, retrying from the same spot fails the same way. When the sensors see room to turn and the turn
+      // failed anyway, something they cannot see is in the way (an obstacle straight ahead falls between the two front sensors): back off.
+      if(!ensureTurnClearance()){
+        double backed = nudgeLeg(-1, pulsesForDistanceMm(BOTCH_BACKOFF_MM));
+        Serial.print("[CLEAR] turn failed with room on the sensors, backed off ");
+        Serial.print(backed / pulsesForDistanceMm(1.0), 0);
+        Serial.println(" mm");
+      }
       plannedTurnDeg = turnNeededDeg(plannedMoveDir);
       turnCompletedForMove = false;
 
@@ -588,14 +650,26 @@ void loop(){
       // re-sense before planning.
       int nx = x_pos, ny = y_pos;
       stepForward(currentDir, nx, ny);
-      mapGrid[x_pos][y_pos].setBlocked(currentDir, true);
-      if(inBounds(nx, ny)) mapGrid[nx][ny].setBlocked(opposite(currentDir), true);
-      Serial.print("[MOVE] blocked edge recorded x=");
-      Serial.print(x_pos);
-      Serial.print(" y=");
-      Serial.print(y_pos);
-      Serial.print(" dir=");
-      Serial.println((int)currentDir);
+      // Something in the way blocks the edge at once. A move that may only have failed because of the robot's pose gets one more
+      // try from a freshly squared-up pose first: the planner picks the same edge again if it is still open after re-sensing.
+      bool sameEdgeAgain = softFailPending && softFailX == x_pos && softFailY == y_pos && softFailDir == currentDir;
+      if(fwdSoftFail && !sameEdgeAgain){
+        softFailPending = true;
+        softFailX = x_pos; softFailY = y_pos; softFailDir = currentDir;
+        Serial.println("[MOVE] move failed, trying that edge once more");
+      }
+      else{
+        softFailPending = false;
+        mapGrid[x_pos][y_pos].setBlocked(currentDir, true);
+        if(inBounds(nx, ny)) mapGrid[nx][ny].setBlocked(opposite(currentDir), true);
+        Serial.print("[MOVE] blocked edge recorded x=");
+        Serial.print(x_pos);
+        Serial.print(" y=");
+        Serial.print(y_pos);
+        Serial.print(" dir=");
+        Serial.println((int)currentDir);
+      }
+      fwdSoftFail = false;
       absoluteturn(turnNeededDeg(currentDir)); // undo any rotation left by an obstacle detour
       delay(100);
       parallel(currentDir);
@@ -605,56 +679,9 @@ void loop(){
       break;
     }
     case RETURN: {
-      // in case of no elevation used, m1,m2,m3 are all blank grids.
-      // let the current floor grid be mapgrid.
-      if(currentFloor == 0)      m1 = mapGrid;
-      else if(currentFloor == 1) m2 = mapGrid;
-      else if(currentFloor == 2) m3 = mapGrid;
-      // currentFloor is already 0-indexed (0..2), matching BFS's floor arrays.
-      std::pair<int, std::pair<int, int>> currentpos = {currentFloor, {x_pos, y_pos}};
-      std::pair<int, std::pair<int, int>> endpos     = {0, {MAP_SIZE/2, MAP_SIZE/2}};
-
-      lcdPrint("starting bfs");
-      
-      Serial.println("starting bfs");
-      std::deque<std::pair<int, std::pair<int,int>>> path = BFS(currentpos, m1, m2, m3, endpos, false);
-      if(path.empty()){
-        lcdPrint("blue allowed");
-        path = BFS(currentpos, m1, m2, m3, endpos, true);
-      }
-      if(path.empty()){
-        lcdPrint("no path found");
-        while(true) drivetrain.fullstop();
-      }
-      Serial.println("path calculated");
-      // path[0]=currentpos, path[last]=endpos >> iterate forward toward home
-      for(int i = 0; i < (int)path.size() - 1; i++){
-        Direction moveDir;
-        int dx = path[i+1].second.first  - path[i].second.first;
-        int dy = path[i+1].second.second - path[i].second.second;
-        if(dy == 0) moveDir = (dx == 1) ? EAST : WEST;
-        else        moveDir = (dy == 1) ? NORTH : SOUTH;
-
-        plannedTurnDeg = turnNeededDeg(moveDir);
-        absoluteturn(plannedTurnDeg);
-        delay(200);
-        parallel(moveDir);
-        delay(100);
-        currentDir = moveDir;
-        fwd(TILE_MM);
-
-        // track floor changes: update currentFloor and swap the active grid
-        int dz = path[i+1].first - path[i].first;
-        if(dz > 0){
-          currentFloor++;
-          mapGrid = (currentFloor == 1) ? m2 : m3;
-        }
-        else if(dz < 0){
-          currentFloor--;
-          mapGrid = (currentFloor == 0) ? m1 : m2;
-        }
-      }
-      
+      // Only reached on the start tile, see the end of EXECUTE_MOVE. The way home is planned tile by tile in PLAN_NEXT
+      // (planDirection() -> stepTowardStart()), not walked from one path computed here.
+      Serial.println("[RETURN] back on the start tile");
       while(true){
         drivetrain.fullstop();
         lcdPrint("back to start");
