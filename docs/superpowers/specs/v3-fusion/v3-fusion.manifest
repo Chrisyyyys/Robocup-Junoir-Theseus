@@ -1,0 +1,11 @@
+{
+  "autodeskProduct": "Fusion",
+  "type": "script",
+  "author": "Theseus team",
+  "description": {
+    "": "Builds the Theseus V3 baseline robot from the design spec"
+  },
+  "supportedOS": "windows|mac",
+  "editEnabled": true,
+  "version": "1.0.0"
+}

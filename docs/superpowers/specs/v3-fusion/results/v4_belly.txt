@@ -1,0 +1,15 @@
+components with a point below the belly line z 3.5:
+  known Wheel L                  lowest z  0.00  (-35.0 mm against the belly line)
+  known Motor L                  lowest z  3.00  (-5.0 mm against the belly line)
+  known Wheel R                  lowest z  0.00  (-35.0 mm against the belly line)
+  known Motor R                  lowest z  3.00  (-5.0 mm against the belly line)
+  known Omni wheel               lowest z  0.00  (-35.0 mm against the belly line)
+  known Omni arm                 lowest z  2.45  (-10.5 mm against the belly line)
+  known Omni pins                lowest z  2.80  (-7.0 mm against the belly line)
+  known Rear nub                 lowest z  2.00  (-15.0 mm against the belly line)
+  known Chute B left             lowest z  3.04  (-4.6 mm against the belly line)
+  known Chute A right            lowest z  3.04  (-4.6 mm against the belly line)
+  known Floor port FP            lowest z  2.80  (-7.0 mm against the belly line)
+  known Silver module SM         lowest z  2.80  (-7.0 mm against the belly line)
+pivot pin (4 mm) lowest point z 3.40: -1.0 mm against the belly line (spec section 4: a 3 mm pin or a sunk pin, decided in CAD)
+RESULT: PASS

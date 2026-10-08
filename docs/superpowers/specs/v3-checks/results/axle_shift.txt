@@ -1,0 +1,64 @@
+============ axle 0.0 cm behind the body centre: omni at 7.00 from the axle, nub at -8.00, front tip 11.00
+axle back 0.0                     riser_up              PASS  pitch  -0.0.. 14.2  omni 0.25  belly  1.50 bumper  2.00 lip  1.19
+axle back 0.0                     riser_down            PASS  pitch -17.0.. -0.0  omni 0.00  belly  1.50 bumper  2.85 lip  0.67
+axle back 0.0                     steps2x1_up           PASS  pitch -26.1.. 15.3  omni 0.25  belly  1.92 bumper  2.33 lip  1.19
+axle back 0.0                     steps2x1_down         PASS  pitch -17.0.. -0.0  omni 0.00  belly  1.50 bumper  2.85 lip  0.67
+axle back 0.0                     ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.25  belly  1.61 bumper  2.05 lip  1.14
+axle back 0.0                     ramp_down             PASS  pitch -25.0.. -0.0  omni 1.25  belly  1.62 bumper  2.06 lip  1.13
+axle back 0.0                     bump2                 PASS  pitch -17.0.. 14.2  omni 0.25  belly  1.50 bumper  2.00 lip  0.67
+axle back 0.0                     bump1                 PASS  pitch  -8.3..  8.1  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+axle back 0.0                     seam                  PASS  pitch  -0.0..  2.4  omni 0.00  belly  3.20 bumper  3.70 lip  2.41
+axle back 0.0 (DZ)                stairs3x2_25_up       PASS  pitch -13.3.. 29.7  omni 2.00  belly  1.41 bumper  1.73 lip  1.13
+axle back 0.0 (DZ)                stairs3x2_25_down     PASS  pitch -32.2.. -0.0  omni 0.00  belly  2.29 bumper  2.79 lip  2.67
+axle back 0.0 (DZ)                stairs3x2_30_up       PASS  pitch -24.0.. 30.8  omni 2.25  belly  0.21 bumper  0.62 lip  1.15
+axle back 0.0 (DZ)                stairs3x2_30_down     PASS  pitch -34.5.. -0.0  omni 0.00  belly  1.49 bumper  1.73 lip  2.67
+axle back 0.0 (DZ)                dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.2  omni 1.75  belly  0.01 bumper  0.10 lip  0.67
+axle back 0.0 (DZ)                dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 33.1  omni 1.25  belly  0.78 bumper  1.08 lip  1.14
+============ axle 1.0 cm behind the body centre: omni at 8.00 from the axle, nub at -7.00, front tip 12.00
+axle back 1.0                     riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  1.50 bumper  2.00 lip  1.18
+axle back 1.0                     riser_down            PASS  pitch -14.7.. -0.0  omni 0.00  belly  1.50 bumper  3.00 lip  0.67
+axle back 1.0                     steps2x1_up           PASS  pitch -26.1.. 14.3  omni 0.00  belly  2.12 bumper  2.33 lip  1.18
+axle back 1.0                     steps2x1_down         PASS  pitch -14.7.. -0.0  omni 0.00  belly  1.50 bumper  3.00 lip  0.67
+axle back 1.0                     ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.25  belly  1.69 bumper  2.14 lip  0.92
+axle back 1.0                     ramp_down             PASS  pitch -25.0.. -0.0  omni 1.25  belly  1.70 bumper  2.14 lip  0.99
+axle back 1.0                     bump2                 PASS  pitch -14.7.. 14.3  omni 0.00  belly  1.50 bumper  2.00 lip  0.67
+axle back 1.0                     bump1                 PASS  pitch  -7.2..  7.1  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+axle back 1.0                     seam                  PASS  pitch  -0.0..  2.1  omni 0.00  belly  3.20 bumper  3.70 lip  2.44
+axle back 1.0 (DZ)                stairs3x2_25_up       PASS  pitch -16.0.. 28.5  omni 1.75  belly  1.21 bumper  1.56 lip  0.96
+axle back 1.0 (DZ)                stairs3x2_25_down     PASS  pitch -30.4.. -0.0  omni 0.00  belly  1.67 bumper  1.95 lip  2.67
+axle back 1.0 (DZ)                stairs3x2_30_up       PASS  pitch -25.1.. 30.0  omni 1.75  belly  0.60 bumper  1.10 lip  0.90
+axle back 1.0 (DZ)                stairs3x2_30_down     PASS  pitch -31.2.. -0.0  omni 0.00  belly  1.61 bumper  1.89 lip  2.28
+axle back 1.0 (DZ)                dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.3  omni 1.75  belly -0.05 bumper  0.14 lip  0.67
+axle back 1.0 (DZ)                dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 32.1  omni 1.25  belly  0.69 bumper  1.14 lip  0.92
+============ axle 2.0 cm behind the body centre: omni at 9.00 from the axle, nub at -6.00, front tip 13.00
+axle back 2.0                     riser_up              PASS  pitch  -0.0.. 12.7  omni 0.00  belly  1.50 bumper  2.00 lip  1.34
+axle back 2.0                     riser_down            PASS  pitch -13.0.. -0.0  omni 0.00  belly  1.50 bumper  3.07 lip  0.67
+axle back 2.0                     steps2x1_up           PASS  pitch -26.1.. 12.7  omni 0.00  belly  2.11 bumper  2.33 lip  1.34
+axle back 2.0                     steps2x1_down         PASS  pitch -13.0.. -0.0  omni 0.00  belly  1.75 bumper  3.12 lip  0.67
+axle back 2.0                     ramp_up               PASS  pitch  -0.0.. 25.0  omni 0.75  belly  1.96 bumper  2.34 lip  0.59
+axle back 2.0                     ramp_down             PASS  pitch -25.0.. -0.0  omni 0.75  belly  1.97 bumper  2.36 lip  0.56
+axle back 2.0                     bump2                 PASS  pitch -13.0.. 12.7  omni 0.00  belly  1.50 bumper  2.00 lip  0.67
+axle back 2.0                     bump1                 PASS  pitch  -6.4..  6.3  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+axle back 2.0                     seam                  PASS  pitch  -0.0..  1.9  omni 0.00  belly  3.20 bumper  3.70 lip  2.46
+axle back 2.0 (DZ)                stairs3x2_25_up       PASS  pitch -18.1.. 25.7  omni 1.00  belly  1.50 bumper  2.00 lip  0.60
+axle back 2.0 (DZ)                stairs3x2_25_down     PASS  pitch -27.2.. -0.0  omni 0.00  belly  1.85 bumper  2.15 lip  2.67
+axle back 2.0 (DZ)                stairs3x2_30_up       PASS  pitch -26.0.. 30.1  omni 2.00  belly  0.97 bumper  1.47 lip  0.55
+axle back 2.0 (DZ)                stairs3x2_30_down     PASS  pitch -32.6.. -0.0  omni 0.00  belly  1.58 bumper  1.84 lip  1.97
+axle back 2.0 (DZ)                dz_bump2_on_ramp_up   PASS  pitch  -0.0.. 37.7  omni 2.00  belly  0.34 bumper  0.81 lip  0.50
+axle back 2.0 (DZ)                dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 31.3  omni 1.00  belly  1.45 bumper  1.92 lip  0.56
+============ axle 3.0 cm behind the body centre: omni at 10.00 from the axle, nub at -5.00, front tip 14.00
+axle back 3.0                     riser_up              PASS  pitch  -0.0.. 11.4  omni 0.00  belly  1.50 bumper  2.00 lip  1.47
+axle back 3.0                     riser_down            PASS  pitch -11.7.. -0.0  omni 0.00  belly  1.50 bumper  3.02 lip  0.67
+axle back 3.0                     steps2x1_up           PASS  pitch -26.1.. 11.4  omni 0.00  belly  2.09 bumper  2.33 lip  1.47
+axle back 3.0                     steps2x1_down         PASS  pitch -11.7.. -0.0  omni 0.00  belly  2.14 bumper  3.21 lip  0.67
+axle back 3.0                     ramp_up               FAIL  pitch  -0.0.. 25.0  omni 0.00  belly  2.00 bumper  2.33 lip  0.20
+axle back 3.0                     ramp_down             FAIL  pitch -25.0.. -0.0  omni 0.00  belly  2.03 bumper  2.36 lip  0.19
+axle back 3.0                     bump2                 PASS  pitch -11.7.. 11.4  omni 0.00  belly  1.50 bumper  2.00 lip  0.67
+axle back 3.0                     bump1                 PASS  pitch  -5.8..  5.7  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+axle back 3.0                     seam                  PASS  pitch  -0.0..  1.7  omni 0.00  belly  3.20 bumper  3.70 lip  2.48
+axle back 3.0 (DZ)                stairs3x2_25_up       PASS  pitch -19.8.. 25.8  omni 0.25  belly  1.50 bumper  2.00 lip  0.24
+axle back 3.0 (DZ)                stairs3x2_25_down     PASS  pitch -27.0.. -0.0  omni 0.00  belly  1.87 bumper  2.19 lip  2.67
+axle back 3.0 (DZ)                stairs3x2_30_up       FAIL  pitch -26.7.. 30.7  omni 1.50  belly  1.50 bumper  2.00 lip  0.15
+axle back 3.0 (DZ)                stairs3x2_30_down     PASS  pitch -34.1.. -0.0  omni 0.00  belly  1.46 bumper  1.70 lip  1.73
+axle back 3.0 (DZ)                dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 36.4  omni 1.75  belly  1.11 bumper  1.51 lip  0.00
+axle back 3.0 (DZ)                dz_bump1_on_ramp_up   FAIL  pitch  -0.0.. 30.7  omni 0.75  belly  1.70 bumper  2.33 lip  0.10

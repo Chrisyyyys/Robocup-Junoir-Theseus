@@ -1,0 +1,31 @@
+kit chute dynamics (MuJoCo 3.15.0), kit 10.3 mm, 1.2 g, slot B (left) to the exit at the body wall; WHAT IF: the channel bore widened from 13.0 to 14.7 mm (outside 17.9 mm), everything else as in the Fusion model
+  ok   control: cube on a plane tilted 32.2 degrees, mu 0.25: acceleration 3.02 m/s2 in the simulation, 3.15 by g (sin a - mu cos a)
+  ok   control: cube on a plane tilted 32.2 degrees, mu 0.35: acceleration 2.28 m/s2 in the simulation, 2.32 by g (sin a - mu cos a)
+  ok   control: cube on a plane tilted 32.2 degrees, mu 0.45: acceleration 1.45 m/s2 in the simulation, 1.49 by g (sin a - mu cos a)
+  ok   control: the same cube at mu 0.70 (above tan 32.2 = 0.63), once settled, creeps 0.001 cm in 0.5 s: it must hold
+  ok   control: a 14.0 mm cube (too big for the 13 mm bore) must not get out: 0 of 4 got out
+30 kits per friction value, random turn (+-29 degrees) and position in the pocket, robot level, damping ratio 1 (nearly inelastic):
+   mu   exit  stuck  lost  timeout   exit speed m/s (min / mean / max)   time to exit s (mean)
+  0.25   18    12     0      0      0.68 / 0.70 / 0.73           0.23
+  0.35   18    12     0      0      0.58 / 0.61 / 0.64           0.25
+  0.45   19    11     0      0      0.40 / 0.50 / 0.54           0.27
+    mu 0.25 stuck: kit turned -10 deg, offset (-0.07, +0.03) cm in the pocket; stopped at (-4.75, 2.81, 7.90)
+    mu 0.25 stuck: kit turned -4 deg, offset (+0.10, -0.11) cm in the pocket; stopped at (-4.70, 2.78, 7.92)
+    mu 0.25 stuck: kit turned +4 deg, offset (-0.03, +0.14) cm in the pocket; stopped at (-4.78, 2.82, 7.87)
+    mu 0.35 stuck: kit turned -10 deg, offset (-0.07, +0.03) cm in the pocket; stopped at (-4.72, 2.81, 7.92)
+    mu 0.35 stuck: kit turned -4 deg, offset (+0.10, -0.11) cm in the pocket; stopped at (-4.70, 2.80, 7.91)
+    mu 0.35 stuck: kit turned +4 deg, offset (-0.03, +0.14) cm in the pocket; stopped at (-4.77, 2.83, 7.87)
+    mu 0.45 stuck: kit turned -4 deg, offset (+0.10, -0.11) cm in the pocket; stopped at (-4.71, 2.80, 7.90)
+    mu 0.45 stuck: kit turned +4 deg, offset (-0.03, +0.14) cm in the pocket; stopped at (-4.77, 2.83, 7.88)
+    mu 0.45 stuck: kit turned +18 deg, offset (-0.03, +0.01) cm in the pocket; stopped at (-4.70, 2.71, 7.96)
+  share of kits that get out, by the turn of the kit from the slot square (degrees; the channel is at -32.8):
+   turn          mu 0.25  mu 0.35  mu 0.45
+  -29 to -20    10/10    10/10    10/10  
+  -20 to -10     2/3      2/3      3/3   
+  -10 to  +0     1/2      1/2      1/2   
+   +0 to +10     2/8      2/8      2/8   
+  +10 to +20     1/5      1/5      1/5   
+  +20 to +29     2/2      2/2      2/2   
+  kits within 10 degrees of the slot square (how a kit sits when the pocket wall holds it): 30 % get out, all friction values together
+time 7 s
+RESULT: FAIL  (kits that arrive aligned with the slot still do not all get out although the 14.7 mm bore takes the cube at any angle: the hopper mouth, not the bore width, is the problem)

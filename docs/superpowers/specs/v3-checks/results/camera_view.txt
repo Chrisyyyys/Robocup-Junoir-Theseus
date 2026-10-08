@@ -1,0 +1,11 @@
+lens axis z 9.3 (baseline); wall distance from the lens tip (horizontal); band to see: letter z 5..9 cm (4 cm letter, centre about 7 cm), 4 cm wide
+lens tip y   path   d_h | tilt: 20 deg: z-range (band seen) width | 25 deg: z-range (band seen) width | 30 deg: z-range (band seen) width
+      10.3   28.0  3.70 |  5.5- 9.7 ( 88%) 5.1 |  4.7- 9.4 (100%) 5.3 |  3.8- 9.0 (100%) 5.5
+      10.3   25.2  2.30 |  6.9- 9.5 ( 52%) 3.2 |  6.5- 9.3 ( 63%) 3.3 |  5.9- 9.1 ( 77%) 3.4
+       8.8   28.0  5.20 |  3.9- 9.8 (100%) 7.2 |  2.9- 9.4 (100%) 7.4 |  1.6- 8.9 ( 98%) 7.8
+       8.8   25.2  3.80 |  5.4- 9.7 ( 91%) 5.2 |  4.6- 9.4 (100%) 5.4 |  3.7- 9.0 (100%) 5.7
+
+camera lens tip radius sweep (psi 88, lens z 9.1): feasible against fixed parts, ToF boards, bumpers, plate, chutes
+  tilt 20: r=10.3: ok (top 11.9)  r=9.8: ok (top 11.9)  r=9.3: ok (top 11.9)  r=8.8: ok (top 11.9)  r=8.3: NO (top 11.9)  r=7.8: NO (top 11.9)
+  tilt 25: r=10.3: NO (top 12.0)  r=9.8: NO (top 12.0)  r=9.3: NO (top 12.0)  r=8.8: NO (top 12.0)  r=8.3: NO (top 12.0)  r=7.8: NO (top 12.0)
+  tilt 30: r=10.3: NO (top 12.2)  r=9.8: NO (top 12.2)  r=9.3: NO (top 12.2)  r=8.8: NO (top 12.2)  r=8.3: NO (top 12.2)  r=7.8: NO (top 12.2)

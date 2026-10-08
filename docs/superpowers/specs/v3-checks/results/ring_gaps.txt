@@ -1,0 +1,17 @@
+angular extent of each window at r 9.75 (screw radius) and r 10.5 (outer face), y >= 0 side:
+  F      r 9.75:    0.0 ..    7.0    r 10.5:    0.0 ..    7.2
+  FL     r 9.75:   18.2 ..   31.8    r 10.5:   18.2 ..   31.8
+  SFL    r 9.75:   32.5 ..   54.2    r 10.5:   36.8 ..   58.0
+  SRL    r 9.75:  125.8 ..  147.5    r 10.5:  122.0 ..  143.2
+  RL     r 9.75:  145.0 ..  160.8    r 10.5:  147.0 ..  163.0
+  CAML   r 9.75:   80.0 ..   96.2    r 10.5:   80.8 ..   95.8
+free angular ranges on y >= 0 (centre of the feature may lie in these):
+  screws (hole 6.5 mm + 3 mm):   [(9.0, 16.5), (56.8, 78.0), (98.2, 123.2), (163.0, 180.0)]
+  hooks (tongue 20 mm + 3 mm):   [(63.8, 75.2), (101.2, 116.2), (169.0, 180.0)]
+proposed: screws at 12, 60, 118 degrees, hooks at 71 and 114 degrees (each +- on both sides); margin of each to the nearest window, mm along the circle:
+  screw   12 deg: nearest window   5.0 mm
+  screw   60 deg: nearest window   3.9 mm
+  screw  118 deg: nearest window   6.6 mm
+  hook    71 deg: nearest window   7.1 mm
+  hook   114 deg: nearest window   3.8 mm
+screw to hook separation: 60 -> 71 degrees = 19.4 mm at r 10.1; the rear screw (118) sits within the angular span of the hook at 114 but 2.9 mm inside it radially (counterbore r 10.05, rebate r 10.34)

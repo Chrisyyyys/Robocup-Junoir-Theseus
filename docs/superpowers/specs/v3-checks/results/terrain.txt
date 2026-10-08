@@ -1,0 +1,47 @@
+FINAL nub2.0 belly3.5 chamfer     riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  1.58 bumper  2.01 lip  1.30
+FINAL nub2.0 belly3.5 chamfer     riser_down            PASS  pitch -14.8.. -0.0  omni 0.00  belly  1.50 bumper  2.75 lip  1.00
+FINAL nub2.0 belly3.5 chamfer     steps2x1_up           PASS  pitch -26.1.. 14.3  omni 0.00  belly  1.91 bumper  2.85 lip  1.30
+FINAL nub2.0 belly3.5 chamfer     steps2x1_down         PASS  pitch -14.8.. -0.0  omni 0.00  belly  1.50 bumper  3.24 lip  1.00
+FINAL nub2.0 belly3.5 chamfer     ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.50  belly  1.51 bumper  1.94 lip  1.26
+FINAL nub2.0 belly3.5 chamfer     ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  1.52 bumper  1.95 lip  1.28
+FINAL nub2.0 belly3.5 chamfer     bump2                 PASS  pitch -14.8.. 14.3  omni 0.00  belly  1.50 bumper  2.01 lip  1.00
+FINAL nub2.0 belly3.5 chamfer     bump1                 PASS  pitch  -7.3..  7.2  omni 0.00  belly  2.50 bumper  3.00 lip  2.00
+FINAL nub2.0 belly3.5 chamfer     seam                  PASS  pitch  -0.0..  2.2  omni 0.00  belly  3.20 bumper  3.70 lip  2.74
+nub 0.5                           riser_up              PASS  pitch  -0.0..  7.9  omni 1.75  belly  1.58 bumper  2.01 lip  2.56
+nub 0.5                           riser_down            PASS  pitch -14.8.. -0.0  omni 1.50  belly  1.53 bumper  1.96 lip  1.80
+nub 0.5                           ramp_up               FAIL  pitch  -0.0.. 25.0  omni 2.50  belly  0.04 bumper  0.39 lip  2.58  infeasible at xd [-1.5, -1.0, -0.5] (n=3)
+nub 0.5                           ramp_down             FAIL  pitch -25.0.. -0.0  omni 2.50  belly  0.03 bumper  0.38 lip  2.56  infeasible at xd [27.5, 28.0, 28.5] (n=3)
+nub 1.0                           riser_up              PASS  pitch  -0.0..  9.7  omni 1.00  belly  1.58 bumper  2.01 lip  2.13
+nub 1.0                           riser_down            PASS  pitch -14.8.. -0.0  omni 1.00  belly  1.92 bumper  2.65 lip  1.80
+nub 1.0                           ramp_up               FAIL  pitch  -0.0.. 25.0  omni 2.50  belly  0.15 bumper  0.53 lip  2.12
+nub 1.0                           ramp_down             FAIL  pitch -25.0.. -0.0  omni 2.50  belly  0.16 bumper  0.53 lip  2.12
+nub 1.5                           riser_up              PASS  pitch  -0.0.. 10.8  omni 0.50  belly  1.58 bumper  2.01 lip  1.71
+nub 1.5                           riser_down            PASS  pitch -14.8.. -0.0  omni 0.50  belly  1.72 bumper  2.75 lip  1.44
+nub 1.5                           ramp_up               PASS  pitch  -0.0.. 25.0  omni 2.00  belly  0.84 bumper  1.25 lip  1.69
+nub 1.5                           ramp_down             PASS  pitch -25.0.. -0.0  omni 2.00  belly  0.85 bumper  1.25 lip  1.69
+nub 2.0                           riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  1.58 bumper  2.01 lip  1.30
+nub 2.0                           riser_down            PASS  pitch -14.8.. -0.0  omni 0.00  belly  1.50 bumper  2.75 lip  1.00
+nub 2.0                           ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.50  belly  1.51 bumper  1.94 lip  1.26
+nub 2.0                           ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  1.52 bumper  1.95 lip  1.28
+nub 2.5                           riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  1.58 bumper  2.01 lip  1.30
+nub 2.5                           riser_down            PASS  pitch -14.8.. -0.0  omni 0.00  belly  1.50 bumper  2.75 lip  1.00
+nub 2.5                           ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.00  belly  1.46 bumper  2.63 lip  0.83
+nub 2.5                           ramp_down             PASS  pitch -25.0.. -0.0  omni 1.00  belly  1.52 bumper  2.63 lip  0.89
+first draft: belly2.5 skid0.5 nochamfriser_up              PASS  pitch  -0.0..  7.9  omni 1.75  belly  0.61 bumper  2.01 lip  2.56
+first draft: belly2.5 skid0.5 nochamframp_up               FAIL  pitch  -0.0.. 25.0  omni 2.50  belly -2.44 bumper  0.39 lip  2.58  infeasible at xd [-1.5, -1.0, -0.5] (n=3)
+first draft: belly2.5 skid0.5 nochamframp_down             FAIL  pitch -25.0.. -0.0  omni 2.50  belly -2.44 bumper  0.38 lip  2.56  infeasible at xd [27.5, 28.0, 28.5] (n=3)
+belly3.5 only (skid0.5 nochamf)   riser_up              PASS  pitch  -0.0..  7.9  omni 1.75  belly  1.58 bumper  2.01 lip  2.56
+belly3.5 only (skid0.5 nochamf)   ramp_up               FAIL  pitch  -0.0.. 25.0  omni 2.50  belly  0.04 bumper  0.39 lip  2.58  infeasible at xd [-1.5, -1.0, -0.5] (n=3)
+belly3.5 only (skid0.5 nochamf)   ramp_down             FAIL  pitch -25.0.. -0.0  omni 2.50  belly  0.03 bumper  0.38 lip  2.56  infeasible at xd [27.5, 28.0, 28.5] (n=3)
+belly2.5 nub2.0 + chamfer         riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  0.71 bumper  2.01 lip  1.30
+belly2.5 nub2.0 + chamfer         ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.50  belly  0.53 bumper  1.94 lip  1.26
+belly2.5 nub2.0 + chamfer         ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  0.54 bumper  1.95 lip  1.28
+belly3.5 nub2.0 NO chamfer        riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  0.92 bumper  2.01 lip  1.30
+belly3.5 nub2.0 NO chamfer        ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.50  belly  0.46 bumper  1.94 lip  1.26
+belly3.5 nub2.0 NO chamfer        ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  0.35 bumper  1.95 lip  1.28
+FINAL (extra cases)               stairs3x2_25_up       PASS  pitch -15.9.. 28.7  omni 2.00  belly  1.49 bumper  1.80 lip  1.24
+FINAL (extra cases)               stairs3x2_25_down     PASS  pitch -30.5.. -0.0  omni 0.00  belly  2.14 bumper  2.42 lip  3.00
+FINAL (extra cases)               stairs3x2_30_up       FAIL  pitch -25.1.. 29.8  omni 2.25  belly  0.10 bumper  0.48 lip  1.27
+FINAL (extra cases)               stairs3x2_30_down     PASS  pitch -31.4.. -0.0  omni 0.00  belly  2.10 bumper  2.37 lip  2.91
+FINAL (extra cases)               dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.2  omni 2.25  belly  0.06 bumper  0.08 lip  1.00
+FINAL (extra cases)               dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 32.2  omni 1.50  belly  0.94 bumper  1.13 lip  1.26

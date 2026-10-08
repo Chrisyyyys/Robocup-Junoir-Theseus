@@ -1,0 +1,22 @@
+placeholder mass 1.07 kg, COM +0.95 cm ahead of the axle, height 6.4 cm, omni 7.0 cm ahead -> front load 13.6%
+
+1) Drive wheel climbing a step with no help from other wheels (2WD, rigid wheel): needs friction coefficient mu >= tan(alpha), cos(alpha) = (r-h)/r
+   wheel dia 80 mm: h=1.0: mu >= 0.88   h=1.5: mu >= 1.25   h=2.0: mu >= 1.73
+   wheel dia 90 mm: h=1.0: mu >= 0.81   h=1.5: mu >= 1.12   h=2.0: mu >= 1.50
+   wheel dia 100 mm: h=1.0: mu >= 0.75   h=1.5: mu >= 1.02   h=2.0: mu >= 1.33
+   (rigid-wheel statics; soft cast silicone, speed and the real stair surface decide. Measure mu: tilt-plane test with a tyre sample on the stair material)
+
+2) Passive 60 mm omni climbing a step, pushed by the drive wheels (traction mu=1.5 assumed)
+   step 1.0 cm: push needed 0.15 W, traction available 1.30 W  -> margin x8.5
+   step 2.0 cm: push needed 0.38 W, traction available 1.30 W  -> margin x3.4
+   if the COM is +1.5 cm (front load 21%): push needed 0.61 W vs traction 1.18 W
+   if the COM is +2.0 cm (front load 29%): push needed 0.81 W vs traction 1.07 W
+
+3) Motor torque (Pololu 20D 195:1, 12 V: gearbox limit 5 kg-cm, stall 10 kg-cm at 1.6 A, 72 rpm no-load)
+   per wheel, 2 cm riser (rigid): 0.157 N-m = 1.60 kg-cm; 25 deg ramp: 0.089 N-m = 0.90 kg-cm (limit 5.0)
+   no-load speed 0.30 m/s at 12 V; a 300 mm tile takes at least 1.0 s
+
+4) Ramp 25 deg: weight line vs the drive contact
+   COM is 2.03 cm BEHIND the drive wheel contact -> the robot rests on the rear skid (8 cm behind, 2 cm off the floor): tilts back atan(2/8)=14.0 deg, skid carries ~25% of the normal load
+   no rock-back needs the COM at least 3.0 cm ahead (front load 43%)
+   descending a 25 deg ramp: front load = 56% -> spring must carry 5.9 N within 2.5 cm travel (k >= 1.8 N/cm)

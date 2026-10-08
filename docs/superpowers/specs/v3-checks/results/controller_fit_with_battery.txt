@@ -1,0 +1,18 @@
+(GIGA R1 + shield, 10.15 x 5.33 x 1.9 cm)
+R 9.5: wheel y 6.28..8.28 (track 14.6 cm), chute exit x -5.7, camera (tip radius, lens z) (8.8, 9.3)
+      battery  x   2.87 y  -3.90 angle 170 z 5.5-8.0  clearance 4.5 mm
+      stack    NO PLACEMENT
+(GIGA R1 + shield, 10.15 x 5.33 x 1.9 cm)
+R 10.0: wheel y 6.84..8.84 (track 15.7 cm), chute exit x -5.7, camera (tip radius, lens z) (8.8, 9.3)
+      battery  x   3.62 y   4.09 angle   0 z 5.5-8.0  clearance 8.4 mm
+      stack    NO PLACEMENT
+(GIGA R1 + shield, 10.15 x 5.33 x 1.9 cm)
+R 10.5: wheel y 7.0..9.0 (track 16.0 cm), chute exit x -5.8, camera (tip radius, lens z) (8.8, 9.3)
+      battery  x   3.90 y   4.35 angle  10 z 5.1-7.6  clearance 8.6 mm
+      stack    NO PLACEMENT
+(main board 7.0 x 4.5 x 1.5 cm) R 9.5: wheel track 14.6 cm, chute exit x -5.7, camera (8.8, 9.3)
+      battery  x   2.87 y  -3.90 angle 170 z 5.5-8.0  clearance 4.5 mm
+      stack    x  -0.02 y   3.74 angle   0 z 6.6-8.1  clearance 2.9 mm
+(main board 6.5 x 4.0 x 1.5 cm) R 9.5: wheel track 14.6 cm, chute exit x -5.7, camera (8.8, 9.3)
+      battery  x   2.87 y  -3.90 angle 170 z 5.5-8.0  clearance 4.5 mm
+      stack    x  -0.02 y   3.74 angle   0 z 6.6-8.1  clearance 5.4 mm

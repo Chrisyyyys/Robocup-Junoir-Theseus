@@ -1,0 +1,11 @@
+ToF cones against the V3 baseline (plate R 4.91 cm, chute exit x -6.0 )
+  F (recessed 1 cm)    pos ( 9.50, 0.00) aim    0: no robot part in the cone
+  FL                   pos ( 9.33, 4.35) aim   25: no robot part in the cone
+  FR                   pos ( 9.33,-4.35) aim  -25: no robot part in the cone
+  SFL                  pos ( 7.28, 7.28) aim   90: no robot part in the cone
+  SFR                  pos ( 7.28,-7.28) aim  -90: no robot part in the cone
+  SRL                  pos (-7.28, 7.28) aim   90: no robot part in the cone
+  SRR                  pos (-7.28,-7.28) aim  -90: no robot part in the cone
+  RL                   pos (-9.26, 4.52) aim  180: no robot part in the cone
+  RR                   pos (-9.26,-4.52) aim  180: no robot part in the cone
+ALL NINE CLEAR

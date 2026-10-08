@@ -1,0 +1,8 @@
+first draft, rear panel on the ring (x -9.4, y -2 to +2, z 11.2): 21.4 to 25.4 cm
+front deck of the plan:
+  Start button   at (7.55, 2.15, z 9.0): 6.7 cm
+  Power switch   at (6.00, 2.15, z 9.0): 8.0 cm
+  Status LED 1   at (7.50, 0.00, z 9.8): 5.3 cm
+  Status LED 2   at (6.60, 0.00, z 9.8): 6.0 cm
+  Victim LED     at (8.35, 0.00, z 15.6), on the handle bar, wire down the post: 12.0 cm
+  USB-C socket (front-right wall) to J12 in a straight line: 2.0 cm

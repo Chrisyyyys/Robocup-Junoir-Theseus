@@ -1,0 +1,9 @@
+smallest clearance (cm) between the sensor window and the terrain over the whole crossing; negative = the sensor would hit
+x_s, face z, half width        riser_up   riser_down      ramp_up    ramp_down        bump2        bump1  steps2x1_up steps2x1_dow stairs3x2_25 stairs3x2_30 dz_bump2_on_
+x 0.0 z 2.8 half 1.0           2.44         2.44         2.53         2.54         2.44         2.46         2.46         2.48         2.46         2.44         2.44
+x 6.5 z 2.8 half 0.8           2.24         2.04         1.52         1.52         2.01         2.20         2.24         2.21         1.10         0.50         1.06
+x 7.5 z 2.8 half 1.0           1.70         2.37         1.30         1.30         1.70         2.17         2.17         2.37         0.82         0.50         0.67
+x 8.0 z 2.8 half 1.0           1.28         2.22         1.20         1.21         1.28         2.06         2.06         2.22         0.82         0.50         0.17
+x 8.5 z 2.8 half 1.0           0.94         2.08         1.11         1.12         0.94         1.87         1.87         2.08         0.82         0.54        -0.33
+x 7.5 z 3.3 half 1.0           1.98         2.85         1.79         1.79         1.98         2.66         2.66         2.85         1.32         1.00         0.84
+x 8.0 z 3.3 half 1.0           1.64         2.70         1.70         1.70         1.64         2.51         2.51         2.70         1.32         1.00         0.53

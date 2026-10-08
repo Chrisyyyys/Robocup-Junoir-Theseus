@@ -1,0 +1,12 @@
+chute model against the Fusion bodies: 7000 random points in x (-7.2, -2.6), y (0.8, 9.2), z (6.6, 9.3) and 8000 points 0.3 mm either side of the faces of the pieces
+  random points: 438 inside some body, 0 disagree with the model, 1 more disagree within 0.2 mm of a surface (ignored)
+  face points: 8000, 9 on the wrong side (0.11 %)
+    at [-5.325, 9.05, 4.321] model [False, True, False] Fusion [False, False, False]
+    at [-6.698, 8.094, 4.03] model [False, True, False] Fusion [False, False, False]
+    at [-5.325, 9.051, 4.036] model [False, True, False] Fusion [False, False, False]
+    at [-6.635, 8.138, 3.822] model [False, True, False] Fusion [False, False, False]
+    at [-5.328, 9.048, 3.972] model [False, True, False] Fusion [False, False, False]
+    at [-6.639, 8.136, 4.276] model [False, True, False] Fusion [False, False, False]
+    at [-6.639, 8.136, 4.428] model [False, True, False] Fusion [False, False, False]
+    at [-6.646, 8.13, 5.047] model [False, True, False] Fusion [False, False, False]
+RESULT: PASS

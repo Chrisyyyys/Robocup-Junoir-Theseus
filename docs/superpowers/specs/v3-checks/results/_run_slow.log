@@ -1,0 +1,2 @@
+controller_fit           does the GIGA stack (1.5 / 1.9 / 2.5 cm) or a smaller main board fit at R 9.5, 10.0, 10.5 (sections 0.2, 9) ... ok (363 s)
+controller_fit_with_battery same with the battery placed too, and the small-board case at R 9.5 (sections 0.5, 9) ... ok (41 s)

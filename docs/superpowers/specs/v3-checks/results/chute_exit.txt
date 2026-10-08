@@ -1,0 +1,6 @@
+exit axis z 3.75  slope 34.9 deg   round r0.9 lowest z  2.63   square outer 16.2 lowest z  2.56
+exit axis z 4.00  slope 33.2 deg   round r0.9 lowest z  2.90   square outer 16.2 lowest z  2.84
+exit axis z 4.10  slope 32.6 deg   round r0.9 lowest z  3.01   square outer 16.2 lowest z  2.95
+exit axis z 4.15  slope 32.2 deg   round r0.9 lowest z  3.06   square outer 16.2 lowest z  3.00
+exit axis z 4.20  slope 31.9 deg   round r0.9 lowest z  3.12   square outer 16.2 lowest z  3.06
+square channel: exit axis z 4.15 puts the lowest point at z 3.00 (slope 32.3 deg)

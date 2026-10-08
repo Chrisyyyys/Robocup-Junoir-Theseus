@@ -1,0 +1,2 @@
+components 51, interfering pairs 0, above the allowlist 0
+RESULT: PASS

@@ -1,0 +1,10 @@
+--- bumper plates at R 10.5 (outer radius 11.0), band z 4.0-6.5: overlap with the wheels / motors / omni arm / ToF boards
+  ends at 58 deg: min plan distance to any other part  1.24 cm; plate end reaches y =  9.33 cm, 3.27 cm from the wall of a 25.2 cm path, 4.67 cm from a 28 cm wall
+  ends at 62 deg: min plan distance to any other part  1.16 cm; plate end reaches y =  9.71 cm, 2.89 cm from the wall of a 25.2 cm path, 4.29 cm from a 28 cm wall
+  ends at 66 deg: min plan distance to any other part  0.90 cm; plate end reaches y = 10.05 cm, 2.55 cm from the wall of a 25.2 cm path, 3.95 cm from a 28 cm wall
+  ends at 70 deg: min plan distance to any other part  0.90 cm; plate end reaches y = 10.34 cm, 2.26 cm from the wall of a 25.2 cm path, 3.66 cm from a 28 cm wall
+--- chute exit x (R 10.5): smallest plan distance from the chute strip to the wheel / motor / omni arm (parts that overlap it in z)
+  exit x -5.5: y  8.94  nearest other part wheelL at  0.30 cm
+  exit x -6.0: y  8.62  nearest other part wheelL at  0.67 cm
+  exit x -6.5: y  8.25  nearest other part wheelL at  1.06 cm
+  exit x -7.0: y  7.83  nearest other part wheelL at  1.47 cm

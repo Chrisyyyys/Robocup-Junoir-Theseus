@@ -1,0 +1,3 @@
+stepper bay against everything except the N20 cartridge:
+  ok   no overlap
+RESULT: PASS

@@ -1,0 +1,16 @@
+farthest radius from the axle, largest first (body 10.5, bumper plates 11.0):
+  ok   Bumper R                 r_max  11.000  (limit 11.0)
+  ok   Bumper L                 r_max  11.000  (limit 11.0)
+  ok   Bumper switch R          r_max  10.752  (limit 11.0)
+  ok   Bumper switch L          r_max  10.752  (limit 11.0)
+  ok   Tub                      r_max  10.500  (limit 10.5)
+  ok   Upper frame              r_max  10.500  (limit 10.5)
+  ok   Lid                      r_max  10.500  (limit 10.5)
+  ok   Chute B left             r_max  10.500  (limit 10.5)
+  ok   Chute A right            r_max  10.500  (limit 10.5)
+  ok   USB-C service socket     r_max  10.470  (limit 10.5)
+  ok   Wi-Fi antenna            r_max  10.295  (limit 10.5)
+  ok   ToF FR                   r_max  10.227  (limit 10.5)
+highest point z 16.00 (victim LED on the bar, bar top 15.6, limit 25)
+omni front edge at rest x 10.00, wall inner face 10.3
+RESULT: PASS

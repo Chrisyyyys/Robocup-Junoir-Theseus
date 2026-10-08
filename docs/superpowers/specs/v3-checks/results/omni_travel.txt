@@ -1,0 +1,16 @@
+--- omni travel 2.5 cm
+travel 2.5                        riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  1.58 bumper  2.01 lip  1.30
+travel 2.5                        ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.50  belly  1.51 bumper  1.94 lip  1.26
+travel 2.5                        ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  1.52 bumper  1.95 lip  1.28
+travel 2.5                        stairs3x2_25_up       PASS  pitch -15.9.. 28.7  omni 2.00  belly  1.49 bumper  1.80 lip  1.24
+travel 2.5                        stairs3x2_30_up       FAIL  pitch -25.1.. 29.8  omni 2.25  belly  0.10 bumper  0.48 lip  1.27
+travel 2.5                        dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.2  omni 2.25  belly  0.06 bumper  0.08 lip  1.00
+travel 2.5                        dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 32.2  omni 1.50  belly  0.94 bumper  1.13 lip  1.26
+--- omni travel 3.0 cm
+travel 3.0                        riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  1.58 bumper  2.01 lip  1.30
+travel 3.0                        ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.50  belly  1.51 bumper  1.94 lip  1.25
+travel 3.0                        ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  1.52 bumper  1.95 lip  1.24
+travel 3.0                        stairs3x2_25_up       PASS  pitch -15.9.. 28.7  omni 2.10  belly  1.38 bumper  1.72 lip  1.30
+travel 3.0                        stairs3x2_30_up       FAIL  pitch -25.1.. 29.8  omni 2.10  belly  0.20 bumper  0.67 lip  1.28
+travel 3.0                        dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.2  omni 2.40  belly -0.16 bumper  0.08 lip  1.00
+travel 3.0                        dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 32.2  omni 1.50  belly  0.71 bumper  0.96 lip  1.25

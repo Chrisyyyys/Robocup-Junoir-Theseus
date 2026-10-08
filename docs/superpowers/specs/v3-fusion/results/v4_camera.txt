@@ -1,0 +1,3 @@
+camera L: 0 / 25 view rays hit a robot part within 3.0 cm of the lens; first: None
+camera R: 0 / 25 view rays hit a robot part within 3.0 cm of the lens; first: None
+camera views done

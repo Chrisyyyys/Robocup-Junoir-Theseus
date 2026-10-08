@@ -1,0 +1,29 @@
+shaft on the plate axis (-2.0, 0); angle = direction from the body centre to the shaft (0 = +x front, 90 = +y left); clearances in mm in plan against parts at the same height
+    0 deg  body centre (-2.80,  0.00)  tightest: GIGA stack   -4.5 mm  -> COLLIDES   GIGA stack  -4.5  battery  26.4  hopper A   4.1  hopper B   4.1  tub wall  57.4
+   15 deg  body centre (-2.77, -0.21)  tightest: GIGA stack   -7.6 mm  -> COLLIDES   GIGA stack  -7.6  battery  27.2  hopper A   1.6  hopper B   4.2  tub wall  57.0
+   30 deg  body centre (-2.69, -0.40)  tightest: GIGA stack   -7.9 mm  -> COLLIDES   GIGA stack  -7.9  battery  27.6  hopper A   0.8  hopper B   4.4  tub wall  57.3
+   45 deg  body centre (-2.57, -0.57)  tightest: GIGA stack   -8.2 mm  -> COLLIDES   GIGA stack  -8.2  battery  27.6  hopper A   1.9  hopper B   5.9  tub wall  58.4
+   60 deg  body centre (-2.40, -0.69)  tightest: GIGA stack   -9.9 mm  -> COLLIDES   GIGA stack  -9.9  battery  27.1  hopper A   0.8  hopper B   8.5  tub wall  60.2
+   75 deg  body centre (-2.21, -0.77)  tightest: GIGA stack  -11.3 mm  -> COLLIDES   GIGA stack -11.3  battery  26.2  hopper A   1.6  hopper B  12.7  tub wall  60.4
+   90 deg  body centre (-2.00, -0.80)  tightest: GIGA stack  -12.1 mm  -> COLLIDES   GIGA stack -12.1  battery  24.9  hopper A   4.1  hopper B  17.6  tub wall  61.2
+  105 deg  body centre (-1.79, -0.77)  tightest: GIGA stack  -12.4 mm  -> COLLIDES   GIGA stack -12.4  battery  23.3  hopper A   4.2  hopper B  19.3  tub wall  62.6
+  120 deg  body centre (-1.60, -0.69)  tightest: GIGA stack  -11.9 mm  -> COLLIDES   GIGA stack -11.9  battery  21.4  hopper A   4.4  hopper B  20.1  tub wall  64.6
+  135 deg  body centre (-1.43, -0.57)  tightest: GIGA stack  -10.5 mm  -> COLLIDES   GIGA stack -10.5  battery  19.4  hopper A   5.9  hopper B  20.4  tub wall  67.3
+  150 deg  body centre (-1.31, -0.40)  tightest: GIGA stack   -8.6 mm  -> COLLIDES   GIGA stack  -8.6  battery  17.3  hopper A   8.5  hopper B  20.1  tub wall  70.5
+  165 deg  body centre (-1.23, -0.21)  tightest: GIGA stack   -7.6 mm  -> COLLIDES   GIGA stack  -7.6  battery  15.3  hopper A  12.7  hopper B  19.3  tub wall  74.2
+  180 deg  body centre (-1.20, -0.00)  tightest: GIGA stack   -6.8 mm  -> COLLIDES   GIGA stack  -6.8  battery  13.1  hopper A  17.6  hopper B  17.6  tub wall  76.5
+  195 deg  body centre (-1.23,  0.21)  tightest: GIGA stack   -5.3 mm  -> COLLIDES   GIGA stack  -5.3  battery   8.5  hopper A  19.3  hopper B  12.7  tub wall  74.2
+  210 deg  body centre (-1.31,  0.40)  tightest: GIGA stack   -1.9 mm  -> COLLIDES   GIGA stack  -1.9  battery   9.0  hopper A  20.1  hopper B   8.5  tub wall  70.5
+  225 deg  body centre (-1.43,  0.57)  tightest: GIGA stack    3.4 mm  -> fits       GIGA stack   3.4  battery   8.8  hopper A  20.4  hopper B   5.9  tub wall  67.3
+  240 deg  body centre (-1.60,  0.69)  tightest: hopper B      4.4 mm  -> fits       GIGA stack   6.1  battery   9.0  hopper A  20.1  hopper B   4.4  tub wall  64.6
+  255 deg  body centre (-1.79,  0.77)  tightest: hopper B      4.2 mm  -> fits       GIGA stack   6.9  battery  13.5  hopper A  19.3  hopper B   4.2  tub wall  62.6
+  270 deg  body centre (-2.00,  0.80)  tightest: hopper B      4.1 mm  -> fits       GIGA stack   7.1  battery  15.6  hopper A  17.6  hopper B   4.1  tub wall  61.2
+  285 deg  body centre (-2.21,  0.77)  tightest: hopper B      1.6 mm  -> touches    GIGA stack   6.9  battery  17.7  hopper A  12.7  hopper B   1.6  tub wall  60.4
+  300 deg  body centre (-2.40,  0.69)  tightest: hopper B      0.8 mm  -> touches    GIGA stack   6.1  battery  19.7  hopper A   8.5  hopper B   0.8  tub wall  60.2
+  315 deg  body centre (-2.57,  0.57)  tightest: hopper B      1.9 mm  -> touches    GIGA stack   4.8  battery  21.8  hopper A   5.9  hopper B   1.9  tub wall  58.4
+  330 deg  body centre (-2.69,  0.40)  tightest: hopper B      0.8 mm  -> touches    GIGA stack   3.1  battery  23.6  hopper A   4.4  hopper B   0.8  tub wall  57.3
+  345 deg  body centre (-2.77,  0.21)  tightest: GIGA stack    0.7 mm  -> touches    GIGA stack   0.7  battery  25.2  hopper A   4.2  hopper B   1.6  tub wall  57.0
+
+best orientations (all clearances at least 2 mm):
+  225, 230, 235, 240, 245, 250, 255, 260, 265, 270, 275, 280
+  widest margin at 230 deg: body centre (-1.49, 0.61); GIGA stack 5.0 mm, battery 8.2 mm, hopper A 20.3 mm, hopper B 5.2 mm, tub wall 66.3 mm

@@ -1,0 +1,6 @@
+--- roof 9.4 (plate floor 8.0)
+   feasible placements: 0 {}
+--- roof 10.0 (plate floor 9.0)
+   feasible placements: 0 {}
+--- roof 11.9 (plate floor 9.0)
+   feasible placements: 0 {}

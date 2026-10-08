@@ -1,0 +1,8 @@
+chute: slot (-4.73,2.73) -> exit (-6.00,8.62), plan 6.02 cm, drop 3.80 cm, slope 32.2 deg, path 7.12 cm
+  mu 0.25: exit speed 0.67 m/s, flight 57 ms, carries 3.2 cm, lands (-6.7, 11.8), 2.2 cm from a 28 cm wall; impact speed 1.08 m/s (Sprint 3 test from 3 cm: 0.77)
+  mu 0.35: exit speed 0.58 m/s, flight 60 ms, carries 2.9 cm, lands (-6.6, 11.5), 2.5 cm from a 28 cm wall; impact speed 1.02 m/s (Sprint 3 test from 3 cm: 0.77)
+     victim -3.0 cm ahead of the camera at the stop: along-wall   3.9, to the wall  2.5, plan distance   4.7 cm (rule: kit entirely within 15 cm; slack along the wall 14.8 cm)
+     victim +0.0 cm ahead of the camera at the stop: along-wall   6.9, to the wall  2.5, plan distance   7.4 cm (rule: kit entirely within 15 cm; slack along the wall 14.8 cm)
+     victim +2.5 cm ahead of the camera at the stop: along-wall   9.4, to the wall  2.5, plan distance   9.8 cm (rule: kit entirely within 15 cm; slack along the wall 14.8 cm)
+     victim +3.6 cm ahead of the camera at the stop: along-wall  10.5, to the wall  2.5, plan distance  10.8 cm (rule: kit entirely within 15 cm; slack along the wall 14.8 cm)
+  mu 0.5: exit speed 0.39 m/s, flight 67 ms, carries 2.2 cm, lands (-6.5, 10.8), 3.2 cm from a 28 cm wall; impact speed 0.93 m/s (Sprint 3 test from 3 cm: 0.77)

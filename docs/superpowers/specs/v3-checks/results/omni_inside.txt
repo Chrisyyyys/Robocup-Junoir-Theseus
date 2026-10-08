@@ -1,0 +1,58 @@
+--- rev 3 as checked in the spec (omni centre 7.95, front edge 10.95, lip x -7.0 z 3.0)
+omni 7.95                         riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  1.58 bumper  2.01 lip  1.30
+omni 7.95                         riser_down            PASS  pitch -14.8.. -0.0  omni 0.00  belly  1.50 bumper  2.75 lip  1.00
+omni 7.95                         steps2x1_up           PASS  pitch -26.1.. 14.3  omni 0.00  belly  1.91 bumper  2.85 lip  1.30
+omni 7.95                         steps2x1_down         PASS  pitch -14.8.. -0.0  omni 0.00  belly  1.50 bumper  3.24 lip  1.00
+omni 7.95                         ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.50  belly  1.51 bumper  1.94 lip  1.26
+omni 7.95                         ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  1.52 bumper  1.95 lip  1.28
+omni 7.95                         bump2                 PASS  pitch -14.8.. 14.3  omni 0.00  belly  1.50 bumper  2.01 lip  1.00
+omni 7.95                         bump1                 PASS  pitch  -7.3..  7.2  omni 0.00  belly  2.50 bumper  3.00 lip  2.00
+omni 7.95                         seam                  PASS  pitch  -0.0..  2.2  omni 0.00  belly  3.20 bumper  3.70 lip  2.74
+--- rev 3 omni with the chute lowest point from the 3D model (lip z 2.67)
+omni 7.95, lip 2.67               riser_down            PASS  pitch -14.8.. -0.0  omni 0.00  belly  1.50 bumper  2.75 lip  0.67
+omni 7.95, lip 2.67               ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  1.52 bumper  1.95 lip  1.16
+omni 7.95, lip 2.67               bump2                 PASS  pitch -14.8.. 14.3  omni 0.00  belly  1.50 bumper  2.01 lip  0.67
+omni 7.95, lip 2.67               riser_up              PASS  pitch  -0.0.. 14.3  omni 0.00  belly  1.58 bumper  2.01 lip  1.18
+--- omni centre 7.3 (front edge 10.30), arm length kept, pivot x 2.85, lip z 2.67
+omni 7.3                          riser_up              PASS  pitch  -0.0.. 13.7  omni 0.25  belly  1.50 bumper  2.00 lip  1.24
+omni 7.3                          riser_down            PASS  pitch -16.2.. -0.0  omni 0.00  belly  1.50 bumper  2.95 lip  0.67
+omni 7.3                          steps2x1_up           PASS  pitch -26.1.. 14.6  omni 0.25  belly  1.97 bumper  2.39 lip  1.24
+omni 7.3                          steps2x1_down         PASS  pitch -16.2.. -0.0  omni 0.00  belly  1.50 bumper  2.98 lip  0.67
+omni 7.3                          ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.25  belly  1.60 bumper  2.03 lip  1.13
+omni 7.3                          ramp_down             PASS  pitch -25.0.. -0.0  omni 1.50  belly  1.34 bumper  1.76 lip  1.26
+omni 7.3                          bump2                 PASS  pitch -16.2.. 14.7  omni 0.25  belly  1.50 bumper  2.00 lip  0.67
+omni 7.3                          bump1                 PASS  pitch  -7.9..  7.8  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+omni 7.3                          seam                  PASS  pitch  -0.0..  2.3  omni 0.00  belly  3.20 bumper  3.70 lip  2.42
+--- omni centre 7.0 (front edge 10.00), arm length kept, pivot x 2.55, lip z 2.67
+omni 7.0                          riser_up              PASS  pitch  -0.0.. 14.2  omni 0.25  belly  1.50 bumper  2.00 lip  1.19
+omni 7.0                          riser_down            PASS  pitch -17.0.. -0.0  omni 0.00  belly  1.50 bumper  2.85 lip  0.67
+omni 7.0                          steps2x1_up           PASS  pitch -26.1.. 15.3  omni 0.25  belly  1.92 bumper  2.33 lip  1.19
+omni 7.0                          steps2x1_down         PASS  pitch -17.0.. -0.0  omni 0.00  belly  1.50 bumper  2.85 lip  0.67
+omni 7.0                          ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.25  belly  1.61 bumper  2.05 lip  1.14
+omni 7.0                          ramp_down             PASS  pitch -25.0.. -0.0  omni 1.25  belly  1.62 bumper  2.06 lip  1.13
+omni 7.0                          bump2                 PASS  pitch -17.0.. 14.2  omni 0.25  belly  1.50 bumper  2.00 lip  0.67
+omni 7.0                          bump1                 PASS  pitch  -8.3..  8.1  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+omni 7.0                          seam                  PASS  pitch  -0.0..  2.4  omni 0.00  belly  3.20 bumper  3.70 lip  2.41
+--- omni centre 6.5 (front edge 9.50), arm length kept, pivot x 2.05, lip z 2.67
+omni 6.5                          riser_up              PASS  pitch  -0.0.. 14.2  omni 0.50  belly  1.50 bumper  2.00 lip  1.19
+omni 6.5                          riser_down            PASS  pitch -18.4.. -0.0  omni 0.00  belly  1.50 bumper  2.59 lip  0.67
+omni 6.5                          steps2x1_up           PASS  pitch -26.1.. 14.2  omni 0.50  belly  1.80 bumper  2.12 lip  1.19
+omni 6.5                          steps2x1_down         PASS  pitch -18.4.. -0.0  omni 0.00  belly  1.50 bumper  2.59 lip  0.67
+omni 6.5                          ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.25  belly  1.47 bumper  1.90 lip  1.13
+omni 6.5                          ramp_down             PASS  pitch -25.0.. -0.0  omni 1.25  belly  1.47 bumper  1.91 lip  1.17
+omni 6.5                          bump2                 PASS  pitch -18.4.. 14.2  omni 0.50  belly  1.50 bumper  2.00 lip  0.67
+omni 6.5                          bump1                 PASS  pitch  -9.0..  8.7  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+omni 6.5                          seam                  PASS  pitch  -0.0..  2.6  omni 0.00  belly  3.20 bumper  3.70 lip  2.39
+--- Dangerous Zone extras, lip z 2.67
+omni 7.0                          stairs3x2_25_up       PASS  pitch -13.3.. 29.7  omni 2.00  belly  1.41 bumper  1.73 lip  1.13
+omni 7.0                          stairs3x2_25_down     PASS  pitch -32.2.. -0.0  omni 0.00  belly  2.29 bumper  2.79 lip  2.67
+omni 7.0                          stairs3x2_30_up       PASS  pitch -24.0.. 30.8  omni 2.25  belly  0.21 bumper  0.62 lip  1.15
+omni 7.0                          stairs3x2_30_down     PASS  pitch -34.5.. -0.0  omni 0.00  belly  1.49 bumper  1.73 lip  2.67
+omni 7.0                          dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.2  omni 1.75  belly  0.01 bumper  0.10 lip  0.67
+omni 7.0                          dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 33.1  omni 1.25  belly  0.78 bumper  1.08 lip  1.14
+omni 7.95                         stairs3x2_25_up       PASS  pitch -15.9.. 28.7  omni 2.00  belly  1.49 bumper  1.80 lip  1.13
+omni 7.95                         stairs3x2_25_down     PASS  pitch -30.5.. -0.0  omni 0.00  belly  2.14 bumper  2.42 lip  2.67
+omni 7.95                         stairs3x2_30_up       FAIL  pitch -25.1.. 29.8  omni 2.25  belly  0.10 bumper  0.48 lip  1.16
+omni 7.95                         stairs3x2_30_down     PASS  pitch -31.4.. -0.0  omni 0.00  belly  2.10 bumper  2.37 lip  2.30
+omni 7.95                         dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.2  omni 2.25  belly  0.06 bumper  0.08 lip  0.67
+omni 7.95                         dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 32.2  omni 1.50  belly  0.94 bumper  1.13 lip  1.15

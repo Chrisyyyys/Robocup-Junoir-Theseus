@@ -1,0 +1,3 @@
+omni sweep: 4 moving bodies against 87 others
+  no interference at any of the 13 positions between 0 and 2.5 cm
+omni sweep done

@@ -1,0 +1,7 @@
+GIGA R1 (10.15 x 5.33 cm) stack alone, by stack height
+R 9.5: h 1.5: none | h 1.9: none | h 2.5: none
+R 10.0: h 1.5: fits (x 2.0, y 3.9, z0 6.5, clearance 2.3 mm) | h 1.9: none | h 2.5: none
+R 10.5: h 1.5: fits (x 1.7, y -1.4, z0 6.5, clearance 3.3 mm) | h 1.9: fits (x 1.7, y -0.8, z0 6.0, clearance 2.9 mm) | h 2.5: none
+Smaller main board (what a Teensy 4.1 in sockets on a custom board would need), 1.5 cm tall, battery not placed
+R 9.5: 8.0 x 5.0: none | 7.0 x 4.5: fits (clearance 3.9 mm) | 6.5 x 4.0: fits (clearance 6.4 mm)
+R 10.0: 8.0 x 5.0: fits (clearance 4.2 mm) | 7.0 x 4.5: fits (clearance 6.7 mm) | 6.5 x 4.0: fits (clearance 9.2 mm)

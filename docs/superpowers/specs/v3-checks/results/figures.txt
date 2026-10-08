@@ -1,0 +1,6 @@
+wrote ../v3-figures\fig1_top.png
+wrote ../v3-figures\fig2_side.png
+wrote ../v3-figures\fig3_front.png
+wrote ../v3-figures\fig4_plate.png
+wrote ../v3-figures\fig5_terrain.png
+wrote ../v3-figures\fig6_sensors.png

@@ -1,0 +1,3 @@
+silver module face 2.8 cm above the floor at x=0.0 (2 cm long): min clearance  riser_up  2.57  riser_down  2.59  ramp_up  2.60  ramp_down  2.60  bump2  2.57  steps2x1_up  2.56
+silver module face 2.8 cm above the floor at x=1.5 (2 cm long): min clearance  riser_up  1.93  riser_down  2.25  ramp_up  2.18  ramp_down  2.20  bump2  1.73  steps2x1_up  2.18
+silver module face 2.5 cm above the floor at x=0.0 (2 cm long): min clearance  riser_up  2.30  riser_down  2.33  ramp_up  2.31  ramp_down  2.31  bump2  2.30  steps2x1_up  2.31

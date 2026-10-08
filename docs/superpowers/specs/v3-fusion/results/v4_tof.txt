@@ -1,0 +1,11 @@
+ToF cones (fixed positions), half angle 12.5 deg, blocked rays / 17 and the first blocker:
+  F    blocked  0 / 17  first blocker None
+  FL   blocked  0 / 17  first blocker None
+  FR   blocked  0 / 17  first blocker None
+  SFL  blocked  0 / 17  first blocker None
+  SFR  blocked  0 / 17  first blocker None
+  SRL  blocked  0 / 17  first blocker None
+  SRR  blocked  0 / 17  first blocker None
+  RL   blocked  0 / 17  first blocker None
+  RR   blocked  0 / 17  first blocker None
+ToF cones done

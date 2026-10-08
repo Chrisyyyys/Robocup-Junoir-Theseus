@@ -1,0 +1,13 @@
+Each VL53L0X cone (25 deg full angle) traced as 5x5 rays to 30 cm; the first hit on the ROBOT itself (not the floor) would be a blocked view.
+front centre (recessed 1 cm)   pos ( 9.50, 0.00) aim    0: NO robot part in the cone
+front toed-out L               pos ( 9.33, 4.35) aim   25: NO robot part in the cone
+front toed-out R               pos ( 9.33,-4.35) aim  -25: NO robot part in the cone
+side front L                   pos ( 7.28, 7.28) aim   90: NO robot part in the cone
+side front R                   pos ( 7.28,-7.28) aim  -90: NO robot part in the cone
+side rear L                    pos (-7.28, 7.28) aim   90: NO robot part in the cone
+side rear R                    pos (-7.28,-7.28) aim  -90: NO robot part in the cone
+rear L                         pos (-9.26, 4.52) aim  180: NO robot part in the cone
+rear R                         pos (-9.26,-4.52) aim  180: NO robot part in the cone
+sensor height  6.5 cm: ramp-foot reading at tile centre: beam centre   194 mm, nearest cone edge   132 mm  (wall at tile centre reads 45 mm, wall max when stopped 30 mm short 75 mm)
+sensor height  8.1 cm: ramp-foot reading at tile centre: beam centre   229 mm, nearest cone edge   155 mm  (wall at tile centre reads 45 mm, wall max when stopped 30 mm short 75 mm)
+sensor height 10.0 cm: ramp-foot reading at tile centre: beam centre   269 mm, nearest cone edge   183 mm  (wall at tile centre reads 45 mm, wall max when stopped 30 mm short 75 mm)
