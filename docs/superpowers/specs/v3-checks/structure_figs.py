@@ -15,7 +15,7 @@ C = dict(body='#5F5E5A', wheel='#2C2C2A', motor='#888780', omni='#1D9E75', bump=
 
 OMNI_X, OMNI_Z, PIV_X, PIV_Z, TRAVEL = 7.0, 3.0, 2.55, 3.6, 2.5      # omni centre and pivot (arm length 4.49 as in rev 3), hard stop
 HANDLE_X, BAR_X0, BAR_X1, BAR_Z0, BAR_Z1 = 4.0, 3.3, 8.7, 14.0, 15.6    # T-handle: post on the front bridge, 5.4 cm bar along x that starts in front of the dropper unit (so the unit lifts out)
-EXIT_Z = 4.15                                                             # chute exit axis height at the wall (keeps the lowest point at z 3.0 for the square channel)
+EXIT_Z = 4.15                                                             # chute exit axis height at the wall (the lowest point of the 18 mm square channel is z 2.78; the terrain tables assume 2.67)
 
 def poly(ax, pts, **kw):
     ax.add_patch(Polygon(pts, closed=True, **kw))
@@ -59,7 +59,7 @@ def fig_structure():
     # chute (beside the plane) and hopper under the slot
     ax.plot([-4.73, -6.0], [7.95, EXIT_Z], color=C['chute'], lw=6, alpha=0.35, solid_capstyle='butt', zorder=2)
     ax.plot([-4.73, -6.0], [7.95, EXIT_Z], color=C['chute'], lw=1.2, ls='--', zorder=2)
-    rect(ax, -5.6, 7.2, -3.9, 8.7, fc=C['chute'], alpha=0.25, ec=C['chute'], lw=1.0, ls='--', zorder=2)
+    rect(ax, -6.3, 7.2, -3.2, 8.7, fc=C['chute'], alpha=0.25, ec=C['chute'], lw=1.0, ls='--', zorder=2)
     # T-handle: post on the front bridge, bar along x
     rect(ax, HANDLE_X - 0.7, 9.8, HANDLE_X + 0.7, BAR_Z0, fc=C['handle'], ec='k', lw=1.0, zorder=7)
     rect(ax, BAR_X0, BAR_Z0, BAR_X1, BAR_Z1, fc=C['handle'], ec='k', lw=1.0, zorder=7)
@@ -257,8 +257,8 @@ def fig_plan():
     rrect(ax, -2.0, 0, 1.0, 1.2, 0, fc=C['motor'], ec='k', lw=1.0, zorder=5)
     for sy in (1, -1):
         sx, sy2 = -4.73, 2.73 * sy; ex, ey = -6.0, 8.62 * sy
-        ax.add_patch(Polygon(list(LineString([(sx, sy2), (ex, ey)]).buffer(0.81, cap_style=2).exterior.coords), closed=True, fc=C['chute'], alpha=0.30, ec=C['chute'], lw=0.9, zorder=2))
-        rrect(ax, sx, sy2, 1.95, 1.95, 45, fc=C['chute'], alpha=0.45, ec=C['chute'], lw=1.0, zorder=3)
+        ax.add_patch(Polygon(list(LineString([(sx, sy2), (ex, ey)]).buffer(1.06, cap_style=2).exterior.coords), closed=True, fc=C['chute'], alpha=0.30, ec=C['chute'], lw=0.9, zorder=2))
+        rrect(ax, sx, sy2, 2.2, 2.2, 45, fc=C['chute'], alpha=0.45, ec=C['chute'], lw=1.0, zorder=3)
     ax.add_patch(Circle((-2.0, 0), 5.11, fill=False, ec='#999', lw=0.8, ls=':', zorder=1))
     for a in (12, -12, 60, -60, 118, -118):                                                                                          # six M3 insert bosses (with a rib to the wall) for the upper frame
         x, y = polar(9.75, a); ax.add_patch(Circle((x, y), 0.4, fc='#DDD', ec='k', lw=1.0, zorder=6)); ax.add_patch(Circle((x, y), 0.17, fc='k', zorder=7))
@@ -276,7 +276,7 @@ def fig_plan():
     for x0_, x1_, y0_, y1_ in ((3.0, 3.9, 0.85, 1.25), (3.0, 3.9, -1.25, -0.85), (-7.5, -6.9, -0.5, 0.5)):
         rect(ax, x0_, y0_, x1_, y1_, fc='#D9D7CD', ec='k', lw=0.8, zorder=3)                                                         # the dropper floor's three seat tabs
     for sy in (1, -1):
-        rrect(ax, -4.73, 2.73 * sy, 1.45, 1.45, 45, fc='white', ec='k', lw=0.8, zorder=3)                                            # slots A and B
+        rrect(ax, -4.73, 2.73 * sy, 1.6, 1.6, 45, fc='white', ec='k', lw=0.8, zorder=3)                                            # slots A and B
     rrect(ax, -2.0, 0, 1.04, 1.24, 0, fc='white', ec='k', lw=0.8, zorder=3)                                                         # N20 pocket in the floor
     ax.add_patch(Circle((-2.0, 0), 4.91, fill=False, ec=C['plate'], lw=1.6, zorder=4))                                               # kit plate (above the floor)
     for i in range(8):
@@ -313,7 +313,7 @@ def fig_plan():
           '7  battery tray with a notch over the left motor, velcro strap, XT30 at the front end; the battery leaves 4.5 cm back and 1.5 cm or more inboard',
           '8  N20 cartridge in the dropper floor pocket (rev 3 motor)',
           '9  28BYJ-48 bay kept free (dashed purple): body 8 mm off the plate axis, toward the front-left (offset direction 230 degrees)',
-          '10 hopper under each slot (sealed to the dropper floor, lifts out with it); 13 mm square channel plugs through the wall hole',
+          '10 hopper under each slot (sealed to the dropper floor, lifts out with it); 18 mm square channel (open trough over the 16 mm slot) plugs through the wall hole',
           '11 six M3 insert bosses that carry the upper frame',
           '12 floor sensors in snap pockets, 7.5 cm ahead of the axle beside the omni bay: silver module SM (y -2.7) and front port FP (y +3.2)',
           '13 bumper plates 12 to 58 degrees, hinge at the outer end, microswitch (black) at the inner end',

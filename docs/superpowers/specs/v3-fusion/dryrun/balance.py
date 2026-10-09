@@ -1,7 +1,7 @@
 """Weight balance and swept circle of the rev 4 model (plan code on the dry-run emulator; masses are placeholders: printed parts from the model volume, bought parts from the rev 3 budget).
 1. every component's mass and centre of mass, in groups;
 2. the balance (centre of mass relative to the axle, front load, front-lift and brake-tip limits) and the swept radius for an axle `a` cm behind the body centre (mechanical design section 4).
-The visibility of the electronics from above is the `access` report of the plan. Usage: python balance.py   (about 1 minute)"""
+The visibility of the electronics from above is the `access` report of the plan. Usage: python balance.py [--repo]   (about 1 minute; --repo: the modules in the repo instead of the code in the plan)"""
 import io
 import math
 import os
@@ -13,15 +13,23 @@ import numpy as np
 
 DRY = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, DRY)
-import plan_code  # noqa: E402
+if '--repo' in sys.argv:                                  # the modules in the repo (the redesigned chute) instead of the code in the plan
+    FUSION = os.path.dirname(DRY)
+    sys.path.insert(0, FUSION)
+    sys.path.insert(0, os.path.join(os.path.dirname(FUSION), 'v3-checks'))
+    import fake_fusion as F  # noqa: E402
 
-d = tempfile.mkdtemp(prefix='rev4_plan_')
-names, problems = plan_code.assemble(d)
-assert not problems, problems
-sys.path.insert(0, d)
-import fake_fusion as F  # noqa: E402
+    F.install()
+else:
+    import plan_code  # noqa: E402
 
-F.install(open(os.path.join(d, 'fusion_lib_patch.py'), encoding='utf-8').read())
+    d = tempfile.mkdtemp(prefix='rev4_plan_')
+    names, problems = plan_code.assemble(d)
+    assert not problems, problems
+    sys.path.insert(0, d)
+    import fake_fusion as F  # noqa: E402
+
+    F.install(open(os.path.join(d, 'fusion_lib_patch.py'), encoding='utf-8').read())
 import emu_checks as E  # noqa: E402
 import v3_model as M3  # noqa: E402
 import v4_model as M  # noqa: E402
@@ -64,7 +72,7 @@ GROUPS = {
     'battery': ['Battery'],
     'GIGA, shield, floor sensors, posts': ['Arduino GIGA R1', 'Main PCB', 'Floor port FP', 'Silver module SM', 'GIGA posts'],
     'ToF boards (9) and cameras (2)': ['ToF ' + n for n, x, y, a in P.TOF] + ['Camera L', 'Camera R'],
-    'tub, bumpers, nub, USB socket': ['Tub', 'Bumper L', 'Bumper R', 'Bumper switch L', 'Bumper switch R', 'Rear nub', 'USB-C service socket'],
+    'tub, bumpers, nub, USB socket, antenna': ['Tub', 'Bumper L', 'Bumper R', 'Bumper switch L', 'Bumper switch R', 'Rear nub', 'USB-C service socket', 'Wi-Fi antenna'],
     'upper frame, lid, handle bar, control parts': ['Upper frame', 'Lid', 'Handle bar', 'Victim LED'] + [c[0] for c in P.CONTROLS],
     'dropper (floor, plate, kits, N20, hoppers, channels)': ['Dropper floor', 'Dropper plate', 'Kits', 'N20 motor', 'N20 face plate', 'Hopper A right', 'Hopper B left', 'Chute A right', 'Chute B left'],
     'not modelled (wiring, IMU, LCD, fasteners)': [r[0] for r in rows if r[1] == 'unmodelled'],

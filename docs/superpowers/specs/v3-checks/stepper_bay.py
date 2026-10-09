@@ -13,10 +13,10 @@ Z_TOP, BODY_H = 8.7, 1.9
 BODY_R, EAR_SPAN, EAR_R, BLOCK_W, BLOCK_REACH, OFFSET = 1.4, 1.75, 0.35, 1.46, 1.7, 0.8
 Z_LO, Z_EAR = Z_TOP - BODY_H, Z_TOP - 0.7             # body bottom 6.8, ears 8.0 .. 8.7
 
-# parts as (plan polygon, z0, z1): GIGA stack and battery from pack_v3.json, hoppers as designed (19.5 mm box with a 23.5 mm flange, 45 degrees, under the slots)
+# parts as (plan polygon, z0, z1): GIGA stack and battery from pack_v3.json, hoppers as designed (22 mm box with a 26 mm flange, 45 degrees, under the slots; redesigned 8 Oct, first design 19.5 and 23.5 mm)
 STACK = box(2.32 - 5.076, -4.03 - 2.667, 2.32 + 5.076, -4.03 + 2.667)
 BATT = rotate(box(3.9 - 3.5, 4.35 - 1.75, 3.9 + 3.5, 4.35 + 1.75), 10, origin=(3.9, 4.35))
-HOPPER_SIDE = 2.35
+HOPPER_SIDE = 2.6
 PARTS = {'GIGA stack': (STACK, 6.15, 8.05), 'battery': (BATT, 5.1, 7.6)}
 for nm, (sx, sy) in (('hopper A', (-4.73, -2.73)), ('hopper B', (-4.73, 2.73))):
     PARTS[nm] = (rotate(box(sx - HOPPER_SIDE / 2, sy - HOPPER_SIDE / 2, sx + HOPPER_SIDE / 2, sy + HOPPER_SIDE / 2), 45, origin=(sx, sy)), 7.2, 8.7)

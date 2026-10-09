@@ -10,13 +10,13 @@ PYTHONPATH="C:/Users/christopher.shu/pl4" python dryrun.py              # plan c
 PYTHONPATH="C:/Users/christopher.shu/pl4" python dryrun.py --clearances # also the nearest-distance report (about 10 more minutes)
 PYTHONPATH="C:/Users/christopher.shu/pl4" python dryrun.py --repo       # use v3-fusion/v4_*.py and v3-checks/v3_params4.py as they are in the repo
 PYTHONPATH="C:/Users/christopher.shu/pl4" python dryrun.py removal tof  # only these reports
-PYTHONPATH="C:/Users/christopher.shu/pl4" python balance.py             # masses by group, centre of mass, front load and lift-off limit for an axle 0 to 3 cm back
+PYTHONPATH="C:/Users/christopher.shu/pl4" python balance.py [--repo]     # masses by group, centre of mass, front load and lift-off limit for an axle 0 to 3 cm back (--repo: the repo files, as for dryrun.py)
 PYTHONPATH="C:/Users/christopher.shu/pl4" python wire_runs.py           # wire lengths from the controls to J12: rear panel against the front deck
 PYTHONPATH="C:/Users/christopher.shu/pl4" python selftest.py            # only the emulator's own tests
 ```
 
 By default the code under test is **pulled out of the plan document** (`plan_code.py` writes the plan's modules to a temporary folder and applies the plan's two textual patches
-to copies), so a mistake in the plan's code shows up before it is typed into the repo. Nothing in the repo is changed.
+to copies), so a mistake in the plan's code shows up before it is typed into the repo. Nothing in the repo is changed. **Since the chute redesign of 8 Oct the plan's code blocks keep the first chute design and no longer equal the repo files: run `--repo` (and `balance.py --repo`) to test the current model.**
 
 ## What it runs
 
@@ -53,10 +53,12 @@ Second round (after the access, controls and sensor changes were folded into the
 12. A tub probe and a unit test asked for floor where the silver module's hole now is, and one comparison failed on a rounding error (0.85 against 0.8500000000000001): both rewritten.
 13. Not found by the emulator but while reviewing its output against the rules: the victim LED on the control deck sat 4 cm under the handle bar and below the lid top, so it was hidden from straight above, and rules 4.2 want it "clearly visible to the referee". It is now on top of the bar's front end (z 16.0, the highest point); a unit test (`test_victim_led_is_on_top_of_the_bar`) and the envelope report's highest-point line pin that.
 
+Third round (8 Oct, the chute redesign after the kit simulation failed the first design; run with `--repo`):
+
+14. The 21.2 mm channel's top corners reached 0.003 cm3 into the dropper floor near the slot centre (found by the stage's overlap test): the channel is cut at the floor's underside (z 8.7).
+15. A tub probe for the wall beside the bigger chute hole asked for material that is inside the hole: the probe point moved.
+16. What the emulator got wrong or cannot see: its test for a cut that removes nothing missed that same 0.003 cm3 sliver on the right chute and found it on the left one (random points over the whole tool): it now takes a second, denser look inside the target's bounding box before it warns (`fake_fusion._focused_overlap`). And it cannot see a body that a cut splits in two: the bigger socket cut left a loose 85 mm3 lintel on each hopper that only Fusion showed (92 bodies instead of 90). The one-body rows of the chute stage check (`ONE_BODY`) cannot fail in the emulator and matter in Fusion; `test_hopper_is_one_piece` sees it on the convex model. `balance.py` had been failing since the Wi-Fi antenna was added (it did not know the component): fixed.
+
 ## Results of the last full run
 
-`results/dryrun_full.txt` is the complete output of `python dryrun.py --clearances` on the final plan code (8 Oct, after the Wi-Fi antenna and the removal-report caching were added): 38 unit tests, 19 stages
-(about 170 probe and overlap rows), 51 components without an overlap, seven removal paths free, access from above (GIGA 55 % to 86 %, shield 53 % to 86 %, battery 77 % to 91 % with the lid off and with
-the lid and dropper unit off), no ToF or camera ray blocked, 14 spec clearances, mass 1196 g with the centre of mass 0.90 cm ahead of the axle and 6.82 cm high (lift-off limit 1.30 m/s^2; the mass and
-distances are sampled, so a repeat run differs by about 1 g and 0.1 mm). `results/balance.txt` and `results/wire_runs.txt` are the outputs of the two helper scripts. **The Fusion run of 8 Oct reproduced
-every number within the tolerances of the plan, Task 9** (results in `../results/`, summary in `../README.md`).
+`results/dryrun_full.txt` is the complete output of `python dryrun.py --repo --clearances` on the repo files after the chute redesign (8 Oct): 44 unit tests, 19 stages (200 probe and overlap rows, 35 of them for the chutes), no cut that removes nothing and no join that touches nothing, 51 components without an overlap, seven removal paths free, access from above (GIGA 55 % to 86 %, shield 53 % to 86 %, battery 77 % to 91 % with the lid off and with the lid and dropper unit off), no ToF or camera ray blocked, 14 spec clearances (chute to wheel 5.65 and 5.64 mm, stepper bay to hopper B 3.98 mm), the chute lips at z 2.91, mass 1197 g with the centre of mass 0.90 cm ahead of the axle and 6.81 cm high (lift-off limit 1.29 m/s^2; the mass and distances are sampled, so a repeat run differs by about 1 g and 0.1 mm). `results/balance.txt` (run with `--repo`) and `results/wire_runs.txt` are the outputs of the two helper scripts. **The Fusion runs of 8 Oct, the first build and the rerun after the chute redesign, reproduced every number within the tolerances of the plan, Task 9** (Fusion on the redesigned model with the 2.8 cm floor slab: 1198 g, 0.89 cm and 6.81 cm, chute to wheel 5.62 mm, stepper bay to hopper B 3.97 mm, chute lips 2.91, N20 to the left motor 10.86 mm against the emulator's 11.00; results in `../results/`, summary in `../README.md`). The first dry run, of the plan's code with the first chute (38 tests, 1196 g), is superseded.

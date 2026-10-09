@@ -4,8 +4,9 @@
   2. in Fusion:  import chute_samples; chute_samples.evaluate(r"POINTS.json", r"SAMPLES.json")        (v3-fusion/chute_samples.py: pointContainment on 'Hopper B left', 'Chute B left', 'Dropper floor')
   3. python chute_geometry_check.py compare POINTS.json SAMPLES.json     counts the points where the two disagree; points within 0.2 mm of a surface of the model are not counted
 
-PASS needs no disagreement away from the surfaces and no more than 0.5 % of the points either side of a face on the wrong side (the exit trim is a plane here and a cylinder in Fusion, 0.3 mm
-apart at the tube's edge). The result is in results/chute_geometry.txt.
+PASS needs no disagreement away from the surfaces and no more than 0.5 % of the points either side of a face on the wrong side (the exit trim and the rim of the dropper floor are cylinders
+in Fusion and fans of planes 2 and 7.5 degrees apart here, 0.02 and 0.1 mm off; with a single tangent plane for the trim 0.51 % of the points were on the wrong side). The result is in
+results/chute_geometry.txt.
 """
 import json
 import random

@@ -129,10 +129,11 @@ def build_tub(ctx):
     cut('Silver module SM hole', 'xy', [rect(sm['x'], sm['y'], sm['l'] + 0.1, sm['w'] + 0.1)], P.Z_BELLY - 0.1, zf + 0.1)
     # square chute holes through the wall (the channel crosses the cylinder obliquely, so the hole is cut with the channel's own profile)
     w_hole = P.CHUTE['out_w'] + 2 * P.CHUTE['hole_clear']
+    lift = P.CHUTE['lift']                            # the channel's square section is centred this far above the axis (the floor stays 8 mm below it)
     for s, tag in ((1, 'B left'), (-1, 'A right')):
         p0, e = P.chute_ends(s)
         d = L.unit(L.vsub(e, p0))
-        tool = L.axis_prism(comp, 'Chute hole tool ' + tag, rect(0, 0, w_hole, w_hole), p0, L.vadd(e, L.vmul(d, 0.8)))
+        tool = L.axis_prism(comp, 'Chute hole tool ' + tag, rect(0, lift, w_hole, w_hole), p0, L.vadd(e, L.vmul(d, 0.8)))
         L.combine(comp, shell, [tool])
     # bumper recess behind each plate (the body is recessed by the 4 mm travel), wall kept, switch pocket at the inner end
     bp = P.BUMPER
@@ -376,9 +377,12 @@ def build_dropper(ctx):
 
 @stage('chutes')
 def build_chutes(ctx):
-    """Per side: a hopper sealed to the underside of the frame floor under the slot (with a socket cut for the channel), and the 13 mm square channel
-    from the slot axis to the body radius with an open trough where the kit falls in (spec 6.2). They do not overlap, so the channel can slide out."""
+    """Per side: a hopper sealed to the underside of the dropper floor under the 16 mm slot (with a socket cut for the channel), and the 18 mm square channel from the slot axis to the
+    body radius. Inside the hopper the channel is an open trough: everything of the tube inside the hopper's void is cut away and only the floor slab is laid back, so that a kit lands
+    on the inclined floor with no wall end, ledge or ceiling edge to catch it (spec 6.2; the first design left low side walls inside the void and jammed kits in the chute simulation).
+    The hopper and the channel do not overlap, so the channel can slide out."""
     Ch, F = P.CHUTE, P.FRAME
+    lift = Ch['lift']                                 # the square section is centred this far above the axis: the bore floor is 8 mm below it, the ceiling 10 mm above (spec 6.2)
     for s, side in ((1, 'B left'), (-1, 'A right')):
         p0, e = P.chute_ends(s)
         d = L.unit(L.vsub(e, p0))
@@ -388,14 +392,20 @@ def build_chutes(ctx):
         hop = L.prism(comp, 'Hopper', 'xy', [rect(sx, sy, Ch['hopper_out'], Ch['hopper_out'], 45)], Ch['hopper_z0'], F['z0'])
         L.prism(comp, 'Hopper flange', 'xy', [rect(sx, sy, Ch['flange'], Ch['flange'], 45)], F['z0'] - Ch['flange_t'], F['z0'], op=JOIN, targets=[hop])
         L.prism(comp, 'Hopper void', 'xy', [rect(sx, sy, Ch['hopper_in'], Ch['hopper_in'], 45)], Ch['hopper_z0'] + 0.16, F['z0'] + 0.1, op=CUT, targets=[hop])
-        sock = L.axis_prism(comp, 'Socket tool', rect(0, 0, Ch['out_w'], Ch['out_w']), L.vsub(p0, L.vmul(d, 0.5)), L.vadd(p0, L.vmul(d, 3.0)))
+        up = Ch['socket_up']                          # the socket is taller than the channel: cut to the channel's ceiling it left a loose lintel of the hopper's downhill corner above it
+        sock = L.axis_prism(comp, 'Socket tool', rect(0, lift + up / 2, Ch['out_w'], Ch['out_w'] + up), L.vsub(p0, L.vmul(d, 0.5)), L.vadd(p0, L.vmul(d, 3.0)))
         L.combine(comp, hop, [sock])
         ctx.pal.paint(hop, '#993C1D', 0.6)
         occ, comp = L.new_part(ctx.root, 'Chute ' + side)
-        tube = L.axis_prism(comp, 'Channel', rect(0, 0, Ch['out_w'], Ch['out_w']), p0, far)
-        bore = L.axis_prism(comp, 'Channel void', rect(0, 0, Ch['in_w'], Ch['in_w']), L.vsub(p0, L.vmul(d, 0.2)), L.vadd(far, L.vmul(d, 0.2)))
+        tube = L.axis_prism(comp, 'Channel', rect(0, lift, Ch['out_w'], Ch['out_w']), p0, far)
+        bore = L.axis_prism(comp, 'Channel void', rect(0, lift, Ch['in_w'], Ch['in_w']), L.vsub(p0, L.vmul(d, 0.2)), L.vadd(far, L.vmul(d, 0.2)))
         L.combine(comp, tube, [bore])
-        L.prism(comp, 'Trough cut', 'xy', [rect(sx, sy, Ch['hopper_in'], Ch['hopper_in'], 45)], 7.7, F['z0'] + 0.3, op=CUT, targets=[tube])
+        L.prism(comp, 'Trough cut', 'xy', [rect(sx, sy, Ch['trough'], Ch['trough'], 45)], Ch['trough_z0'], F['z0'] + 0.3, op=CUT, targets=[tube])
+        hi = Ch['in_w'] / 2
+        slab = L.axis_prism(comp, 'Floor slab', rect(0, lift - (hi + Ch['wall'] / 2), Ch['out_w'], Ch['wall']), p0, L.vadd(p0, L.vmul(d, Ch['slab_end'])))
+        L.combine(comp, tube, [slab], op=JOIN)
+        # the tall section's top corners just outside the trough, near the slot centre, would reach into the dropper floor (up to 2 mm above its underside): they are cut at z 8.7
+        L.prism(comp, 'Dropper floor clearance cut', 'xy', [circle((0, 0), 14.0)], F['z0'], F['z0'] + 1.0, op=CUT, targets=[tube])
         trim = L.ring_prism(comp, 'Trim', 'xy', circle((0, 0), 14.0), circle((0, 0), P.R_BODY), 2.0, 9.0)
         L.combine(comp, tube, [trim])
         ctx.pal.paint(tube, '#993C1D', 0.6)

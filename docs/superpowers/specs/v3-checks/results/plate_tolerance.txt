@@ -1,11 +1,11 @@
-plate ring r=38.6 pocket 14.0 slot 14.5: {'cases': 128, 'violations': 0, 'park_margin_mm': 2.53, 'wall_mm': 2.83} violations: []
+plate ring r=38.6 pocket 14.0 slot 16.0: {'cases': 128, 'violations': 0, 'park_margin_mm': 1.74, 'wall_mm': 2.83} violations: []
 target pocket 0 over slot A, plate error in degrees -> share of the kit footprint over the opening:
-   0deg 1.00  1deg 1.00  2deg 1.00  3deg 1.00  4deg 0.94  5deg 0.88  6deg 0.81  8deg 0.68
+   0deg 1.00  1deg 1.00  2deg 1.00  3deg 1.00  4deg 1.00  5deg 0.95  6deg 0.89  8deg 0.76
 parked, plate error in degrees -> pocket/slot overlap area (mm2), kit exposure:
    err  0 deg (0.0 mm at the ring): overlap 0.0 mm2, kit over slot 0.00
    err  2 deg (1.3 mm at the ring): overlap 0.0 mm2, kit over slot 0.00
-   err  4 deg (2.7 mm at the ring): overlap 0.0 mm2, kit over slot 0.00
-   err  5 deg (3.4 mm at the ring): overlap 0.1 mm2, kit over slot 0.00
-   err  6 deg (4.0 mm at the ring): overlap 0.8 mm2, kit over slot 0.00
-   err  8 deg (5.4 mm at the ring): overlap 5.2 mm2, kit over slot 0.00
-   err 10 deg (6.7 mm at the ring): overlap 14.0 mm2, kit over slot 0.01
+   err  4 deg (2.7 mm at the ring): overlap 0.2 mm2, kit over slot 0.00
+   err  5 deg (3.4 mm at the ring): overlap 1.3 mm2, kit over slot 0.00
+   err  6 deg (4.0 mm at the ring): overlap 3.2 mm2, kit over slot 0.00
+   err  8 deg (5.4 mm at the ring): overlap 10.1 mm2, kit over slot 0.00
+   err 10 deg (6.7 mm at the ring): overlap 22.1 mm2, kit over slot 0.03

@@ -1,0 +1,13 @@
+kit 10.3 mm: face diagonal 14.57 mm, space diagonal 17.84 mm, standing on a corner 16.25 mm (closed form 16.25)
+  flat on a face           smallest square that holds its shadow: 10.30 mm
+  tipped onto an edge      smallest square that holds its shadow: 14.57 mm
+  standing on a corner     smallest square that holds its shadow: 16.25 mm
+  slot 13.00 mm: 82.3 % of 20000 random attitudes do not fit
+  slot 14.50 mm: 33.3 % of 20000 random attitudes do not fit
+  slot 14.60 mm: 21.0 % of 20000 random attitudes do not fit
+  slot 15.00 mm: 11.9 % of 20000 random attitudes do not fit
+  slot 15.50 mm:  5.5 % of 20000 random attitudes do not fit
+  slot 16.00 mm:  0.9 % of 20000 random attitudes do not fit
+  slot 16.25 mm:  0.0 % of 20000 random attitudes do not fit
+  slot 17.00 mm:  0.0 % of 20000 random attitudes do not fit
+a 16.0 mm slot is too small somewhere up to 4.5 degrees away from standing on a corner

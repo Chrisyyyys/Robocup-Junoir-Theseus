@@ -58,8 +58,10 @@ class OmniInsideTheBody(unittest.TestCase):
 class Chute(unittest.TestCase):
     def test_square_channel_lowest_point(self):
         p0, e = P.chute_ends(1)
-        low = chute_exit.tube_min_z(p0, e, 'square', P.CHUTE['out_w'] / 2)
-        self.assertAlmostEqual(low, 3.0, delta=0.02)
+        down = P.CHUTE['out_w'] / 2 - P.CHUTE['lift']        # the outer floor is this far below the axis; the section is out_w wide
+        low = chute_exit.tube_min_z(p0, e, 'square', down, half_lat=P.CHUTE['out_w'] / 2)
+        self.assertAlmostEqual(low, 2.78, delta=0.02)        # the 18 mm channel hangs 2 mm lower at the wall than the 13 mm one did (3.00)
+        self.assertGreaterEqual(low, 2.70)                    # the terrain tables of the spec assume a chute lip at z 2.67
 
     def test_slope(self):
         p0, e = P.chute_ends(1)
@@ -73,9 +75,105 @@ class Chute(unittest.TestCase):
         self.assertAlmostEqual(f[1], -e[1], places=9)
         self.assertAlmostEqual(q0[1], -p0[1], places=9)
 
-    def test_cube_slack_in_the_channel(self):
-        self.assertAlmostEqual(P.CHUTE['in_w'] - 1.03, 0.27, places=3)
-        self.assertAlmostEqual(P.CHUTE['out_w'], 1.62, places=6)
+    def test_cube_passes_the_slot_the_hopper_and_the_bore_at_any_turn(self):
+        """The simulation of 8 Oct (chute_dynamics.py): a kit that arrives square to the slot jams in a 13 mm bore, and a kit that tips on its way into a 14.5 mm slot wedges across its
+        diagonal (14.57 mm). A 16 mm slot, hopper void and bore take the cube lying at any turn (face diagonal 14.57 mm, with 0.12 mm to spare) and tipped any way except within 4.5 degrees
+        of standing on a corner (0.9 % of attitudes, 16.25 mm: cube_slot.py); the review of 8 Oct caught 'in any attitude' as too strong."""
+        diag = 1.03 * math.sqrt(2)
+        for name, width in (('slot', P.PLATE['slot']), ('hopper void', P.CHUTE['hopper_in']), ('bore', P.CHUTE['in_w'])):
+            self.assertGreaterEqual(width, diag + 0.12, name)
+        self.assertGreaterEqual(P.CHUTE['in_w'], P.CHUTE['hopper_in'])                  # no wall end catches a kit between the hopper and the channel
+        self.assertGreaterEqual(P.CHUTE['hopper_in'], P.PLATE['slot'])
+        self.assertAlmostEqual(P.CHUTE['out_w'], P.CHUTE['in_w'] + 2 * P.CHUTE['wall'], places=6)
+        self.assertGreaterEqual(P.CHUTE['hopper_out'] - P.CHUTE['hopper_in'], 0.4)      # hopper walls at least 2 mm
+        self.assertGreaterEqual(P.CHUTE['flange'] - P.CHUTE['hopper_out'], 0.3)
+
+    def test_bore_is_wider_and_taller_than_a_tumbling_cube(self):
+        """With bouncy impacts the chute simulation wedged tumbling kits between the two side walls and between the floor and the ceiling of a 16 mm bore: a cube in a general attitude is
+        up to its space diagonal, 17.84 mm, wide. An 18 mm bore cannot wedge it. The square section is centred `lift` above the axis, so the floor is 8 mm below the axis and the
+        ceiling 10 mm above it: the floor, which sets the lowest point at the wall, stays where the 16 mm design had it. The margin is thin: 0.16 mm at the nominal 10.3 mm kit. A 10.5 mm kit (the
+        rev 3 tolerance: space diagonal 18.19 mm) or a bore printed 0.4 mm small does wedge some bouncing kits (the tolerance corners of chute_dynamics.py: 94 to 97 % get out): 19 mm would
+        cost 0.5 mm of the chute-to-wheel gap (spec 6.2, D21)."""
+        self.assertGreaterEqual(P.CHUTE['in_w'], 1.03 * math.sqrt(3) + 0.005)
+        self.assertAlmostEqual(P.CHUTE['in_w'] / 2 - P.CHUTE['lift'], 0.8, places=6)
+
+    def test_parking_allowance_is_what_the_slot_leaves_over_the_pocket(self):
+        """A kit lying corner to corner in its pocket is as wide along the ring as the pocket (14 mm), so the plate may be parked off by (slot - pocket) / 2 = 1.0 mm before the kit's corner
+        overhangs the slot's edge; the simulation with the pocket walls in (chute_dynamics.py) takes every kit out up to 1 mm off and loses about a fifth at 2 mm. This number is the
+        dropper's parking requirement (spec 6.2); change the slot or the pocket and the spec's 1 mm has to be re-derived."""
+        self.assertAlmostEqual((P.PLATE['slot'] - P.PLATE['pocket']) / 2, 0.1, places=6)
+
+    def test_drop_sequences_with_the_bigger_slot(self):
+        import platesim
+        import platesim2
+        pl = platesim.Plate(r=38.6, pocket=14.0, slot=P.PLATE['slot'] * 10.0)
+        res, viol = platesim2.check(pl)
+        self.assertEqual(res['violations'], 0, viol[:3])
+        self.assertGreaterEqual(res['park_margin_mm'], 1.5)
+
+    def test_slot_stays_inside_the_dropper_floor(self):
+        sx, sy = P.slot_xy('B')
+        r_slot = math.hypot(sx - P.PLATE['cx'], sy - P.PLATE['cy'])
+        far = math.hypot(r_slot + P.PLATE['slot'] / 2, P.PLATE['slot'] / 2)           # the slot's corner farthest from the plate axis
+        self.assertLessEqual(far, P.DROPPER_FLOOR['r'] - 0.3)
+
+    def test_channel_floor_has_no_hole(self):
+        """The trough cut is a vertical prism through a sloping floor, so it meets the floor further down the axis than its plan corner: 2.55 cm at the floor's top face and 2.65 cm at its
+        underside, not the 2.04 cm of the corner at axis height. A slab that ended at 2.5 cm left a notch in the bore floor (found by the reviewer, 8 Oct). Scan the floor 0.1 mm under its
+        top face, across the bore width, from the slot centre on: every point must be material."""
+        import numpy as np
+        import chute_geometry as cg
+        solids = cg.build(1)['channel']
+        p0, d, ex, ey, ez, e = cg.channel_frame(1)
+        Ch = P.CHUTE
+        wi = Ch['in_w'] / 2
+        y_floor = Ch['lift'] - wi - 0.01                                          # in the channel's frame: 0.1 mm under the face a kit slides on
+        s, a = np.meshgrid(np.arange(0.02, 4.0, 0.01), np.arange(-wi + 0.01, wi, 0.02), indexing='ij')
+        pts = (p0 + s[..., None] * d + a[..., None] * ex + y_floor * ey).reshape(-1, 3)
+        inside = np.zeros(len(pts), bool)
+        for v, p in solids:
+            N, b = np.array([h.n for h in p]), np.array([h.b for h in p])
+            inside |= (pts @ N.T <= b + 1e-9).all(axis=1)
+        missing = pts[~inside]
+        self.assertEqual(len(missing), 0, 'floor points that are not material: %d, first at %s' % (len(missing), np.round(missing[0], 3) if len(missing) else None))
+
+    def test_hopper_is_one_piece(self):
+        """Cutting the channel's own section (21.2 mm wide, topped at its ceiling plane) out of the hopper left the hopper's downhill corner, above the channel, hanging free: Fusion split
+        each hopper into two bodies, the second an 85 mm3 lintel (8 Oct). The convex model of chute_geometry.py, gridded at 0.5 mm, must be one connected piece; it is two when the
+        socket tool stops at the channel's ceiling (CHUTE['socket_up'] = 0)."""
+        import numpy as np
+        import chute_geometry as cg
+        solids = cg.build(1)['hopper']
+        verts = np.vstack([v for v, p in solids])
+        step = 0.05
+        lo, hi = verts.min(axis=0) - 0.1, verts.max(axis=0) + 0.1
+        axes = [np.arange(l, h, step) + step / 2 for l, h in zip(lo, hi)]
+        grid = np.stack(np.meshgrid(*axes, indexing='ij'), axis=-1)
+        pts = grid.reshape(-1, 3)
+        inside = np.zeros(len(pts), bool)
+        for v, p in solids:
+            N, b = np.array([h.n for h in p]), np.array([h.b for h in p])
+            inside |= (pts @ N.T <= b + 1e-9).all(axis=1)
+        inside = inside.reshape(grid.shape[:3])
+        seen = np.zeros_like(inside)
+        sizes = []
+        for start in zip(*np.nonzero(inside)):
+            if seen[start]:
+                continue
+            seen[start] = True
+            todo, n = [start], 0
+            while todo:
+                i, j, k = todo.pop()
+                n += 1
+                for di, dj, dk in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)):
+                    q = (i + di, j + dj, k + dk)
+                    if 0 <= q[0] < inside.shape[0] and 0 <= q[1] < inside.shape[1] and 0 <= q[2] < inside.shape[2] and inside[q] and not seen[q]:
+                        seen[q] = True
+                        todo.append(q)
+            sizes.append(n * step ** 3)
+        sizes = [s for s in sizes if s > 0.005]                                          # one to three cells are the gridding of a sliver piece (0.0004 cm3), not a part
+        self.assertEqual(len(sizes), 1, 'hopper pieces (cm3): %s' % ', '.join('%.4f' % s for s in sorted(sizes)))
+        self.assertGreater(sizes[0], 1.5)                                                # the wall, the flange and the floor strip: about 1.9 cm3
 
 
 class RingScrewsAndHooks(unittest.TestCase):
@@ -219,7 +317,7 @@ class StepperBay(unittest.TestCase):
         (cx, cy), rows = stepper_bay.clearances(P.STEPPER['theta'])
         self.assertAlmostEqual(g['centre'][0], cx, places=2)
         self.assertAlmostEqual(g['centre'][1], cy, places=2)
-        self.assertGreaterEqual(min(v for _, v in rows), 4.0)       # mm in plan against the stack, battery, hoppers, wall
+        self.assertGreaterEqual(min(v for _, v in rows), 3.5)       # mm in plan against the stack, battery, hoppers, wall (4.0 mm to hopper B since the chute redesign of 8 Oct made the hoppers 2.5 mm bigger; it was 5.2)
 
 
 class GigaMounting(unittest.TestCase):

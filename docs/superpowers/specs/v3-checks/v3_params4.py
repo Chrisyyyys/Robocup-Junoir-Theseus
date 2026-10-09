@@ -5,6 +5,7 @@ import math
 
 from v3_params import *  # noqa: F401,F403  R_BODY R_INT R_SWEPT Z_BELLY Z_ROOF Z_LID AXLE_Z WHEEL MOTOR NUB CHAMFER BUMPER FLOOR_FRONT SILVER BUMPER_SW_DEG TOF_Z TOF_W TOF_H TOF_T CAM PLATE
 from v3_params import PART_SIZES, PLATE, R_BODY, load_pack, slot_xy
+PLATE = dict(PLATE, slot=1.6)       # rev 4 changes the slot only: 16 mm instead of 14.5, so that a kit that tips on its way in cannot wedge across its 14.57 mm diagonal (spec 6.2); a copy, the rev 3 dict stays as it was
 
 Z_TUB_TOP = 8.7             # top of the tub wall = underside of the upper frame
 Z_FLOOR_TOP = 3.9           # tub floor z 3.5 to 3.9
@@ -40,9 +41,19 @@ TOF = [('F', 9.5, 0.0, 0), ('FL', 9.9 * _C25, 9.9 * _S25, 25), ('FR', 9.9 * _C25
        ('SFL', 7.18, 6.0, 90), ('SFR', 7.18, -6.0, -90), ('SRL', -7.18, 6.0, 90), ('SRR', -7.18, -6.0, -90),
        ('RL', -8.4, 4.5, 180), ('RR', -8.4, -4.5, 180)]                                   # name, x, y, aim (deg, 0 = forward, 90 = left)
 
-# ---- hopper and 13 mm square channel (spec section 6.2)
-CHUTE = dict(in_w=1.3, wall=0.16, exit_x=-6.0, exit_axis_z=4.15, start_z=7.95, hopper_out=1.95, hopper_in=1.45, flange=2.35, flange_t=0.15, hopper_z0=7.2, hole_clear=0.04)
-CHUTE['out_w'] = CHUTE['in_w'] + 2 * CHUTE['wall']          # 1.62
+# ---- hopper and 18 mm square channel (spec section 6.2; redesigned on 8 Oct after the chute simulation: the first design, a 14.5 mm slot and hopper over a 13 mm bore whose open trough was
+# cut flat at z 7.7, jammed every kit that arrived square to the slot). The slot and the hopper void are 16 mm, so that a cube lying at any turn (face diagonal 14.57 mm) passes, and one tipped any way except within 4.5 degrees of
+# standing on a corner (16.25 mm, cube_slot.py); the bore is 18 mm square, wider than the void and 0.16 mm wider than the cube's space diagonal (17.84 mm), so that at the nominal size a kit that
+# tumbles on its bounce cannot wedge between two walls or between floor and ceiling (a 10.5 mm kit or a bore printed 0.4 mm small can: spec 6.2, D21).
+# The trough is cut down to the bore floor inside the hopper: a 25 mm square cut (`trough`, larger than the void: it must go right through the side walls where the tube starts, or loose
+# fragments of wall are left behind, and the walls then end in a V that leads a kit into the bore) removes everything of the tube inside it, and the floor slab is laid back afterwards
+# (`slab_end` cm along the axis from the slot centre; the cut's vertical wall meets the sloping floor at 2.55 cm (top face) to 2.65 cm (underside), not at the 2.04 cm of its plan corner, so 2.8). The square sections of the tube, the bore, the hopper socket and the wall hole are centred
+# `lift` above the axis, so the bore floor is 8 mm below the axis (as in the 16 mm design) and the ceiling 10 mm above it. The hopper's socket (what the channel's section cuts out of the
+# hopper where the channel leaves it) is `socket_up` taller than the channel, upward: cut to the channel's own ceiling it left the hopper's downhill corner above the channel hanging
+# free, an 85 mm3 lintel that Fusion split off as a second body of each hopper.
+CHUTE = dict(in_w=1.8, wall=0.16, exit_x=-6.0, exit_axis_z=4.15, start_z=7.95, hopper_out=2.2, hopper_in=1.6, flange=2.6, flange_t=0.15, hopper_z0=7.2, hole_clear=0.04,
+             trough=2.5, trough_z0=5.0, slab_end=2.8, lift=0.1, socket_up=0.8)
+CHUTE['out_w'] = CHUTE['in_w'] + 2 * CHUTE['wall']          # 2.12
 CHUTE['exit_y'] = math.sqrt(R_BODY ** 2 - CHUTE['exit_x'] ** 2)
 
 

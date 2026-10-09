@@ -1,6 +1,5 @@
-code from the plan: fusion_lib_patch.py, test_v3_params4.py, v3_checks3d.py, v3_params4.py, v4_checks3d.py, v4_model.py, v4_run.py -> C:\Users\CHRIST~1.SHU\AppData\Local\Temp\rev4_plan_tke36pj3
 emulator self-test: ok
-unit tests: ok (0.5 s)  ---------------------------------------------------------------------- | Ran 38 tests in 0.020s | OK
+unit tests: ok (9.0 s)  ---------------------------------------------------------------------- | Ran 44 tests in 8.486s | OK
 
 self-test of the probe API in the emulator:
   ok   box inside           expected True  got True
@@ -13,39 +12,39 @@ self-test of the probe API in the emulator:
   ok   tube bore            expected False got False
   ok   beyond the tube end  expected False got False
 RESULT: PASS
-stage tub          PASS  (39 ok, 0 FAIL, 2.7 s)
-stage drive        PASS  (8 ok, 0 FAIL, 0.8 s)
-stage cartridges   PASS  (6 ok, 0 FAIL, 0.3 s)
-stage omni         PASS  (8 ok, 0 FAIL, 0.6 s)
-stage nub          PASS  (2 ok, 0 FAIL, 0.1 s)
-stage bumpers      PASS  (4 ok, 0 FAIL, 0.2 s)
-stage frame        PASS  (28 ok, 0 FAIL, 3.3 s)
-stage tof          PASS  (4 ok, 0 FAIL, 1.0 s)
-stage cameras      PASS  (2 ok, 0 FAIL, 0.3 s)
-stage lid          PASS  (13 ok, 0 FAIL, 1.1 s)
+stage tub          PASS  (39 ok, 0 FAIL, 3.6 s)
+stage drive        PASS  (8 ok, 0 FAIL, 0.6 s)
+stage cartridges   PASS  (6 ok, 0 FAIL, 0.2 s)
+stage omni         PASS  (8 ok, 0 FAIL, 0.3 s)
+stage nub          PASS  (2 ok, 0 FAIL, 0.0 s)
+stage bumpers      PASS  (4 ok, 0 FAIL, 0.1 s)
+stage frame        PASS  (28 ok, 0 FAIL, 1.7 s)
+stage tof          PASS  (4 ok, 0 FAIL, 0.4 s)
+stage cameras      PASS  (2 ok, 0 FAIL, 0.1 s)
+stage lid          PASS  (13 ok, 0 FAIL, 0.5 s)
 stage handle       PASS  (6 ok, 0 FAIL, 0.0 s)
-stage controls     PASS  (6 ok, 0 FAIL, 0.2 s)
-stage dropper      PASS  (20 ok, 0 FAIL, 1.9 s)
-stage chutes       PASS  (11 ok, 0 FAIL, 1.4 s)
-stage posts        PASS  (4 ok, 0 FAIL, 0.6 s)
-stage electronics  PASS  (6 ok, 0 FAIL, 0.7 s)
+stage controls     PASS  (6 ok, 0 FAIL, 0.1 s)
+stage dropper      PASS  (22 ok, 0 FAIL, 1.2 s)
+stage chutes       PASS  (35 ok, 0 FAIL, 1.6 s)
+stage posts        PASS  (4 ok, 0 FAIL, 0.3 s)
+stage electronics  PASS  (6 ok, 0 FAIL, 0.3 s)
 stage connector    PASS  (1 ok, 0 FAIL, 0.0 s)
 stage antenna      PASS  (3 ok, 0 FAIL, 0.0 s)
 stage stepper      PASS  (3 ok, 0 FAIL, 0.1 s)
-model built in 15 s: 52 components
+model built in 11 s: 52 components
 
-============ report envelope (28 s)
+============ report envelope (20 s)
 farthest radius from the axle, largest first (body 10.5, bumper plates 11.0):
-  ok   Bumper R                 r_max  11.000  (limit 11.0)
   ok   Bumper L                 r_max  11.000  (limit 11.0)
+  ok   Bumper R                 r_max  11.000  (limit 11.0)
   ok   Bumper switch L          r_max  10.752  (limit 11.0)
   ok   Bumper switch R          r_max  10.752  (limit 11.0)
   ok   Upper frame              r_max  10.500  (limit 10.5)
-  ok   Chute A right            r_max  10.500  (limit 10.5)
+  ok   Chute B left             r_max  10.500  (limit 10.5)
   ok   Tub                      r_max  10.500  (limit 10.5)
+  ok   Chute A right            r_max  10.500  (limit 10.5)
   ok   Lid                      r_max  10.500  (limit 10.5)
-  ok   Chute B left             r_max  10.499  (limit 10.5)
-  ok   USB-C service socket     r_max  10.468  (limit 10.5)
+  ok   USB-C service socket     r_max  10.469  (limit 10.5)
   ok   Wi-Fi antenna            r_max  10.295  (limit 10.5)
   ok   ToF FL                   r_max  10.227  (limit 10.5)
 highest point z 16.00 (victim LED on the bar, bar top 15.6, limit 25)
@@ -62,14 +61,14 @@ components with a point below the belly line z 3.5:
   known Omni arm                 lowest z  2.45  (-10.5 mm against the belly line)
   known Omni pins                lowest z  2.80  (-7.0 mm against the belly line)
   known Rear nub                 lowest z  2.00  (-15.0 mm against the belly line)
-  known Chute B left             lowest z  3.04  (-4.6 mm against the belly line)
-  known Chute A right            lowest z  3.04  (-4.6 mm against the belly line)
+  known Chute B left             lowest z  2.91  (-5.9 mm against the belly line)
+  known Chute A right            lowest z  2.91  (-5.9 mm against the belly line)
   known Floor port FP            lowest z  2.80  (-7.0 mm against the belly line)
   known Silver module SM         lowest z  2.80  (-7.0 mm against the belly line)
 pivot pin (4 mm) lowest point z 3.40: -1.0 mm against the belly line (spec section 4: a 3 mm pin or a sunk pin, decided in CAD)
 RESULT: PASS
 
-============ report omni (3 s)
+============ report omni (1 s)
 omni sweep: 4 moving bodies against 87 others
   no interference at any of the 13 positions between 0 and 2.5 cm
 omni sweep done
@@ -79,13 +78,13 @@ stepper bay against everything except the N20 cartridge:
   ok   no overlap
 RESULT: PASS
 
-============ report mass (59 s)
+============ report mass (42 s)
 mass budget [placeholder]: printed = volume x 1.27 g/cm3 x fill 0.45, bought = rev 3 budget (com.py)
    110.0 g  Battery                    bought       vol    61.20 cm3  x   3.90  z  6.35
    105.9 g  Upper frame                printed      vol   185.38 cm3  x   0.34  z  9.97
     95.0 g  Motor R                    bought       vol    14.72 cm3  x  -0.00  z  4.00
     95.0 g  Motor L                    bought       vol    14.71 cm3  x  -0.00  z  4.00
-    80.9 g  Tub                        printed      vol   141.47 cm3  x   1.04  z  4.85
+    80.1 g  Tub                        printed      vol   140.08 cm3  x   1.10  z  4.85
     70.0 g  BNO055, TCS34725, LCD, hardware not modelled vol     0.00 cm3  x   0.00  z  7.00
     57.3 g  Lid                        printed      vol   100.28 cm3  x  -0.44  z 11.43
     55.0 g  mux, regulator, wiring     not modelled vol     0.00 cm3  x   0.00  z  6.00
@@ -95,16 +94,16 @@ mass budget [placeholder]: printed = volume x 1.27 g/cm3 x fill 0.45, bought = r
     48.0 g  Kits                       bought       vol     8.74 cm3  x  -0.39  z  9.51
     41.2 g  Dropper plate              printed      vol    72.10 cm3  x  -2.42  z  9.60
     40.0 g  cables and fasteners       not modelled vol     0.00 cm3  x   0.00  z  8.00
-total 1196 g (rev 3 budget 1070 g), centre of mass x +0.90  y +0.15  z 6.82 cm (rev 3: +0.90 and 6.3)
-front load 12.9 % at the omni 7.0 cm ahead (rev 3: 11.9 % at 7.95)
-front lift limit g x COM_x / COM_h = 1.30 m/s^2 (rev 3: 1.5; the firmware PWM ramp assumes at least 1.0)
+total 1197 g (rev 3 budget 1070 g), centre of mass x +0.90  y +0.15  z 6.81 cm (rev 3: +0.90 and 6.3)
+front load 12.8 % at the omni 7.0 cm ahead (rev 3: 11.9 % at 7.95)
+front lift limit g x COM_x / COM_h = 1.29 m/s^2 (rev 3: 1.5; the firmware PWM ramp assumes at least 1.0)
 RESULT: PASS
 
-============ report interference (2 s)
+============ report interference (6 s)
 components 51, interfering pairs 0, above the allowlist 0
 RESULT: PASS
 
-============ report removal (71 s)
+============ report removal (74 s)
 ok   [0] lid lifts straight up over the handle (the hooks flex)
 ok   [1] left wheel slides 1.2 cm out along its shaft, then drops through the arch
 ok   [2] right wheel, same path mirrored
@@ -114,7 +113,7 @@ ok   [5] battery swap: the dropper unit out, then the battery 4.5 cm back and 2 
 ok   [6] teardown: lid, channels, dropper unit, frame group up, battery up, left wheel out, left cartridge up (prongs flex), GIGA stack up, right wheel out, right cartridge up (prongs flex), omni module up
 RESULT: PASS
 
-============ report access (14 s)
+============ report access (6 s)
 share of the upper surface seen from straight above (grid of rays; the GIGA and its shield count as one stack):
   part                   lid off   lid + dropper unit off
   ok   Arduino GIGA R1            55%                      86%   at least 70%
@@ -129,7 +128,7 @@ points on the GIGA seen from straight above with the lid off and the dropper uni
   ok   GIGA boot button PB2 (outer corner, under the ring)        covered by Upper frame   (known, spec 7.4)
 RESULT: PASS
 
-============ report tof (1 s)
+============ report tof (0 s)
 ToF cones (fixed positions), half angle 12.5 deg, blocked rays / 17 and the first blocker:
   F    blocked  0 / 17  first blocker None
   FL   blocked  0 / 17  first blocker None
@@ -140,84 +139,83 @@ ToF cones (fixed positions), half angle 12.5 deg, blocked rays / 17 and the firs
   SRR  blocked  0 / 17  first blocker None
   RL   blocked  0 / 17  first blocker None
   RR   blocked  0 / 17  first blocker None
-ToF cones done  [min distance Silver module SM/Silver mod Omni wheel/Omni wheel    5.00 mm  14.6 s]
-  [min distance Silver module SM/Silver mod GIGA posts/GIGA post     2.78 mm  17.6 s]
-  [min distance Silver module SM/Silver mod GIGA posts/GIGA post    77.72 mm  16.8 s]
-  [min distance Silver module SM/Silver mod GIGA posts/GIGA post    23.32 mm  13.7 s]
-  [min distance Silver module SM/Silver mod GIGA posts/GIGA post    88.14 mm  16.5 s]
-  [min distance Wi-Fi antenna/Wi-Fi ante Omni wheel/Omni wheel   10.54 mm  21.9 s]
-  [min distance N20 motor/N20 gearmo     Motor L/Encoder L    10.93 mm  20.0 s]
-  [min distance N20 motor/N20 gearmo     Motor L/Gearmotor    12.75 mm  18.8 s]
-  [min distance N20 motor/N20 gearmo     Motor L/Motor shaf   57.10 mm  13.6 s]
-  [min distance N20 motor/N20 shaft      Motor L/Encoder L    44.59 mm  16.9 s]
-  [min distance N20 motor/N20 shaft      Motor L/Gearmotor    44.70 mm  18.1 s]
-  [min distance N20 motor/N20 shaft      Motor L/Motor shaf   78.13 mm  19.7 s]
-  [min distance Chute B left/Channel     Wheel L/Wheel L       8.27 mm  22.5 s]
-  [min distance Chute A right/Channel    Wheel R/Wheel R       8.29 mm  23.1 s]
-  [min distance Omni wheel/Omni wheel    GIGA posts/GIGA post     2.67 mm  17.7 s]
-  [min distance Omni wheel/Omni wheel    GIGA posts/GIGA post    53.59 mm  15.6 s]
-  [min distance Omni wheel/Omni wheel    GIGA posts/GIGA post    49.99 mm  19.4 s]
-  [min distance Omni wheel/Omni wheel    GIGA posts/GIGA post    80.11 mm  17.8 s]
-  [min distance Arduino GIGA R1/GIGA board Tub/Tub shell         1.73 mm  21.7 s]
-  [min distance Arduino GIGA R1/GIGA board Tub/Cradle pro       44.29 mm  15.5 s]
-  [min distance Arduino GIGA R1/GIGA board Tub/Cradle pro       44.27 mm  17.3 s]
-  [min distance Arduino GIGA R1/GIGA board Tub/Cradle pro       13.50 mm  16.8 s]
-  [min distance Arduino GIGA R1/GIGA board Tub/Cradle pro       13.50 mm  21.4 s]
-  [min distance Arduino GIGA R1/Header str Tub/Tub shell        20.40 mm  63.7 s]
-  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       45.99 mm  21.6 s]
-  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       46.04 mm  22.4 s]
-  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       18.79 mm  22.0 s]
-  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       18.81 mm  21.7 s]
-  [min distance Arduino GIGA R1/Header str Tub/Tub shell         5.52 mm  29.7 s]
-  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       93.04 mm  23.2 s]
-  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       93.01 mm  17.9 s]
-  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       15.38 mm  20.8 s]
-  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       15.36 mm  21.7 s]
-  [min distance Arduino GIGA R1/USB-C J12 Tub/Tub shell        16.51 mm  43.7 s]
-  [min distance Arduino GIGA R1/USB-C J12 Tub/Cradle pro       80.56 mm  17.1 s]
-  [min distance Arduino GIGA R1/USB-C J12 Tub/Cradle pro       97.35 mm  19.5 s]
-  [min distance Arduino GIGA R1/USB-C J12 Tub/Cradle pro       61.88 mm  17.4 s]
-  [min distance Arduino GIGA R1/USB-C J12 Tub/Cradle pro       82.37 mm  19.7 s]
-  [min distance Battery/Battery (p       Motor L/Encoder L     5.46 mm  15.8 s]
-  [min distance Battery/Battery (p       Motor L/Gearmotor     1.12 mm  17.6 s]
-  [min distance Battery/Battery (p       Motor L/Motor shaf   11.62 mm  19.2 s]
-  [min distance Dropper plate/Dropper pl Lid/Lid plate        10.00 mm  23.2 s]
-  [min distance Dropper plate/Dropper pl Lid/Hook bump        60.23 mm  17.3 s]
-  [min distance Dropper plate/Dropper pl Lid/Hook bump        45.58 mm  16.7 s]
-  [min distance Dropper plate/Dropper pl Lid/Hook bump        60.17 mm  18.3 s]
-  [min distance Dropper plate/Dropper pl Lid/Hook bump        45.58 mm  18.7 s]
-  [min distance Camera L/Lens block      Wheel L/Wheel L       3.62 mm  19.0 s]
-  [min distance Camera L/OpenMV H7       Wheel L/Wheel L      12.62 mm  18.0 s]
-  [min distance Stepper bay 28BYJ-48/Body Main PCB/Main PCB s    5.76 mm  16.4 s]
-  [min distance Stepper bay 28BYJ-48/Body Main PCB/PCB compon    8.02 mm  17.5 s]
-  [min distance Stepper bay 28BYJ-48/Body Hopper B left/Hopper    5.23 mm  26.4 s]
-  [min distance Stepper bay 28BYJ-48/Body Battery/Battery (p    8.25 mm  33.6 s]
+ToF cones done  [min distance Silver module SM/Silver mod Omni wheel/Omni wheel    5.00 mm  14.2 s]
+  [min distance Silver module SM/Silver mod GIGA posts/GIGA post     2.78 mm  15.0 s]
+  [min distance Silver module SM/Silver mod GIGA posts/GIGA post    77.72 mm  15.6 s]
+  [min distance Silver module SM/Silver mod GIGA posts/GIGA post    23.32 mm  14.5 s]
+  [min distance Silver module SM/Silver mod GIGA posts/GIGA post    88.18 mm  13.2 s]
+  [min distance Wi-Fi antenna/Wi-Fi ante Omni wheel/Omni wheel   10.55 mm  17.0 s]
+  [min distance N20 motor/N20 gearmo     Motor L/Encoder L    11.00 mm  16.5 s]
+  [min distance N20 motor/N20 gearmo     Motor L/Gearmotor    12.84 mm  16.4 s]
+  [min distance N20 motor/N20 gearmo     Motor L/Motor shaf   57.09 mm  16.8 s]
+  [min distance N20 motor/N20 shaft      Motor L/Encoder L    44.58 mm  16.5 s]
+  [min distance N20 motor/N20 shaft      Motor L/Gearmotor    44.65 mm  17.0 s]
+  [min distance N20 motor/N20 shaft      Motor L/Motor shaf   78.06 mm  19.4 s]
+  [min distance Chute B left/Channel     Wheel L/Wheel L       5.65 mm  22.3 s]
+  [min distance Chute A right/Channel    Wheel R/Wheel R       5.64 mm  24.0 s]
+  [min distance Omni wheel/Omni wheel    GIGA posts/GIGA post     2.67 mm  20.4 s]
+  [min distance Omni wheel/Omni wheel    GIGA posts/GIGA post    53.58 mm  19.1 s]
+  [min distance Omni wheel/Omni wheel    GIGA posts/GIGA post    49.98 mm  16.4 s]
+  [min distance Omni wheel/Omni wheel    GIGA posts/GIGA post    80.08 mm  19.9 s]
+  [min distance Arduino GIGA R1/GIGA board Tub/Tub shell         1.73 mm  20.6 s]
+  [min distance Arduino GIGA R1/GIGA board Tub/Cradle pro       44.28 mm  16.9 s]
+  [min distance Arduino GIGA R1/GIGA board Tub/Cradle pro       44.27 mm  16.4 s]
+  [min distance Arduino GIGA R1/GIGA board Tub/Cradle pro       13.50 mm  16.1 s]
+  [min distance Arduino GIGA R1/GIGA board Tub/Cradle pro       13.50 mm  15.8 s]
+  [min distance Arduino GIGA R1/Header str Tub/Tub shell        20.37 mm  39.0 s]
+  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       45.99 mm  15.9 s]
+  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       46.00 mm  16.8 s]
+  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       18.81 mm  18.1 s]
+  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       18.82 mm  17.1 s]
+  [min distance Arduino GIGA R1/Header str Tub/Tub shell         5.53 mm  22.0 s]
+  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       93.02 mm  17.0 s]
+  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       93.01 mm  14.8 s]
+  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       15.36 mm  16.5 s]
+  [min distance Arduino GIGA R1/Header str Tub/Cradle pro       15.38 mm  16.2 s]
+  [min distance Arduino GIGA R1/USB-C J12 Tub/Tub shell        16.47 mm  30.2 s]
+  [min distance Arduino GIGA R1/USB-C J12 Tub/Cradle pro       80.67 mm  15.6 s]
+  [min distance Arduino GIGA R1/USB-C J12 Tub/Cradle pro       97.35 mm  16.8 s]
+  [min distance Arduino GIGA R1/USB-C J12 Tub/Cradle pro       61.90 mm  18.3 s]
+  [min distance Arduino GIGA R1/USB-C J12 Tub/Cradle pro       82.39 mm  17.8 s]
+  [min distance Battery/Battery (p       Motor L/Encoder L     5.43 mm  15.3 s]
+  [min distance Battery/Battery (p       Motor L/Gearmotor     1.12 mm  17.4 s]
+  [min distance Battery/Battery (p       Motor L/Motor shaf   11.62 mm  16.6 s]
+  [min distance Dropper plate/Dropper pl Lid/Lid plate        10.00 mm  18.3 s]
+  [min distance Dropper plate/Dropper pl Lid/Hook bump        60.22 mm  16.6 s]
+  [min distance Dropper plate/Dropper pl Lid/Hook bump        45.59 mm  17.4 s]
+  [min distance Dropper plate/Dropper pl Lid/Hook bump        60.24 mm  16.5 s]
+  [min distance Dropper plate/Dropper pl Lid/Hook bump        45.60 mm  15.9 s]
+  [min distance Camera L/Lens block      Wheel L/Wheel L       3.61 mm  14.5 s]
+  [min distance Camera L/OpenMV H7       Wheel L/Wheel L      12.64 mm  15.2 s]
+  [min distance Stepper bay 28BYJ-48/Body Main PCB/Main PCB s    5.77 mm  14.1 s]
+  [min distance Stepper bay 28BYJ-48/Body Main PCB/PCB compon    8.02 mm  13.4 s]
+  [min distance Stepper bay 28BYJ-48/Body Hopper B left/Hopper    3.98 mm  13.5 s]
+  [min distance Stepper bay 28BYJ-48/Body Battery/Battery (p    8.25 mm  15.0 s]
 
 
-============ report camera (1 s)
+============ report camera (0 s)
 camera L: 0 / 25 view rays hit a robot part within 3.0 cm of the lens; first: None
 camera R: 0 / 25 view rays hit a robot part within 3.0 cm of the lens; first: None
 camera views done
 
-============ report clearances (1077 s)
+============ report clearances (912 s)
   ok     5.00 mm  (spec --, at least 3.0)  Silver module SM         | Omni wheel          silver module (x 7.5, beside the omni bay) to the omni wheel [placeholder module size]
   ok     2.78 mm  (spec --, at least 1.5)  Silver module SM         | GIGA posts          silver module to the GIGA post H1 [placeholder module size]
-  ok    10.54 mm  (spec --, at least 5.0)  Wi-Fi antenna            | Omni wheel          Wi-Fi antenna on the front wall to the omni wheel at rest
-  ok    10.93 mm  (spec 10.6, at least 5.0)  N20 motor                | Motor L             N20 to the left drive motor (first model 10.6 mm)
-  ok     8.27 mm  (spec 6.7, at least 5.0)  Chute B left             | Wheel L             chute to the left wheel (rev 3 6.7 mm)
-  ok     8.29 mm  (spec 6.7, at least 5.0)  Chute A right            | Wheel R             chute to the right wheel
+  ok    10.55 mm  (spec --, at least 5.0)  Wi-Fi antenna            | Omni wheel          Wi-Fi antenna on the front wall to the omni wheel at rest
+  ok    11.00 mm  (spec 10.6, at least 5.0)  N20 motor                | Motor L             N20 to the left drive motor (first model 10.6 mm)
+  ok     5.65 mm  (spec 5.6, at least 5.0)  Chute B left             | Wheel L             chute to the left wheel (rev 3 6.7 mm; 8.2 mm with the first rev 4 chute, 5.6 mm with the 18 mm channel)
+  ok     5.64 mm  (spec 5.6, at least 5.0)  Chute A right            | Wheel R             chute to the right wheel (mirror of the left)
   ok     2.67 mm  (spec 2.7, at least 2.0)  Omni wheel               | GIGA posts          omni wheel to GIGA post H1 (spec 2.7 mm)
   ok     1.73 mm  (spec 1.7, at least 1.0)  Arduino GIGA R1          | Tub                 GIGA stack to the tub (3.1 mm plain wall, 1.7 mm behind the right bumper)
   ok     1.12 mm  (spec 1.0, at least 0.5)  Battery                  | Motor L             battery above the left drive motor (spec 1.0 mm)
   ok    10.00 mm  (spec --, at least 5.0)  Dropper plate            | Lid                 kit plate to the lid
-  ok     3.62 mm  (spec 3.6, at least 2.5)  Camera L                 | Wheel L             camera lens block to the wheel top (rev 3 3.6 mm)
-  ok     5.76 mm  (spec 5.0, at least 3.0)  Stepper bay 28BYJ-48     | Main PCB            stepper bay to the GIGA stack, nearest at the shield (spec 5.0 mm in plan view; 3D is larger where the heights differ)
-  ok     5.23 mm  (spec 5.2, at least 3.0)  Stepper bay 28BYJ-48     | Hopper B left       stepper bay to hopper B (spec 5.2 mm)
+  ok     3.61 mm  (spec 3.6, at least 2.5)  Camera L                 | Wheel L             camera lens block to the wheel top (rev 3 3.6 mm)
+  ok     5.77 mm  (spec 5.0, at least 3.0)  Stepper bay 28BYJ-48     | Main PCB            stepper bay to the GIGA stack, nearest at the shield (spec 5.0 mm in plan view; 3D is larger where the heights differ)
+  ok     3.98 mm  (spec 4.0, at least 3.0)  Stepper bay 28BYJ-48     | Hopper B left       stepper bay to hopper B (spec 4.0 mm; 5.2 mm with the first hopper)
   ok     8.25 mm  (spec 8.2, at least 5.0)  Stepper bay 28BYJ-48     | Battery             stepper bay to the battery (spec 8.2 mm)
 RESULT: PASS
 
 ============ summary
-  ok   plan code extracted, patches applied                       0 problems
   ok   emulator self-test                                         
   ok   unit tests test_v3_params4                                 OK
   ok   probe API self-test (v4_checks3d.selftest)                 
@@ -233,8 +231,8 @@ RESULT: PASS
   ok   stage lid                                                  13 probes and overlaps ok
   ok   stage handle                                               6 probes and overlaps ok
   ok   stage controls                                             6 probes and overlaps ok
-  ok   stage dropper                                              20 probes and overlaps ok
-  ok   stage chutes                                               11 probes and overlaps ok
+  ok   stage dropper                                              22 probes and overlaps ok
+  ok   stage chutes                                               35 probes and overlaps ok
   ok   stage posts                                                4 probes and overlaps ok
   ok   stage electronics                                          6 probes and overlaps ok
   ok   stage connector                                            1 probes and overlaps ok

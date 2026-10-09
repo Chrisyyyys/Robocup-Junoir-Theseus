@@ -59,4 +59,4 @@ motor snap prongs (thin walls along the axis, 0.75 mm undercut): thickness t, he
   (smooth cylinder: the hook can only hold a few N; ears in grooves take the torque. Pull-out is estimated from the wedge angle at the hook, friction 0.35)
   ear: gearbox limit 5 kg.cm = 490 N.mm over ONE front ear at about 19.5 mm from the axle: 25.1 N; bearing area 8 x 3 mm = 24 mm^2: 1.05 MPa
 torque needed: 1.63 kg.cm (2 cm riser), gearbox limit 5 kg.cm, motor stall 10 kg.cm (Pololu 3493)
-cube 10.3 mm: face diagonal 14.57 mm; 15 mm round bore slack 0.43 mm; 13 mm square channel slack 2.70 mm in total (1.35 per side)
+cube 10.3 mm: face diagonal 14.57 mm, space diagonal 17.84 mm; 16 mm slot and hopper void: 1.43 mm of slack over the face diagonal; 18 mm bore: 0.16 mm over the space diagonal, 3.85 mm per side for a cube lying square (first design, 13 mm bore: 2.70 mm in total, and kits that arrived turned jammed in it)

@@ -1,9 +1,13 @@
-  ok   kit 10.3 mm falls from the plate pocket through slot B (left) and its hopper to the trough floor (z 7.7): 14 positions, worst overlap 0.0000 cm3
-  ok   channel B (left) runs 32.8 degrees off the slot square; the cube can turn 39.5 degrees inside the 14.5 mm square (room 6.7 degrees) and enter the 13 mm bore up to 18.2 degrees off its axis
-  ok   kit 10.3 mm slides down channel B (left) to 2 cm beyond the exit: 145 positions (centred, 1.2 mm to each side and up and down), worst overlap 0.0000 cm3
-  ok   kit 10.3 mm falls from the plate pocket through slot A (right) and its hopper to the trough floor (z 7.7): 14 positions, worst overlap 0.0000 cm3
-  ok   channel A (right) runs 32.8 degrees off the slot square; the cube can turn 39.5 degrees inside the 14.5 mm square (room 6.7 degrees) and enter the 13 mm bore up to 18.2 degrees off its axis
-  ok   kit 10.3 mm slides down channel A (right) to 2 cm beyond the exit: 145 positions (centred, 1.2 mm to each side and up and down), worst overlap 0.0000 cm3
-  ok   control: a 14.7 mm cube in the slot is blocked, as it must be (0.0264 cm3 with Hopper B left / Hopper)
-  ok   control: a 14.0 mm cube in the 13 mm channel is blocked, as it must be (0.3780 cm3 with Chute B left / Channel)
+(run one side per call because of the 60 s tool limit: kit_path.report(sides=(1,)) for channel B, then kit_path.report(sides=(-1,)) for channel A; each call runs the two controls on its own side)
+  ok   kit 10.3 mm falls from the plate pocket through slot B (left) and its hopper to 2 mm above the floor slab: 14 positions, worst overlap 0.0000 cm3
+  ok   channel B (left) runs 32.8 degrees off the slot square; the 16 mm slot and the 18 mm bore are 1.43 and 3.43 mm wider than the 14.57 mm face diagonal of the cube, so a kit turned any angle fits (standing on a corner it needs 16.25 mm)
+  ok   kit 10.3 mm slides down channel B (left) to 2 cm beyond the exit: 145 positions (centred, 3 mm to each side and 2.5 mm up and down), worst overlap 0.0000 cm3
+  ok   control: a 17.5 mm cube in the 16 mm slot is blocked, as it must be (0.1574 cm3 with Hopper B left / Hopper)
+  ok   control: a 19.0 mm cube in the 18 mm channel is blocked, as it must be (0.8740 cm3 with Chute B left / Channel)
+RESULT: PASS
+  ok   kit 10.3 mm falls from the plate pocket through slot A (right) and its hopper to 2 mm above the floor slab: 14 positions, worst overlap 0.0000 cm3
+  ok   channel A (right) runs 32.8 degrees off the slot square; the 16 mm slot and the 18 mm bore are 1.43 and 3.43 mm wider than the 14.57 mm face diagonal of the cube, so a kit turned any angle fits (standing on a corner it needs 16.25 mm)
+  ok   kit 10.3 mm slides down channel A (right) to 2 cm beyond the exit: 145 positions (centred, 3 mm to each side and 2.5 mm up and down), worst overlap 0.0000 cm3
+  ok   control: a 17.5 mm cube in the 16 mm slot is blocked, as it must be (0.1574 cm3 with Hopper A right / Hopper)
+  ok   control: a 19.0 mm cube in the 18 mm channel is blocked, as it must be (0.8740 cm3 with Chute A right / Channel)
 RESULT: PASS

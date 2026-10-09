@@ -13,6 +13,7 @@ P3, V3 = L.P3, L.V3
 PROBES = {}                       # stage name -> function returning rows (component, (x, y, z), expect_solid, label)
 STAGE_COMPONENTS = {}             # stage name -> components the stage creates (for the local interference test)
 ALLOW = {}                        # frozenset({component a, component b}) -> largest accepted overlap in cm3; every entry needs a comment saying why
+ONE_BODY = {}                     # stage name -> components that must be a single body: a cut that leaves a loose chip splits a part in two, and no probe point sees that (the hopper lintel)
 
 
 def probes(stage):
@@ -94,6 +95,15 @@ def check_stage(ctx, stage):
             good = (got == want)
             ok = ok and good
             lines.append('  %s %-26s %-46s expected %-5s got %s' % ('ok  ' if good else 'FAIL', comp, label, 'solid' if want else 'empty', 'solid' if got else 'empty'))
+    for comp in ONE_BODY.get(stage, []):
+        try:
+            n = len(_bodies(ctx, comp))
+        except KeyError:
+            ok = False
+            lines.append('  FAIL %-26s component missing (one body)' % comp)
+            continue
+        ok = ok and n == 1
+        lines.append('  %s %-26s %-46s expected 1 body, got %d' % ('ok  ' if n == 1 else 'FAIL', comp, 'one body, no loose fragment', n))
     names = STAGE_COMPONENTS.get(stage, [])
     if names:
         rows = local_interference(ctx, names, exclude=('Stepper bay 28BYJ-48',))
@@ -141,7 +151,7 @@ def _tub_probes():
     ang = math.degrees(math.atan2(e[1], e[0]))
     tx, ty = -math.sin(math.radians(ang)), math.cos(math.radians(ang))    # wall tangent at the exit
     wx, wy = P.polar(10.4, ang)
-    in_wall = (wx + 1.2 * tx, wy + 1.2 * ty, e[2])                        # 12 mm along the wall from the hole centre
+    in_wall = P.polar(10.4, ang + 9.0) + (e[2],)                          # 9 degrees (16 mm) round the wall from the hole centre (the 22 mm wide hole reaches about 6.5 degrees)
     bx, by = P.polar(S['r'], 12.0)
     ux, uy = math.cos(math.radians(12.0)), math.sin(math.radians(12.0))      # radial direction at the 12 degree boss, vx/vy tangential
     vx, vy = -uy, ux
@@ -354,6 +364,7 @@ def _controls_probes():
 
 
 STAGE_COMPONENTS.update({'dropper': ['Dropper floor', 'Dropper plate', 'N20 motor', 'N20 face plate', 'Kits'], 'chutes': ['Hopper A right', 'Chute A right', 'Hopper B left', 'Chute B left']})
+ONE_BODY['chutes'] = ['Hopper A right', 'Chute A right', 'Hopper B left', 'Chute B left']
 
 
 @probes('dropper')
@@ -364,6 +375,8 @@ def _dropper_probes():
     return [
         ('Dropper floor', (-2.0, 3.0, 8.85), True, 'floor disc'),
         ('Dropper floor', (sx, sy, 8.85), False, 'slot A through the floor'),
+        ('Dropper floor', (sx + 0.75 * math.cos(math.radians(45)), sy + 0.75 * math.sin(math.radians(45)), 8.85), False, 'slot A is 16 mm: 7.5 mm from its centre along a side normal is open'),
+        ('Dropper floor', (sx + 0.85 * math.cos(math.radians(45)), sy + 0.85 * math.sin(math.radians(45)), 8.85), True, 'floor beside the 16 mm slot A (8.5 mm from its centre)'),
         ('Dropper floor', (cx, cy, 8.85), False, 'N20 pocket'),
         ('Dropper floor', (cx, 0.8, 8.95), False, 'N20 face plate recess'),
         ('Dropper floor', (cx, 0.8, 8.75), True, 'floor under the recess'),
@@ -387,17 +400,35 @@ def _dropper_probes():
 @probes('chutes')
 def _chute_probes():
     rows = []
+    Ch = P.CHUTE
+    wall = Ch['in_w'] / 2 + Ch['wall'] / 2                                            # the middle of a side wall (0.98 from the axis)
+    floor = -(Ch['in_w'] / 2 - Ch['lift'] + Ch['wall'] / 2)                           # the middle of the floor (0.88 below the axis)
+    roof = Ch['in_w'] / 2 + Ch['lift'] + Ch['wall'] / 2                               # the middle of the ceiling (1.08 above the axis)
     for s, side in ((1, 'B left'), (-1, 'A right')):
         p0, e = P.chute_ends(s)
         d = L.unit(L.vsub(e, p0))
         lat = L.unit((-d[1], d[0], 0.0))
+        up = L.unit(L.vsub((0.0, 0.0, 1.0), L.vmul(d, d[2])))                            # across the axis in the vertical plane, as the channel prism is built
         mid = L.vadd(p0, L.vmul(d, 3.5))
+        under = L.vadd(p0, L.vmul(d, 0.8))                                                # inside the open trough, 8 mm along the axis from the slot centre
         rows += [
             ('Hopper ' + side, (p0[0], p0[1], 8.3), False, 'hopper void under the slot'),
-            ('Hopper ' + side, L.vadd((p0[0], p0[1], 8.0), L.vmul(lat, 0.95)), True, 'hopper wall beside the channel socket'),
+            ('Hopper ' + side, L.vadd((p0[0], p0[1], 8.0), L.vmul(lat, 1.2)), True, 'hopper wall beside the channel socket'),
             ('Chute ' + side, mid, False, 'channel bore'),
-            ('Chute ' + side, L.vadd(mid, L.vmul(lat, 0.73)), True, 'channel wall'),
+            ('Chute ' + side, L.vadd(mid, L.vmul(lat, wall)), True, 'channel wall'),
+            ('Chute ' + side, L.vadd(mid, L.vmul(up, floor)), True, 'channel floor'),
+            ('Chute ' + side, L.vadd(mid, L.vmul(up, roof)), True, 'channel ceiling'),
             ('Chute ' + side, L.vadd(e, L.vmul(d, 0.3)), False, 'channel trimmed at the body radius'),
+            # the open trough under the slot: only the floor slab is there, so that a kit lands on the inclined floor and no wall end, ledge or ceiling edge can catch it
+            ('Chute ' + side, L.vadd(under, L.vmul(up, floor)), True, 'floor slab under the slot'),
+            ('Chute ' + side, L.vadd(under, L.vmul(up, roof)), False, 'no ceiling over the trough'),
+            ('Chute ' + side, L.vadd(L.vadd(under, L.vmul(lat, wall)), L.vmul(up, -0.3)), False, 'no low side wall in the trough (the first design left one, and kits stuck on it)'),
+            # the vertical trough cut meets the sloping floor at 2.55 cm (top face) to 2.65 cm (underside) along the axis, not at the 2.04 cm of its plan corner: a slab that ended at 2.5 cm left a notch
+            ('Chute ' + side, L.vadd(L.vadd(L.vadd(p0, L.vmul(d, 2.57)), L.vmul(lat, -0.37)), L.vmul(up, floor)), True, 'floor slab reaches past the trough cut (no notch at 2.57 cm, one side)'),
+            ('Chute ' + side, L.vadd(L.vadd(L.vadd(p0, L.vmul(d, 2.57)), L.vmul(lat, 0.37)), L.vmul(up, floor)), True, 'floor slab reaches past the trough cut (no notch at 2.57 cm, other side)'),
+            ('Chute ' + side, L.vadd(L.vadd(p0, L.vmul(d, 3.2)), L.vmul(lat, wall)), True, 'side wall beyond the trough'),
+            ('Chute ' + side, L.vadd(L.vadd(p0, L.vmul(d, 3.2)), L.vmul(up, roof)), True, 'ceiling beyond the trough'),
+            ('Chute ' + side, L.vadd(L.vadd(p0, L.vmul(d, 3.2)), L.vmul(up, Ch['in_w'] / 2 + Ch['lift'] - 0.05)), False, 'bore is 18 mm tall: open 0.5 mm under the ceiling'),
         ]
     return rows
 
@@ -711,15 +742,15 @@ SPEC_PAIRS = [   # (component, component, number quoted by the spec or None, sma
     ('Silver module SM', 'GIGA posts', None, 1.5, 'silver module to the GIGA post H1 [placeholder module size]'),
     ('Wi-Fi antenna', 'Omni wheel', None, 5.0, 'Wi-Fi antenna on the front wall to the omni wheel at rest'),
     ('N20 motor', 'Motor L', 10.6, 5.0, 'N20 to the left drive motor (first model 10.6 mm)'),
-    ('Chute B left', 'Wheel L', 6.7, 5.0, 'chute to the left wheel (rev 3 6.7 mm)'),
-    ('Chute A right', 'Wheel R', 6.7, 5.0, 'chute to the right wheel'),
+    ('Chute B left', 'Wheel L', 5.6, 5.0, 'chute to the left wheel (rev 3 6.7 mm; 8.2 mm with the first rev 4 chute, 5.6 mm with the 18 mm channel)'),
+    ('Chute A right', 'Wheel R', 5.6, 5.0, 'chute to the right wheel (mirror of the left)'),
     ('Omni wheel', 'GIGA posts', 2.7, 2.0, 'omni wheel to GIGA post H1 (spec 2.7 mm)'),
     ('Arduino GIGA R1', 'Tub', 1.7, 1.0, 'GIGA stack to the tub (3.1 mm plain wall, 1.7 mm behind the right bumper)'),
     ('Battery', 'Motor L', 1.0, 0.5, 'battery above the left drive motor (spec 1.0 mm)'),
     ('Dropper plate', 'Lid', None, 5.0, 'kit plate to the lid'),
     ('Camera L', 'Wheel L', 3.6, 2.5, 'camera lens block to the wheel top (rev 3 3.6 mm)'),
     (GHOST, 'Main PCB', 5.0, 3.0, 'stepper bay to the GIGA stack, nearest at the shield (spec 5.0 mm in plan view; 3D is larger where the heights differ)'),
-    (GHOST, 'Hopper B left', 5.2, 3.0, 'stepper bay to hopper B (spec 5.2 mm)'),
+    (GHOST, 'Hopper B left', 4.0, 3.0, 'stepper bay to hopper B (spec 4.0 mm; 5.2 mm with the first hopper)'),
     (GHOST, 'Battery', 8.2, 5.0, 'stepper bay to the battery (spec 8.2 mm)'),
 ]
 

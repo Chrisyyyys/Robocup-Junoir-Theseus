@@ -27,7 +27,7 @@ KEEP = {
     'omni arm swing, one plate on +y': box(PIV_X - 0.5, 1.0, OMNI_X + 0.6, 1.7),
     'omni wheel': box(OMNI_X - 3.0, -1.05, OMNI_X + 3.0, 1.05),
     'silver module SM': box(-1.0, -1.1, 1.0, 1.1),
-    'chute A channel': LineString([(-4.73, -2.73), (-6.0, -8.62)]).buffer(0.85),
+    'chute A channel': LineString([(-4.73, -2.73), (-6.0, -8.62)]).buffer(1.10),                      # the 18 mm square channel: outer 21.2 mm plus 0.4 mm
 }
 
 if __name__ == '__main__':
@@ -81,4 +81,5 @@ if __name__ == '__main__':
     print('  (smooth cylinder: the hook can only hold a few N; ears in grooves take the torque. Pull-out is estimated from the wedge angle at the hook, friction 0.35)')
     print('  ear: gearbox limit 5 kg.cm = 490 N.mm over ONE front ear at about 19.5 mm from the axle: %.1f N; bearing area 8 x 3 mm = 24 mm^2: %.2f MPa' % (490 / 19.5, 490 / 19.5 / 24))
     print('torque needed: 1.63 kg.cm (2 cm riser), gearbox limit 5 kg.cm, motor stall 10 kg.cm (Pololu 3493)')
-    print('cube 10.3 mm: face diagonal %.2f mm; 15 mm round bore slack %.2f mm; 13 mm square channel slack %.2f mm in total (%.2f per side)' % (10.3 * math.sqrt(2), 15 - 10.3 * math.sqrt(2), 13 - 10.3, (13 - 10.3) / 2))
+    print('cube 10.3 mm: face diagonal %.2f mm, space diagonal %.2f mm; 16 mm slot and hopper void: %.2f mm of slack over the face diagonal; 18 mm bore: %.2f mm over the space diagonal, '
+          '%.2f mm per side for a cube lying square (first design, 13 mm bore: %.2f mm in total, and kits that arrived turned jammed in it)' % (10.3 * math.sqrt(2), 10.3 * math.sqrt(3), 16 - 10.3 * math.sqrt(2), 18 - 10.3 * math.sqrt(3), (18 - 10.3) / 2, 13 - 10.3))

@@ -277,6 +277,25 @@ def _to3(plane, u, v, w):
     return np.stack([w, u, v], 1)
 
 
+def _focused_overlap(target, plane, poly, a0, a1, n=200000):
+    """Second look for a thin sliver: random points of the extrusion clipped to the target's bounding box, from a stream of their own (the global one is not disturbed). The first look
+    spreads its points over the whole tool, and a 0.003 cm3 sliver (the channel's top corners against the dropper floor, 8 Oct) can be missed there on one side and found on the other."""
+    lo, hi = target.bbox_all()
+    ax = {'xy': (0, 1, 2), 'xz': (0, 2, 1), 'yz': (1, 2, 0)}[plane]          # which of x, y, z are the sketch's u and v and the extrusion's w (see _to3)
+    x0, y0, x1, y1 = poly.bounds
+    ulo, uhi, vlo, vhi = max(x0, lo[ax[0]]), min(x1, hi[ax[0]]), max(y0, lo[ax[1]]), min(y1, hi[ax[1]])
+    wlo, whi = max(a0, lo[ax[2]]), min(a1, hi[ax[2]])
+    if ulo >= uhi or vlo >= vhi or wlo >= whi:
+        return False
+    rng = np.random.default_rng(zlib.crc32(('%s %.6f %.6f' % (plane, a0, a1)).encode()))
+    u = rng.uniform(ulo, uhi, n)
+    v = rng.uniform(vlo, vhi, n)
+    ok = shapely.contains_xy(poly, u, v)
+    u, v = u[ok], v[ok]
+    w = rng.uniform(wlo, whi, len(u))
+    return bool(len(u)) and bool(target.inside(_to3(plane, u, v, w)).any())
+
+
 def _contact(target, plane, poly, a0, a1, n=80000):
     """(overlaps, touches): random points inside the extrusion (overlap), points just outside its end faces and just outside its side faces (contact) against the target body."""
     e = 0.004
@@ -287,6 +306,8 @@ def _contact(target, plane, poly, a0, a1, n=80000):
     u, v = u[ok], v[ok]
     w = RNG.uniform(a0, a1, len(u))
     over = bool(len(u)) and bool(target.inside(_to3(plane, u, v, w)).any())
+    if not over:
+        over = _focused_overlap(target, plane, poly, a0, a1)
     m = min(len(u), 4000)
     touch = bool(target.inside(_to3(plane, u[:m], v[:m], np.full(m, a0 - e))).any()) or bool(target.inside(_to3(plane, u[:m], v[:m], np.full(m, a1 + e))).any())
     if not (over or touch):

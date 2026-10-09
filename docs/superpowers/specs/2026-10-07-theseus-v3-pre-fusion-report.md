@@ -2,6 +2,8 @@
 
 Status: **nothing has been built in Fusion, saved, committed or printed.** This report answers your last round of questions, says what a dry run of the rebuild plan found, describes the design as it will be built and the numbers the Fusion build should reproduce, and lists what I need from you before I start. The design is [the rev 4 spec](2026-10-07-theseus-v3-mechanical-design.md) (section 0, rows 15 to 18, and sections 3, 4, 5.3, 6.1, 7); the build is [the plan](../plans/2026-10-07-theseus-v3-rev4-fusion-model.md); the emulator is [v3-fusion/dryrun](v3-fusion/dryrun/README.md). Tags as in the spec: **[calc]**, **[check]**, **[src]**, **[placeholder]**.
 
+> Note (8 Oct, after the build): this report is a snapshot from before the Fusion build. Its chute numbers (13 mm channel, chute to wheel 8.3 mm, stepper bay to hopper B 5.2 mm, lowest point 3.0) are the first design; the chute was redesigned after a kit simulation (16 mm slot, 18 mm channel, open trough: spec 6.2, with chute to wheel 5.6 mm, stepper bay to hopper B 4.0 mm and lowest point 2.78).
+
 ## 1. The short version
 
 | You asked | Answer |
