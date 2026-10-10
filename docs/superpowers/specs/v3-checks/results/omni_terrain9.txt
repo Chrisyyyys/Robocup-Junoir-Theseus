@@ -1,0 +1,34 @@
+--- omni layout of 8 Oct: rest axle (7.00, 3.00), pivot (2.550, 3.60), arm 4.49 cm, chute lip z 2.67
+omni 8 Oct                        riser_up              PASS  pitch  -0.0.. 14.2  omni 0.25  belly  1.50 bumper  2.00 lip  1.19
+omni 8 Oct                        riser_down            PASS  pitch -17.0.. -0.0  omni 0.00  belly  1.50 bumper  2.85 lip  0.67
+omni 8 Oct                        steps2x1_up           PASS  pitch -26.1.. 15.3  omni 0.25  belly  1.92 bumper  2.33 lip  1.19
+omni 8 Oct                        steps2x1_down         PASS  pitch -17.0.. -0.0  omni 0.00  belly  1.50 bumper  2.85 lip  0.67
+omni 8 Oct                        ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.25  belly  1.61 bumper  2.05 lip  1.14
+omni 8 Oct                        ramp_down             PASS  pitch -25.0.. -0.0  omni 1.25  belly  1.62 bumper  2.06 lip  1.13
+omni 8 Oct                        bump2                 PASS  pitch -17.0.. 14.2  omni 0.25  belly  1.50 bumper  2.00 lip  0.67
+omni 8 Oct                        bump1                 PASS  pitch  -8.3..  8.1  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+omni 8 Oct                        seam                  PASS  pitch  -0.0..  2.4  omni 0.00  belly  3.20 bumper  3.70 lip  2.41
+--- Dangerous Zone extras, same layout
+omni 8 Oct                        stairs3x2_25_up       PASS  pitch -13.3.. 29.7  omni 2.00  belly  1.41 bumper  1.73 lip  1.13
+omni 8 Oct                        stairs3x2_25_down     PASS  pitch -32.2.. -0.0  omni 0.00  belly  2.29 bumper  2.79 lip  2.67
+omni 8 Oct                        stairs3x2_30_up       PASS  pitch -24.0.. 30.8  omni 2.25  belly  0.21 bumper  0.62 lip  1.15
+omni 8 Oct                        stairs3x2_30_down     PASS  pitch -34.5.. -0.0  omni 0.00  belly  1.49 bumper  1.73 lip  2.67
+omni 8 Oct                        dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.2  omni 1.75  belly  0.01 bumper  0.10 lip  0.67
+omni 8 Oct                        dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 33.1  omni 1.25  belly  0.78 bumper  1.08 lip  1.14
+--- omni layout of 9 Oct: rest axle (6.85, 3.00), pivot (2.409, 4.20), arm 4.60 cm, chute lip z 2.67
+omni 9 Oct                        riser_up              PASS  pitch  -0.0.. 14.8  omni 0.25  belly  1.50 bumper  2.00 lip  1.13
+omni 9 Oct                        riser_down            PASS  pitch -17.4.. -0.0  omni 0.00  belly  1.50 bumper  2.77 lip  0.67
+omni 9 Oct                        steps2x1_up           PASS  pitch -26.1.. 15.6  omni 0.25  belly  1.86 bumper  2.28 lip  1.13
+omni 9 Oct                        steps2x1_down         PASS  pitch -17.4.. -0.0  omni 0.00  belly  1.50 bumper  2.77 lip  0.67
+omni 9 Oct                        ramp_up               PASS  pitch  -0.0.. 25.0  omni 1.25  belly  1.62 bumper  2.05 lip  1.15
+omni 9 Oct                        ramp_down             PASS  pitch -25.0.. -0.0  omni 1.25  belly  1.62 bumper  2.06 lip  1.13
+omni 9 Oct                        bump2                 PASS  pitch -17.4.. 14.8  omni 0.25  belly  1.50 bumper  2.00 lip  0.67
+omni 9 Oct                        bump1                 PASS  pitch  -8.5..  8.3  omni 0.00  belly  2.50 bumper  3.00 lip  1.67
+omni 9 Oct                        seam                  PASS  pitch  -0.0..  2.5  omni 0.00  belly  3.20 bumper  3.70 lip  2.40
+--- Dangerous Zone extras, same layout
+omni 9 Oct                        stairs3x2_25_up       PASS  pitch -12.9.. 29.6  omni 2.00  belly  1.44 bumper  1.76 lip  1.13
+omni 9 Oct                        stairs3x2_25_down     PASS  pitch -31.4.. -0.0  omni 0.00  belly  2.34 bumper  2.93 lip  2.67
+omni 9 Oct                        stairs3x2_30_up       PASS  pitch -23.8.. 31.2  omni 2.25  belly  0.20 bumper  0.65 lip  1.13
+omni 9 Oct                        stairs3x2_30_down     PASS  pitch -34.4.. -0.0  omni 0.00  belly  1.36 bumper  1.61 lip  2.67
+omni 9 Oct                        dz_bump2_on_ramp_up   FAIL  pitch  -0.0.. 39.5  omni 1.75  belly  0.01 bumper  0.10 lip  0.67
+omni 9 Oct                        dz_bump1_on_ramp_up   PASS  pitch  -0.0.. 33.3  omni 1.25  belly  0.78 bumper  1.08 lip  1.15

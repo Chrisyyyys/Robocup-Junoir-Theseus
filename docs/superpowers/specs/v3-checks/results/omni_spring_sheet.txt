@@ -1,0 +1,6 @@
+torsion spring, right-hand wound, the load OPENS the coil (the legs are held from below, so it cannot be wound the other way)
+wire 1.60 mm music wire (ASTM A228 / EN 10270-1 SH, about 2200 MPa); mean diameter 10.0 mm (ID 8.4, OD 11.6 free; ID 8.7, OD 11.9 at full travel); 4.07 body turns close wound = 8.1 mm long
+rear leg: tangent, pointing back (180 degrees), 10 mm to the adjuster head, 12 mm in all; forward leg: tangent, 11 mm to its pin, 12 mm in all, 23.6 degrees below horizontal when free (11.1 at rest, +20.4 at full travel)
+free angle between the legs 203.6 degrees (counterclockwise from the forward leg to the rear leg) = 4 turns and 23.6 degrees
+rate 493 N.mm/rad = 8.60 N.mm/degree; torque 107 N.mm at 12.4 degrees of opening (rest, 2.4 N at the axle) and 378 N.mm at 44.0 degrees (full travel, 8.5 N); stress 1055 MPa = 48 % of the wire's strength
+wrote fig14_omni_spring.png/.svg in C:\Users\christopher.shu\OneDrive - St. Andrew's College\Desktop\Robocup-Junoir-Theseus\docs\superpowers\specs\v3-figures

@@ -1,12 +1,13 @@
-"""Floor-sensor face clearance on the terrain cases for the rev 4 body (omni at 7.0, chute lip z 2.67) with the sensor window x_s ahead of the axle (mechanical design section 5.3).
+"""Floor-sensor face clearance on the terrain cases for the rev 4 body (the 9 Oct omni layout: rest axle 6.85, pivot (2.409, 4.2), arm 4.6 cm; 8 Oct: 7.0 and (2.55, 3.6); chute lip z 2.67) with the sensor window x_s ahead of the axle (mechanical design section 5.3).
 Same machinery as fsens.py (rev 3: front port at 6.5, silver module at the axle); the window half width is a parameter here. Prints the smallest clearance (cm) between the window and the
 terrain over the whole crossing; negative = the sensor would hit. Rows: x_s, face z, half width. A case passes with at least 0.2 cm. Usage: python fsens_front.py  (about 2 minutes)"""
 import fsens
 import nubtable as N
-from omni_inside import mk2
+import omni_mount as M
+from omni_terrain9 import mk as mk9
 from sidesim2 import terrain, wheel_centre_z, pitch_for_omni, rear_ok
 
-R = mk2(7.0, lip=(-6.2, 2.67))
+R = mk9(M.NEW)
 XS = [x / 1.0 for x in range(-25, 50)]
 CASES = ['riser_up', 'riser_down', 'ramp_up', 'ramp_down', 'bump2', 'bump1', 'steps2x1_up', 'steps2x1_down']
 EXTRA = ['stairs3x2_25_up', 'stairs3x2_30_up', 'dz_bump2_on_ramp_up']

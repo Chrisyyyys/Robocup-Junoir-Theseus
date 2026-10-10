@@ -1,6 +1,6 @@
 
 connector edge toward the front, top (header) edge on the inboard side
-  H1 (15.24, 2.54)   -> (  5.87,  -1.62)  omni arm swing, two plates (-3.5 mm)
+  H1 (15.24, 2.54)   -> (  5.87,  -1.62)  omni arm swing, two plates (-1.1 mm)
   H2 (90.17, 2.54)   -> ( -1.62,  -1.62)  clear
   H3 (13.9, 50.7)    -> (  6.01,  -6.43)  clear
   H4 (96.7, 50.7)    -> ( -2.27,  -6.43)  clear
@@ -11,7 +11,7 @@ connector edge toward the front, top (header) edge on the inboard side
 connector edge toward the front, top (header) edge on the outboard side
   H1 (15.24, 2.54)   -> (  5.87,  -6.44)  clear
   H2 (90.17, 2.54)   -> ( -1.62,  -6.44)  right motor ledges (+0.4 mm); right motor web and plate slot (-3.3 mm)
-  H3 (13.9, 50.7)    -> (  6.01,  -1.63)  omni arm swing, two plates (-3.5 mm)
+  H3 (13.9, 50.7)    -> (  6.01,  -1.63)  omni arm swing, two plates (-1.0 mm)
   H4 (96.7, 50.7)    -> ( -2.27,  -1.63)  clear
   H5 (66.1, 17.8)    -> (  0.79,  -4.92)  right motor body (-3.5 mm); right motor prongs (-3.5 mm)
   H6 (66.1, 45.6)    -> (  0.79,  -2.14)  right motor body (-3.5 mm)
@@ -19,7 +19,7 @@ connector edge toward the front, top (header) edge on the outboard side
 
 connector edge toward the rear, top (header) edge on the inboard side
   H1 (15.24, 2.54)   -> ( -1.23,  -1.62)  right motor body (-1.2 mm)
-  H2 (90.17, 2.54)   -> (  6.26,  -1.62)  omni arm swing, two plates (-3.5 mm)
+  H2 (90.17, 2.54)   -> (  6.26,  -1.62)  omni arm swing, two plates (-1.1 mm)
   H3 (13.9, 50.7)    -> ( -1.37,  -6.43)  right motor body (+1.4 mm); right motor prongs (+0.4 mm); right motor ledges (+0.3 mm); right motor web and plate slot (-3.5 mm)
   H4 (96.7, 50.7)    -> (  6.91,  -6.43)  clear
   H5 (66.1, 17.8)    -> (  3.85,  -3.14)  clear
@@ -30,9 +30,9 @@ connector edge toward the rear, top (header) edge on the outboard side
   H1 (15.24, 2.54)   -> ( -1.23,  -6.44)  right motor body (+0.6 mm); right motor prongs (+0.4 mm); right motor ledges (+0.4 mm); right motor web and plate slot (-3.5 mm)
   H2 (90.17, 2.54)   -> (  6.26,  -6.44)  clear
   H3 (13.9, 50.7)    -> ( -1.37,  -1.63)  right motor body (+0.2 mm)
-  H4 (96.7, 50.7)    -> (  6.91,  -1.63)  omni arm swing, two plates (-3.5 mm)
+  H4 (96.7, 50.7)    -> (  6.91,  -1.63)  omni arm swing, two plates (-1.0 mm)
   H5 (66.1, 17.8)    -> (  3.85,  -4.92)  clear
-  H6 (66.1, 45.6)    -> (  3.85,  -2.14)  omni arm swing, two plates (+0.9 mm)
+  H6 (66.1, 45.6)    -> (  3.85,  -2.14)  clear
   -> with the omni arm on +y only: usable H2 H3 H4 H5 H6 (n=5), at least 1.5 mm clear: H2 H4 H5 H6; usable holes span x -1.4 .. 6.9 cm
 
 USB-C J12 at x 7.40, y -2.74 (top edge inboard); free space in front of the stack edge: to the tub wall (r 10.3, below z 8.7) 2.53 cm, to the ring (r 9.0, above z 8.7) 1.18 cm
@@ -41,15 +41,15 @@ USB-C J12 at x 7.40, y -5.32 (top edge outboard); free space in front of the sta
 
 ToF module to the nearest edge of the GIGA stack (plan) and a routed estimate (x1.3 + 3 cm):
   F    plan   2.5 cm   routed about   6.3 cm
-  FL   plan   5.8 cm   routed about  10.5 cm
+  FL   plan   5.6 cm   routed about  10.2 cm
   FR   plan   1.6 cm   routed about   5.0 cm
   SFL  plan   7.4 cm   routed about  12.6 cm
   SFR  plan   0.0 cm   routed about   3.0 cm
-  SRL  plan   8.6 cm   routed about  14.2 cm
-  SRR  plan   4.4 cm   routed about   8.8 cm
-  RL   plan   8.1 cm   routed about  13.6 cm
+  SRL  plan   8.4 cm   routed about  14.0 cm
+  SRR  plan   4.1 cm   routed about   8.3 cm
+  RL   plan   7.5 cm   routed about  12.8 cm
   RR   plan   5.6 cm   routed about  10.3 cm
-longest routed run about 14.2 cm; 100 mm cables are long enough for 4 of 9, 200 mm cables for all
+longest routed run about 14.0 cm; 100 mm cables are long enough for 4 of 9, 200 mm cables for all
 motor snap prongs (thin walls along the axis, 0.75 mm undercut): thickness t, height b, free length L, hook height above the axis
   t 1.6 b 11 L 32 hook 4.5 mm above the axis: deflection to pass the equator 1.82 mm, push-in 1.3 N per prong, strain 0.43 %, pull-out 1.1 N (both prongs), friction torque 0.04 kg.cm
   t 2.0 b 11 L 32 hook 4.5 mm above the axis: deflection to pass the equator 1.82 mm, push-in 2.4 N per prong, strain 0.53 %, pull-out 2.1 N (both prongs), friction torque 0.08 kg.cm
@@ -59,4 +59,4 @@ motor snap prongs (thin walls along the axis, 0.75 mm undercut): thickness t, he
   (smooth cylinder: the hook can only hold a few N; ears in grooves take the torque. Pull-out is estimated from the wedge angle at the hook, friction 0.35)
   ear: gearbox limit 5 kg.cm = 490 N.mm over ONE front ear at about 19.5 mm from the axle: 25.1 N; bearing area 8 x 3 mm = 24 mm^2: 1.05 MPa
 torque needed: 1.63 kg.cm (2 cm riser), gearbox limit 5 kg.cm, motor stall 10 kg.cm (Pololu 3493)
-cube 10.3 mm: face diagonal 14.57 mm, space diagonal 17.84 mm; 16 mm slot and hopper void: 1.43 mm of slack over the face diagonal; 18 mm bore: 0.16 mm over the space diagonal, 3.85 mm per side for a cube lying square (first design, 13 mm bore: 2.70 mm in total, and kits that arrived turned jammed in it)
+cube 10.3 mm: face diagonal 14.57 mm, space diagonal 17.84 mm; 17 mm slot and hopper void: 2.43 mm of slack over the face diagonal; 19 mm bore: 1.16 mm over the space diagonal (0.81 mm for a 10.5 mm kit), 4.35 mm per side for a cube lying square (first design, 13 mm bore: 2.70 mm in total, and kits that arrived turned jammed in it)

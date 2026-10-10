@@ -1,24 +1,9 @@
-(run in pieces because a Fusion tool call times out after about 60 s: scenarios 0 to 3 in one call, 4 and 5 one call each, the teardown 6 group by group with window=(group, 1, 10**6); each group's path was checked against every body not yet removed)
 ok   [0] lid lifts straight up over the handle (the hooks flex)
 ok   [1] left wheel slides 1.2 cm out along its shaft, then drops through the arch
 ok   [2] right wheel, same path mirrored
 ok   [3] kit swap: lid, then kit plate with the kits, then the N20 cartridge up through the floor pocket
-RESULT: PASS
 ok   [4] dropper unit out: lid, both channels along their axes, then floor disc, plate, kits, N20 cartridge and both hoppers straight up
-RESULT: PASS
 ok   [5] battery swap: the dropper unit out, then the battery 4.5 cm back and 2 cm inboard (Camera L and the ring corner are over it, the bridge and its switch in front) and straight up
+ok   [6] teardown: lid, channels, dropper unit, frame group up, battery up, left wheel out, left cartridge up (prongs flex), GIGA stack up, right wheel out, right cartridge up (prongs flex), pivot and stop screws out inboard, axle screw unscrewed 3.5 mm out of the arm, wheel set with the screw still in it down, arm with the spring on its tube up
 RESULT: PASS
-scenario 6, 12 groups: teardown: lid, channels, dropper unit, frame group up, battery up, left wheel out, left cartridge up (prongs flex), GIGA stack up, right wheel out, right cartridge up (prongs flex), omni module up
-group 0 ['Lid'] ok
-group 1 ['Chute A right'] ok
-group 2 ['Chute B left'] ok
-group 3 ['Dropper floor', 'Dropper plate', 'Kits'] ok
-group 4 ['Upper frame', 'Handle bar', 'Victim LED'] ok
-group 5 ['Battery'] ok
-group 6 ['Wheel L'] ok
-group 7 ['Motor L', 'Face plate L'] ok
-group 8 ['Arduino GIGA R1', 'Main PCB'] ok
-group 9 ['Wheel R'] ok
-group 10 ['Motor R', 'Face plate R'] ok
-group 11 ['Omni wheel', 'Omni arm', 'Omni pins'] ok
-RESULT: PASS (all seven scenarios ok)
+(10 Oct, with the spring's forward leg, its seat pin and the arbor. Scenarios 0 to 5 were run whole (0 to 2, 3 and 4, 5 in separate calls). The teardown [6] was run as 15 windows, one per group, each over all its steps: report('removal', only=[6], window=(group, 1, 999)) for groups 0 to 14, every one RESULT: PASS. Groups 11 to 14 are the omni steps: pivot and stop screws out along -y 3.6 cm, the axle screw 3.5 mm out of the arm, the wheel set with the screw 9 cm down, the arm (now carrying the seat pin and the forward spring leg) with the spring on its tube and its arbor 12 cm up.)

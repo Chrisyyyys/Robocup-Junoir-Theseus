@@ -20,14 +20,15 @@ EXPECTED = [
     ('Tub shell', 'Cradle prong', 0.13, "the prong's root is sunk 0.5 mm into the floor and its outer end sits inside the cradle ledge (a separate body only because it flexes; one printed part with the tub)"),
     ('Lid plate', 'Hook bump', 0.011, "the bump's outer face is sunk 0.1 to 0.2 mm into the skirt's inner face (a separate body only because it flexes; one printed part with the lid)"),
     ('Bumper plate', 'Microswitch', 0.0004, 'the bumper plate rests on its microswitch (touching, as in the rev 3 model)'),
+    ('Seat pin', 'Spring forward leg', 0.0001, "the spring's forward leg lies on the seat pin's top: a line contact, no volume (10 Oct)"),
 ]
 
 # (component name prefix, why it touches nothing in the model)
 LOOSE = [
     ('ToF ', 'the board sits in its ring pocket with clearance; the snap tab is not modelled'),
     ('Camera ', 'the board floats under its lid hump; its cradle with the snap tabs is not modelled'),
-    ('Floor port FP', 'in its floor hole with clearance; the snap pocket is not modelled'),
-    ('Silver module SM', 'in its floor hole with clearance; the snap pocket is not modelled'),
+    ('Floor port FP', 'the real 20.3 mm TCS34725 board in its floor hole with clearance; its holder is not designed yet (spec 5.3)'),
+    ('Silver module SM', 'a placeholder in its floor hole with clearance; the parts are not chosen yet (the silver bench test decides, spec 5.3)'),
     ('Rear nub', 'the nub boss and its M5 thread are not modelled, so the nub stops short of the tub'),
     ('USB-C service socket', 'in its wall hole with clearance; the fixing is not modelled'),
     ('Wi-Fi antenna', 'stuck on the wall with adhesive; modelled 0.05 to 0.1 mm off the wall face on purpose'),

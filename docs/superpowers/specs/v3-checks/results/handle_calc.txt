@@ -1,8 +1,8 @@
 bridge section: area 1.55 cm2, centroid 0.434 cm above the underside, I = 0.1654 cm4
   15 N at the post, lever 5.0 cm: moment 75 N.cm, stress at the web underside 2.0 MPa, tip deflection 0.19 mm
   45 N at the post, lever 5.0 cm: moment 225 N.cm, stress at the web underside 5.9 MPa, tip deflection 0.57 mm
-carried by the bar, nose-up angle (COM x 0.89, z 6.82, grip z 14.8):
-  grip at x 0.9 (rear end of the first 8 cm bar): 0.1 degrees
-  grip at x 3.3 (rear end of the 5.4 cm bar): 16.8 degrees
-  grip at x 6.0 (middle of the 5.4 cm bar): 32.6 degrees
-  grip at x 8.7 (front end): 44.4 degrees
+carried by the bar, nose-up angle (COM x 1.09, z 6.79, grip z 14.8):
+  grip at x 0.9 (rear end of the first 8 cm bar): -1.4 degrees
+  grip at x 3.3 (rear end of the 5.4 cm bar): 15.4 degrees
+  grip at x 6.0 (middle of the 5.4 cm bar): 31.5 degrees
+  grip at x 8.7 (front end): 43.5 degrees

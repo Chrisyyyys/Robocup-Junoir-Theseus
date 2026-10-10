@@ -1,4 +1,4 @@
-"""Convex-piece model of the kit chute for the rev 4 layout (spec section 6.2): the dropper floor around slot B, the hopper under it and the 18 mm square channel, built from the same
+"""Convex-piece model of the kit chute for the rev 4 layout (spec section 6.2): the dropper floor around slot B, the hopper under it and the 19 mm square channel, built from the same
 parameters and the same cuts as v4_model.build_chutes, so that a physics engine can run on it. Units cm, frame x forward, y left, z up. Pure numpy, no Fusion and no physics engine.
 
 A convex piece is a list of half-spaces n.x <= b. A solid with a hole is a union of convex pieces: `difference(A, B)` cuts a convex B out of a convex A and returns convex pieces

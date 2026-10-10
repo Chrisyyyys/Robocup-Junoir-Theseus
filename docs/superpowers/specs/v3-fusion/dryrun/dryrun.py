@@ -88,9 +88,7 @@ def main():
     E.install_report_patches(K, K3)
     ctx = E.make_ctx(M3.tof_positions)
     import v3_params4 as P
-    for nm, x, y, aim in P.TOF:
-        got = ctx.tof[nm]
-        assert abs(got[0] - x) < 1e-6 and abs(got[1] - y) < 1e-6 and got[2] == aim, 'ToF %s differs between v3_model and v3_params4' % nm
+    ctx.tof = {nm: (x, y, aim) for nm, x, y, aim in P.TOF}            # the rev 4 positions of 9 Oct (the real boards are wider than the product page said), as v4_model.make_ctx sets them
 
     print('\nself-test of the probe API in the emulator:')
     st = K.selftest(ctx)

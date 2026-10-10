@@ -7,6 +7,7 @@ import adsk.fusion
 
 import fusion_lib as L
 import v3_checks3d as K3
+import tof_mount as T
 import v3_params4 as P
 
 P3, V3 = L.P3, L.V3
@@ -152,8 +153,9 @@ def _tub_probes():
     tx, ty = -math.sin(math.radians(ang)), math.cos(math.radians(ang))    # wall tangent at the exit
     wx, wy = P.polar(10.4, ang)
     in_wall = P.polar(10.4, ang + 9.0) + (e[2],)                          # 9 degrees (16 mm) round the wall from the hole centre (the 22 mm wide hole reaches about 6.5 degrees)
-    bx, by = P.polar(S['r'], 12.0)
-    ux, uy = math.cos(math.radians(12.0)), math.sin(math.radians(12.0))      # radial direction at the 12 degree boss, vx/vy tangential
+    a_b = P.SCREW_DEG[0]                                                      # the front boss of the left side (12 degrees)
+    bx, by = P.polar(S['r'], a_b)
+    ux, uy = math.cos(math.radians(a_b)), math.sin(math.radians(a_b))        # radial direction at that boss, vx/vy tangential
     vx, vy = -uy, ux
     rib = (bx + 0.47 * ux + 0.45 * vx, by + 0.47 * uy + 0.45 * vy)           # on the rib, outside the boss circle and inside the wall's inner face
     beside = (bx + 0.47 * ux + 0.65 * vx, by + 0.47 * uy + 0.65 * vy)        # same radius, beside the rib (half width 0.5)
@@ -182,16 +184,27 @@ def _tub_probes():
         ('Tub', (1.8, 6.25, 3.7), False, 'plate slot through the floor'),
         ('Tub', (7.0, 0.0, 3.7), False, 'omni bay in the floor'),
         ('Tub', (6.0, -2.0, 3.7), True, 'floor between the omni bay and the silver-module hole'),
-        ('Tub', (3.0, 1.3, 3.7), False, 'arm slot near the pivot'),
-        ('Tub', (3.0, 0.0, 3.7), True, 'floor beside the arm slot'),
+        ('Tub', (3.0, 1.3, 3.7), False, 'pocket in the floor beside the pivot (spring coil and arm)'),
+        ('Tub', (3.9, 1.3, 3.7), False, 'the pocket joins the omni bay'),
+        ('Tub', (3.0, 0.0, 3.7), True, 'plain floor inboard of the pillar'),
+        ('Tub', (2.9, 0.55, 4.5), True, 'omni pillar, above and beside the pivot hole'),
+        ('Tub', (P.OMNI['pivot'][0], 0.55, P.OMNI['pivot'][1]), False, 'pivot screw hole through the pillar'),
+        ('Tub', (P.omni_stop_pin()[0], 0.55, P.omni_stop_pin()[1]), False, 'stop screw hole through the pillar'),
+        ('Tub', (1.65, 0.55, 4.1), True, 'pillar tail behind the pivot'),
+        ('Tub', (P.OMNI_MOUNT['adjuster']['x'] + 0.3, 1.0, 4.1), True, 'the tail is wide enough (y to 1.2) for the adjuster under the rear leg'),
+        ('Tub', (P.OMNI_MOUNT['adjuster']['x'] + 0.3, 1.3, 4.1), False, 'and stops 1 mm short of the left motor seat (y 1.3)'),
+        ('Tub', (P.OMNI_MOUNT['adjuster']['x'], P.OMNI_MOUNT['adjuster']['y'], 4.1), False, 'hole for the adjuster screw in the tail'),
+        ('Tub', (2.4, 2.5, 4.55), True, 'outer ear, above the pivot thread hole'),
+        ('Tub', (P.OMNI['pivot'][0], 2.5, P.OMNI['pivot'][1]), False, 'thread hole for the M3 pivot screw in the ear'),
+        ('Tub', (P.omni_stop_pin()[0], 2.4, P.omni_stop_pin()[1]), False, 'pilot hole for the stop screw in the ear'),
         ('Tub', (P.FLOOR_FRONT['x'], P.FLOOR_FRONT['y'], 3.7), False, 'front floor port hole, 7.5 cm ahead of the axle'),
         ('Tub', (P.SILVER['x'], P.SILVER['y'], 3.7), False, 'silver module hole, 7.5 cm ahead of the axle beside the omni bay'),
         ('Tub', (0.0, 0.0, 3.7), True, 'plain floor at the axle line (the silver module moved forward)'),
         ('Tub', in_hole, False, 'chute hole through the wall'),
         ('Tub', in_wall, True, 'wall beside the chute hole'),
-        ('Tub', (bx, by, 7.9), True, 'insert boss at 12 degrees'),
+        ('Tub', (bx, by, 7.9), True, 'insert boss at %d degrees' % a_b),
         ('Tub', (bx, by, 8.5), False, 'insert hole in the boss'),
-        ('Tub', (rib[0], rib[1], 8.2), True, 'rib from the 12 degree boss to the wall'),
+        ('Tub', (rib[0], rib[1], 8.2), True, 'rib from the %d degree boss to the wall' % a_b),
         ('Tub', (beside[0], beside[1], 8.2), False, 'beside the rib'),
         ('Tub', (bat[0], bat[1], 5.0), True, 'battery tray'),
         ('Tub', (0.9, 5.0, 5.0), False, 'notch in the tray over the left motor'),
@@ -199,10 +212,13 @@ def _tub_probes():
         ('Tub', (usb_in[0], usb_in[1], 7.5), False, 'USB-C socket hole in the front-right wall'),
         ('Tub', (usb_side[0], usb_side[1], 7.5), True, 'wall beside the socket hole'),
         ('Tub', (-10.4, 0.0, 7.5), True, 'rear wall is plain now'),
+        ('Tub', (P.IMU['x'] + P.IMU['holes'][0] + 0.18, P.IMU['y'] + P.IMU['holes'][1] + 0.18, P.Z_FLOOR_TOP + 0.25), True, 'IMU post (beside its pilot hole)'),
+        ('Tub', (P.IMU['x'] + P.IMU['holes'][0], P.IMU['y'] + P.IMU['holes'][1], P.Z_FLOOR_TOP + 0.3), False, 'pilot hole in the IMU post'),
+        ('Tub', (P.IMU['x'], P.IMU['y'], P.Z_FLOOR_TOP + 0.25), False, 'no floor boss under the middle of the IMU board'),
     ]
 
 
-STAGE_COMPONENTS.update({'drive': ['Wheel L', 'Motor L', 'Wheel R', 'Motor R'], 'cartridges': ['Face plate L', 'Face plate R'], 'omni': ['Omni wheel', 'Omni arm', 'Omni pins'],
+STAGE_COMPONENTS.update({'drive': ['Wheel L', 'Motor L', 'Wheel R', 'Motor R'], 'cartridges': ['Face plate L', 'Face plate R'], 'omni': ['Omni wheel', 'Omni arm', 'Omni pins', 'Omni pivot', 'Omni spring', 'Omni adjuster'],
                          'nub': ['Rear nub'], 'bumpers': ['Bumper L', 'Bumper switch L', 'Bumper R', 'Bumper switch R']})
 
 
@@ -232,18 +248,64 @@ def _cartridge_probes():
 
 @probes('omni')
 def _omni_probes():
-    ox, oz = P.OMNI['rest']
-    px, pz = P.OMNI['pivot']
+    O, B, X, M, SP = P.OMNI, P.OMNI_BEARING, P.OMNI_AXLE, P.OMNI_MOUNT, P.OMNI_SPRING
+    ox, oz = O['rest']
+    px, pz = O['pivot']
+    w0, w1 = O['y_wheel']
+    a0, a1 = O['arm_y']
+    ym = (a0 + a1) / 2
     xm = 4.8
     zm = pz + (oz - pz) * (xm - px) / (ox - px)          # centre line of the arm at x 4.8
+    stx, stz = P.omni_stop_pin()
+    ad = M['adjuster']
+    zl = pz + SP['mean_d'] / 2
+    y_b1 = w0 + P.OMNI_AXLE['seat']
+    y_under = y_b1 - P.OMNI_AXLE['washer_h']
+    kx, kz = P.omni_seat(0.0)
+    (lx0, lz0), (lx1, lz1) = P.omni_leg(0.0)
+    lmx, lmz = (lx0 + lx1) / 2, (lz0 + lz1) / 2
+    y_leg = SP['y'][1] - SP['wire'] / 2
     return [
-        ('Omni wheel', (ox, 0.0, oz + 2.5), True, 'wheel above the hub'),
-        ('Omni wheel', (ox, 0.0, oz), False, 'axle bore'),
-        ('Omni wheel', (ox + 2.9, 0.0, oz), True, 'front edge of the wheel (x 9.9)'),
-        ('Omni wheel', (ox + 3.1, 0.0, oz), False, 'beyond the front edge (x 10.1)'),
-        ('Omni arm', (xm, 1.3, zm), True, 'single arm plate on +y'),
-        ('Omni arm', (xm, -1.3, zm), False, 'no second arm plate on -y'),
-        ('Omni pins', (px, 1.3, pz), True, 'pivot pin'),
+        ('Omni wheel', (ox, 0.5, oz + 2.5), True, 'wheel above the hub'),
+        ('Omni wheel', (ox + 0.25, 0.5, oz), True, 'sleeve between the inner rings'),
+        ('Omni wheel', (ox, 0.5, oz), False, 'the hole of the sleeve (the screw is in the axle set)'),
+        ('Omni wheel', (ox + 0.4, y_b1 + 0.2, oz), True, 'inboard bearing ring'),
+        ('Omni wheel', (ox, y_b1 + 0.2, oz), False, 'inboard bearing bore'),
+        ('Omni wheel', (ox + 0.45, w0 + 0.2, oz), False, 'the bore in front of the inboard bearing (the screw head sits here)'),
+        ('Omni wheel', (ox + 0.25, (w1 + a0) / 2, oz), True, '1 mm spacer between the wheel and the arm'),
+        ('Omni wheel', (ox + 2.9, 0.5, oz), True, 'front edge of the wheel (x 9.75)'),
+        ('Omni wheel', (ox + 3.1, 0.5, oz), False, 'beyond the front edge'),
+        ('Omni wheel', (ox, w0 - 0.05, oz + 2.0), False, 'inboard of the wheel face (y -1.03)'),
+        ('Omni arm', (xm, ym, zm), True, 'single arm bar on +y'),
+        ('Omni arm', (xm, -1.3, zm), False, 'no second arm bar on -y'),
+        ('Omni arm', (px, ym, pz), False, 'pivot bore'),
+        ('Omni arm', (ox, ym, oz), False, 'axle hole'),
+        ('Omni arm', (stx, ym, stz), False, 'the arc slot, at the stop screw'),
+        ('Omni arm', (px + 1.5, ym, pz - 0.2), True, 'solid bar between the pivot and the slot'),
+        ('Omni arm', (kx, 1.5, kz), True, 'seat pin standing out of the arm\'s inboard face'),
+        ('Omni arm', (kx, ym, kz), True, 'seat pin inside the bar'),
+        ('Omni arm', (kx, a1 - 0.02, kz), False, 'the seat hole is open for the last 0.5 mm'),
+        ('Omni arm', (lmx, y_leg, lmz), True, 'forward spring leg'),
+        ('Omni arm', (lmx, y_leg - 0.3, lmz), False, 'nothing but the leg in this plane: the leg is one wire thick'),
+        ('Omni pins', (ox, 0.5, oz), True, 'axle screw'),
+        ('Omni pins', (ox + 0.2, y_under - 0.2, oz), True, 'axle screw head, in the wheel\'s bore'),
+        ('Omni pins', (ox, w0 - 0.05, oz), False, 'nothing of the axle set in front of the wheel\'s inboard face'),
+        ('Omni pins', (ox, a1 - 0.05, oz), True, 'axle screw tip inside the arm'),
+        ('Omni pins', (ox, a1 + 0.05, oz), False, 'nothing beyond the arm\'s outer face'),
+        ('Omni pivot', (px, 1.3, pz), True, 'pivot screw'),
+        ('Omni pivot', (px, 2.5, pz), True, 'pivot screw in the ear'),
+        ('Omni pivot', (stx, 1.3, stz), True, 'stop screw'),
+        ('Omni pivot', (px, 1.3, pz + 0.4), False, 'nothing above the pivot screw'),
+        ('Omni spring', (px, 1.3, pz + SP['mean_d'] / 2), True, 'spring coil (top)'),
+        ('Omni spring', (px + 0.2, 1.3, pz), True, 'pivot tube'),
+        ('Omni spring', (px, 1.3, pz), False, 'the screw hole in the tube'),
+        ('Omni spring', (ad['x'], ad['y'], zl), True, 'rear leg over the middle of the adjuster head'),
+        ('Omni spring', (ad['x'] - 0.15, ad['y'], zl), True, 'rear leg ends 2 mm past it'),
+        ('Omni spring', (ad['x'] - 0.25, ad['y'], zl), False, 'and no further'),
+        ('Omni spring', (px + 0.31, 1.2, pz), True, 'spring arbor between the tube and the coil'),
+        ('Omni spring', (px + 0.395, 1.2, pz), False, 'half a millimetre of air between the arbor and the coil'),
+        ('Omni adjuster', (ad['x'], ad['y'], 0.5 * (ad['head_z'][0] + ad['head_z'][1])), True, 'adjuster screw head'),
+        ('Omni adjuster', (ad['x'], ad['y'], 4.2), True, 'adjuster screw shank'),
     ]
 
 
@@ -266,17 +328,42 @@ def report_omni(ctx):
     return 'omni sweep done'
 
 
-STAGE_COMPONENTS.update({'frame': ['Upper frame'], 'tof': ['ToF %s' % n for n, x, y, a in P.TOF], 'cameras': ['Camera L', 'Camera R']})
+STAGE_COMPONENTS.update({'frame': ['Upper frame'], 'tof': ['ToF %s' % n for n, x, y, a in P.TOF], 'cameras': ['Camera L', 'Camera R', 'Camera cage L', 'Camera cage R']})
+ONE_BODY['cameras'] = ['Camera cage L', 'Camera cage R']          # a cut through a rail or an ear must not leave a loose piece
+
+
+def _tof_pt(nm, u, v, w=0.0):
+    """World point of the local point (u, v, w) of a ToF sensor (u along the beam from the PCB's front face, v to the left, w up from z 10.0)."""
+    x, y, aim = T.sensors()[nm]
+    px, py = T.uv(T.frame(x, y, aim), u, v)
+    return (px, py, P.TOF_Z + w)
+
+
+def _cam_pt(s, lx, ly, lz):
+    """World point of the local point (x, y, z) of the camera on side s (the frame of build_cameras4: origin at the lens tip, z back along the view axis, y up in the board's plane, x = world x for the left camera)."""
+    t = math.radians(P.CAM['tilt'])
+    tip = (P.CAM_X, s * P.CAM['tip_r'] * math.sin(math.radians(P.CAM['psi'])), P.CAM['zl'])
+    ez = (0.0, -s * math.cos(t), math.sin(t))
+    ey = (0.0, s * math.sin(t), math.cos(t))
+    ex = (s * 1.0, 0.0, 0.0)
+    return L.vadd(L.vadd(L.vadd(tip, L.vmul(ex, lx)), L.vmul(ey, ly)), L.vmul(ez, lz))
 
 
 @probes('frame')
 def _frame_probes():
-    S = P.SCREW
+    S, TB, TM = P.SCREW, P.TOF_BOARD, P.TOF_MOUNT
+    Fr, Hk = P.FRAME, P.HOOK
+    a_b = P.SCREW_DEG[0]
     free = P.polar(S['r'], 66.0)                      # between the screw at 60 and the hook at 71 degrees: no window, no screw
-    hole = P.polar(S['r'], 12.0)
+    hole = P.polar(S['r'], a_b)
+    zh = Hk['skirt_z0'] + 0.4                          # inside the hook rebate and the ring beside it
     reb = P.polar(10.45, 71.0)
     groove = P.polar(10.3, 71.0)
     ring_ok = P.polar(10.45, 62.0)
+    hz = T.hole_z()
+    ur = T.u_rear()
+    face_l = math.sqrt(P.FRAME['r_in'] ** 2 - (abs(P.CAM_X + P.CAGE['ear_x']) + P.CAGE['ear_w'] / 2) ** 2)
+    zb = P.TOF_Z - TB['long'] / 2 - 0.0                # the board's bottom edge
     return [
         ('Upper frame', (free[0], free[1], 10.0), True, 'ring wall between screw and hook'),
         ('Upper frame', (6.0, 1.0, 8.85), True, 'bridge web'),
@@ -296,30 +383,72 @@ def _frame_probes():
         ('Upper frame', (-7.4, 0.0, 8.95), False, 'rear seat: top half of the spoke web removed'),
         ('Upper frame', (4.0, 0.0, 12.0), True, 'handle post'),
         ('Upper frame', (4.0, 1.0, 12.0), False, 'beside the handle post'),
-        ('Upper frame', (hole[0], hole[1], 10.0), False, 'screw hole at 12 degrees'),
-        ('Upper frame', (hole[0], hole[1], 11.1), False, 'counterbore at 12 degrees'),
-        ('Upper frame', (reb[0], reb[1], 10.8), False, 'hook rebate at 71 degrees'),
-        ('Upper frame', (groove[0], groove[1], 10.7), False, 'hook groove at 71 degrees'),
-        ('Upper frame', (ring_ok[0], ring_ok[1], 10.8), True, 'ring beside the rebate'),
-        ('Upper frame', (9.5, 0.0, 10.0), False, 'ToF pocket F'),
-        ('Upper frame', (9.5, 0.0, 11.15), False, 'ToF pocket F is open to the top (the board drops in from above, the lid covers it)'),
-        ('Upper frame', (10.2, 0.0, 10.0), False, 'ToF beam window F'),
+        ('Upper frame', (hole[0], hole[1], 10.0), False, 'screw hole at %d degrees' % a_b),
+        ('Upper frame', (hole[0], hole[1], Fr['z1'] - 0.15), False, 'counterbore at %d degrees' % a_b),
+        ('Upper frame', (reb[0], reb[1], zh), False, 'hook rebate at 71 degrees'),
+        ('Upper frame', (groove[0], groove[1], (Hk['bump_z'][0] + Hk['bump_z'][1]) / 2), False, 'hook groove at 71 degrees'),
+        ('Upper frame', (ring_ok[0], ring_ok[1], zh), True, 'ring beside the rebate'),
+        ('Upper frame', _tof_pt('F', -0.05, 0.0), False, 'ToF pocket F (the board stands in it)'),
+        ('Upper frame', _tof_pt('F', -0.05, 0.0, 1.4), False, 'ToF pocket F is open to the top (the board drops in from above, the lid covers it)'),
+        ('Upper frame', _tof_pt('F', 0.7, 0.0), False, 'ToF beam tunnel F'),
+        ('Upper frame', _tof_pt('F', 0.7, 1.05), True, 'wall beside the beam tunnel F'),
+        ('Upper frame', _tof_pt('F', 0.2, TB['hole_short'] + 0.18, TB['hole_long']), True, 'ToF post F, upper left (beside its pilot hole)'),
+        ('Upper frame', _tof_pt('F', 0.2, -TB['hole_short'] - 0.18, TB['hole_long']), True, 'ToF post F, upper right (beside its pilot hole)'),
+        ('Upper frame', _tof_pt('F', 0.2, TB['hole_short'] + 0.18, -TB['hole_long']), False, 'no post at the lower holes'),
+        ('Upper frame', _tof_pt('F', 0.25, TB['hole_short'], TB['hole_long']), False, 'pilot hole in the post'),
+        ('Upper frame', _tof_pt('F', ur - 0.15, TB['hole_short'], TB['hole_long']), False, 'screwdriver access hole through the rear wall'),
+        ('Upper frame', _tof_pt('F', ur - 0.15, 0.0, TB['hole_long']), True, 'rear wall between the access holes'),
+        ('Upper frame', (T.sensors()['F'][0] + 0.1, 0.0, 8.85), False, 'plug shaft under the lower connector, down through the floor'),
+        ('Upper frame', (T.sensors()['F'][0] - 0.2, 0.0, 8.85), True, 'floor under the pocket beside the shaft'),
+        ('Upper frame', _tof_pt('SFL', ur - 0.15, 0.0), True, 'rear wall of the SFL pocket: the block that fills the bore side'),
+        ('Upper frame', _tof_pt('SFL', 0.9, 0.0), False, 'beam tunnel SFL (the tunnel runs through the bore and the ring)'),
         ('Upper frame', (0.307, 9.6, 9.3), False, 'camera window, left'),
+        ('Upper frame', (P.CAM_X + P.CAGE['ear_x'], face_l + 0.2, 9.5), False, 'M3 insert hole for the camera cage (left, front ear)'),
+        ('Upper frame', (P.CAM_X + P.CAGE['ear_x'], face_l + 1.0, 9.5), True, 'ring behind the insert hole'),
     ]
 
 
 @probes('tof')
 def _tof_probes():
-    return [('ToF F', (9.5, 0.0, 10.0), True, 'front module'), ('ToF SFL', (7.18, 6.0, 10.0), True, 'side-front left module'),
-            ('ToF SFL', (7.18, 6.0, 11.2), False, 'above the module (top z 11.05)')]
+    TB = P.TOF_BOARD
+    top = TB['long'] / 2 - TB['conn_end'] - TB['conn_len'] / 2
+    rows = []
+    for nm in ('F', 'SFL', 'RR'):
+        rows += [('ToF ' + nm, _tof_pt(nm, -0.08, 0.0), True, 'board %s' % nm),
+                 ('ToF ' + nm, _tof_pt(nm, 0.05, 0.0), True, 'chip %s' % nm),
+                 ('ToF ' + nm, _tof_pt(nm, 0.15, 0.0, top), True, 'QT connector %s (top end)' % nm),
+                 ('ToF ' + nm, _tof_pt(nm, 0.15, 0.0, -top), True, 'QT connector %s (bottom end, the plug goes here)' % nm),
+                 ('ToF ' + nm, _tof_pt(nm, 0.15, 0.5, 0.0), False, 'nothing but the chip in front of the board %s' % nm),
+                 ('ToF ' + nm, _tof_pt(nm, -0.08, 0.0, TB['long'] / 2 + 0.1), False, 'above the board %s (top z %.2f)' % (nm, P.TOF_Z + TB['long'] / 2))]
+    rows += [('ToF F', _tof_pt('F', -0.08, TB['hole_short'], TB['hole_long']), True, 'M2.5 screw in the upper left hole'),
+             ('ToF F', _tof_pt('F', -0.08, TB['hole_short'], -TB['hole_long']), False, 'lower left hole is empty'),
+             ('ToF F', _tof_pt('F', -0.23, TB['hole_short'], TB['hole_long']), True, 'screw head behind the board')]
+    return rows
 
 
 @probes('cameras')
 def _camera_probes():
-    t = math.radians(P.CAM['tilt'])
-    tip = (P.CAM['tip_r'] * math.cos(math.radians(P.CAM['psi'])), P.CAM['tip_r'] * math.sin(math.radians(P.CAM['psi'])), P.CAM['zl'])
-    inside = (tip[0], tip[1] - 1.0 * math.cos(t), tip[2] + 1.0 * math.sin(t))        # 1 cm behind the lens tip along the lens block
-    return [('Camera L', inside, True, 'lens block, 1 cm behind the tip')]
+    G, C = P.CAGE, P.CAMERA
+    rows = []
+    for s, tag in ((1, 'L'), (-1, 'R')):
+        hx = s * (C['holes'][0][1] - C['lens_v'])
+        hy = C['holes'][0][0] - C['lens_u']
+        xe = P.CAM_X + G['ear_x']
+        face = math.sqrt(P.FRAME['r_in'] ** 2 - (abs(xe) + G['ear_w'] / 2) ** 2)
+        rows += [('Camera ' + tag, _cam_pt(s, 0.0, 0.0, 1.0), True, 'lens barrel, 1 cm behind the tip'),
+                 ('Camera ' + tag, _cam_pt(s, 0.0, 0.0, C['tip'] - 0.4), True, 'lens holder'),
+                 ('Camera ' + tag, _cam_pt(s, 0.0, 0.0, C['tip'] + 0.08), True, 'board in line with the lens axis'),
+                 ('Camera ' + tag, _cam_pt(s, s * 3.0, 0.0, C['tip'] + 0.08), True, "the board's tail 3 cm behind the lens axis"),
+                 ('Camera ' + tag, _cam_pt(s, -s * 1.5, 0.0, C['tip'] + 0.08), False, 'nothing beyond the camera end (the board ends 5 mm behind the axis)'),
+                 ('Camera ' + tag, _cam_pt(s, hx, hy, C['tip'] + 0.25), True, 'M2.5 screw head behind the board'),
+                 ('Camera cage ' + tag, _cam_pt(s, 0.0, 1.5, C['tip'] - G['frame_t'] / 2), True, 'cage frame, upper bar'),
+                 ('Camera cage ' + tag, _cam_pt(s, 0.0, 0.0, C['tip'] - G['frame_t'] / 2), False, 'cage frame opening round the lens holder'),
+                 ('Camera cage ' + tag, _cam_pt(s, 1.2, 0.0, 1.8), True, 'cage rail'),
+                 ('Camera cage ' + tag, _cam_pt(s, 2.0, 0.0, (G['flange_z'][0] + G['flange_z'][1]) / 2), True, 'cage flange'),
+                 ('Camera cage ' + tag, _cam_pt(s, 0.0, 0.0, (G['flange_z'][0] + G['flange_z'][1]) / 2), False, 'barrel opening in the flange'),
+                 ('Camera cage ' + tag, (xe + 0.3, s * (face - 0.25), 9.5), True, 'cage ear against the ring'),
+                 ('Camera cage ' + tag, (xe, s * (face - 0.25), 9.5), False, 'M3 hole in the ear')]
+    return rows
 
 
 STAGE_COMPONENTS.update({'lid': ['Lid'], 'handle': ['Handle bar', 'Victim LED'], 'controls': [c[0] for c in P.CONTROLS] + ['USB-C service socket']})
@@ -331,19 +460,26 @@ def _lid_probes():
     bump = P.polar(10.30, 71.0)
     between = P.polar(10.42, 90.0)
     finger = P.polar(10.3, 12.0)
+    zl = P.LID['z0'] + 0.15                                # inside the lid plate
+    zs = (P.HOOK['skirt_z0'] + P.LID['z0']) / 2            # inside the hook skirts
+    zu = P.LID['z0'] - 0.1                                 # just under the lid plate: the space the camera humps open up
     return [
-        ('Lid', (-5.0, 0.0, 11.35), True, 'lid plate'),
-        ('Lid', (4.0, 0.0, 11.35), False, 'handle slot'),
-        ('Lid', (-9.5, 0.0, 11.35), True, 'lid plate at the rear (the panel moved to the front, no rear notch)'),
-        ('Lid', (7.0, 2.0, 11.35), False, 'front notch over the control deck'),
-        ('Lid', (7.0, 3.8, 11.35), True, 'plate beside the front notch'),
-        ('Lid', (7.0, -1.6, 11.35), True, 'plate on the -y side of the slot: the notch is on the +y side only'),
-        ('Lid', (sk[0], sk[1], 10.8), True, 'hook skirt at 71 degrees'),
-        ('Lid', (bump[0], bump[1], 10.7), True, 'hook bump at 71 degrees'),
-        ('Lid', (between[0], between[1], 10.8), False, 'no skirt between the hooks'),
-        ('Lid', (finger[0], finger[1], 11.35), False, 'finger notch at 12 degrees'),
-        ('Lid', (0.307, 7.3, 12.2), True, 'camera hump skin'),
-        ('Lid', (0.307, 7.3, 11.6), False, 'space under the camera hump'),
+        ('Lid', (-5.0, 0.0, zl), True, 'lid plate'),
+        ('Lid', (4.0, 0.0, zl), False, 'handle slot'),
+        ('Lid', (-9.5, 0.0, zl), True, 'lid plate at the rear (the panel moved to the front, no rear notch)'),
+        ('Lid', (7.0, 2.0, zl), False, 'front notch over the control deck'),
+        ('Lid', (7.0, 3.8, zl), True, 'plate beside the front notch'),
+        ('Lid', (7.0, -1.6, zl), True, 'plate on the -y side of the slot: the notch is on the +y side only'),
+        ('Lid', (sk[0], sk[1], zs), True, 'hook skirt at 71 degrees'),
+        ('Lid', (bump[0], bump[1], (P.HOOK['bump_z'][0] + P.HOOK['bump_z'][1]) / 2), True, 'hook bump at 71 degrees'),
+        ('Lid', (between[0], between[1], zs), False, 'no skirt between the hooks'),
+        ('Lid', (finger[0], finger[1], zl), False, 'finger notch at 12 degrees'),
+        ('Lid', (0.307, 7.3, 12.4), True, 'camera hump skin (pocket ceiling 12.3, skin 2 mm)'),
+        ('Lid', (0.307, 7.3, zl), False, 'space under the camera hump (the pocket goes through the lid plate up to z %.1f)' % P.Z_LID),
+        ('Lid', (4.4, 7.3, zl), False, 'the hump pocket reaches the board tail (x 4.25) and the lens holder overhang (x -0.56)'),
+        ('Lid', (-0.8, 7.3, zl), False, 'pocket beyond the lens holder overhang'),
+        ('Lid', (5.0, 7.3, zl), True, 'lid plate beyond the hump pocket'),
+        ('Lid', (-1.5, 7.3, zl), True, 'lid plate behind the hump pocket (it ends at x -1.3)'),
     ]
 
 
@@ -375,8 +511,8 @@ def _dropper_probes():
     return [
         ('Dropper floor', (-2.0, 3.0, 8.85), True, 'floor disc'),
         ('Dropper floor', (sx, sy, 8.85), False, 'slot A through the floor'),
-        ('Dropper floor', (sx + 0.75 * math.cos(math.radians(45)), sy + 0.75 * math.sin(math.radians(45)), 8.85), False, 'slot A is 16 mm: 7.5 mm from its centre along a side normal is open'),
-        ('Dropper floor', (sx + 0.85 * math.cos(math.radians(45)), sy + 0.85 * math.sin(math.radians(45)), 8.85), True, 'floor beside the 16 mm slot A (8.5 mm from its centre)'),
+        ('Dropper floor', (sx + 0.80 * math.cos(math.radians(45)), sy + 0.80 * math.sin(math.radians(45)), 8.85), False, 'slot A is 17 mm: 8.0 mm from its centre along a side normal is open'),
+        ('Dropper floor', (sx + 0.90 * math.cos(math.radians(45)), sy + 0.90 * math.sin(math.radians(45)), 8.85), True, 'floor beside the 17 mm slot A (9.0 mm from its centre)'),
         ('Dropper floor', (cx, cy, 8.85), False, 'N20 pocket'),
         ('Dropper floor', (cx, 0.8, 8.95), False, 'N20 face plate recess'),
         ('Dropper floor', (cx, 0.8, 8.75), True, 'floor under the recess'),
@@ -386,7 +522,7 @@ def _dropper_probes():
         ('Dropper floor', (-7.3, 0.0, 8.75), False, 'nothing under the rear tab: the spoke web is the ledge'),
         ('Dropper plate', (cx, cy + 0.5, 9.6), True, 'plate near the centre'),
         ('Dropper plate', (cx, cy, 9.6), False, 'shaft bore'),
-        ('Dropper plate', (p1[0], p1[1], 9.6), False, 'pocket 1 (14 mm)'),
+        ('Dropper plate', (p1[0], p1[1], 9.6), False, 'pocket 1 (13 mm)'),
         ('Dropper plate', (cx - 3.86, cy, 9.6), True, 'blank arc facing the rear'),
         ('N20 motor', (cx, cy, 6.0), True, 'N20 gearmotor'),
         ('N20 motor', (cx, cy + 0.5, 9.5), False, 'above the floor only the shaft remains'),
@@ -428,12 +564,12 @@ def _chute_probes():
             ('Chute ' + side, L.vadd(L.vadd(L.vadd(p0, L.vmul(d, 2.57)), L.vmul(lat, 0.37)), L.vmul(up, floor)), True, 'floor slab reaches past the trough cut (no notch at 2.57 cm, other side)'),
             ('Chute ' + side, L.vadd(L.vadd(p0, L.vmul(d, 3.2)), L.vmul(lat, wall)), True, 'side wall beyond the trough'),
             ('Chute ' + side, L.vadd(L.vadd(p0, L.vmul(d, 3.2)), L.vmul(up, roof)), True, 'ceiling beyond the trough'),
-            ('Chute ' + side, L.vadd(L.vadd(p0, L.vmul(d, 3.2)), L.vmul(up, Ch['in_w'] / 2 + Ch['lift'] - 0.05)), False, 'bore is 18 mm tall: open 0.5 mm under the ceiling'),
+            ('Chute ' + side, L.vadd(L.vadd(p0, L.vmul(d, 3.2)), L.vmul(up, Ch['in_w'] / 2 + Ch['lift'] - 0.05)), False, 'bore is 19 mm tall: open 0.5 mm under the ceiling'),
         ]
     return rows
 
 
-STAGE_COMPONENTS.update({'posts': ['GIGA posts'], 'electronics': ['Arduino GIGA R1', 'Main PCB', 'Battery', 'Floor port FP', 'Silver module SM'], 'antenna': ['Wi-Fi antenna']})
+STAGE_COMPONENTS.update({'posts': ['GIGA posts'], 'electronics': ['Arduino GIGA R1', 'Main PCB', 'Battery', 'Floor port FP', 'Silver module SM'], 'antenna': ['Wi-Fi antenna'], 'imu': ['BNO055 IMU']})
 
 
 @probes('posts')
@@ -464,6 +600,18 @@ def _connector_probes():
 def _antenna_probes():
     x, y, ang = P.antenna_pose()
     return [('Wi-Fi antenna', (x, y, 6.3), True, 'antenna strip on the inside of the front wall'), ('Wi-Fi antenna', (x, y, 7.3), False, 'above the strip')]
+
+
+@probes('imu')
+def _imu_probes():
+    I = P.IMU
+    z0 = P.Z_FLOOR_TOP + I['post_h']
+    px, py = I['x'] + I['holes'][0], I['y'] + I['holes'][1]
+    return [('BNO055 IMU', (I['x'], I['y'] + 0.45, z0 + 0.08), True, 'IMU board on its posts'),
+            ('BNO055 IMU', (I['x'], I['y'], z0 + I['size'][2] + 0.05), True, 'BNO055 chip'),
+            ('BNO055 IMU', (px, py, z0 + I['size'][2] + 0.07), True, 'M2.5 screw head'),
+            ('BNO055 IMU', (I['x'] + 0.6, I['y'], z0 + I['size'][2] + 0.3), False, 'nothing above the board but the chip and the screw heads'),
+            ('BNO055 IMU', (I['x'] + I['size'][0] / 2 + 0.2, I['y'], z0 + 0.08), False, 'nothing beyond the board edge')]
 
 
 @probes('stepper')
@@ -542,8 +690,10 @@ def report_belly(ctx, z_belly=3.5):
             if not known:
                 bad.append(nm)
             lines.append('  %s %-24s lowest z %5.2f  (%+.1f mm against the belly line)' % ('known' if known else 'FAIL ', nm, lo[2], (lo[2] - z_belly) * 10))
-    z_pin = P.OMNI['pivot'][1] - P.OMNI['pin_r']
-    lines.append('pivot pin (4 mm) lowest point z %.2f: %+.1f mm against the belly line (spec section 4: a 3 mm pin or a sunk pin, decided in CAD)' % (z_pin, (z_pin - z_belly) * 10))
+    z_tube = P.OMNI['pivot'][1] - P.OMNI_PIVOT['tube_r'][1]
+    z_coil = P.OMNI['pivot'][1] - P.OMNI_SPRING['od'] / 2
+    lines.append('pivot tube (5 mm) lowest point z %.2f: %+.1f mm against the belly line; spring coil lowest point z %.2f: %+.1f mm (the pivot was raised to z 4.2 on 9 Oct: a 4 mm pin at 3.6 hung 1 mm under it)' %
+                 (z_tube, (z_tube - z_belly) * 10, z_coil, (z_coil - z_belly) * 10))
     lines.append('RESULT: ' + ('PASS' if not bad else 'FAIL'))
     return '\n'.join(lines)
 
@@ -618,7 +768,7 @@ UNIT = ('Dropper floor', 'Dropper plate', 'Kits', 'N20 motor', 'N20 face plate',
 
 def removal_scenarios():
     tof = ['ToF %s' % n for n, x, y, a in P.TOF]
-    frame = ['Upper frame', 'Handle bar', 'Victim LED', 'Camera L', 'Camera R'] + tof + [c[0] for c in P.CONTROLS]          # what the six screws hold; the control parts sit on its bridge
+    frame = ['Upper frame', 'Handle bar', 'Victim LED', 'Camera L', 'Camera R', 'Camera cage L', 'Camera cage R'] + tof + [c[0] for c in P.CONTROLS]          # what the six screws hold; the control parts sit on its bridge
     lid = (['Lid'], [(0.0, 0.0, 6.0)])
     chutes = [(['Chute A right'], [_along_chute(-1, 5.0)]), (['Chute B left'], [_along_chute(1, 5.0)])]
     unit_up = (list(UNIT), [(0.0, 0.0, 12.0)])
@@ -632,13 +782,16 @@ def removal_scenarios():
         ('battery swap: the dropper unit out, then the battery 4.5 cm back and 2 cm inboard (Camera L and the ring corner are over it, the bridge and its switch in front) and straight up',
          [lid] + chutes + [unit_up, (['Battery'], [(-4.5, -2.0, 0.0), (0.0, 0.0, 8.0)])]),
         ('teardown: lid, channels, dropper unit, frame group up, battery up, left wheel out, left cartridge up (prongs flex), GIGA stack up, right wheel out, '
-         'right cartridge up (prongs flex), omni module up',
+         'right cartridge up (prongs flex), pivot and stop screws out inboard, axle screw unscrewed 3.5 mm out of the arm, wheel set with the screw still in it down, arm with the spring on its tube up',
          [lid] + chutes + [unit_up, (frame, [(0.0, 0.0, 12.0)]),
           (['Battery'], [(0.0, 0.0, 8.0)]),
           (['Wheel L'], [(0.0, 1.2, 0.0), (0.0, 0.0, -9.0)]), (['Motor L', 'Face plate L'], [(0.0, 0.0, 10.0)]),
           (['Arduino GIGA R1', 'Main PCB'], [(0.0, 0.0, 10.0)]),
           (['Wheel R'], [(0.0, -1.2, 0.0), (0.0, 0.0, -9.0)]), (['Motor R', 'Face plate R'], [(0.0, 0.0, 10.0)]),
-          (['Omni wheel', 'Omni arm', 'Omni pins'], [(0.0, 0.0, 12.0)])]),
+          (['Omni pivot'], [(0.0, -3.6, 0.0)]),
+          (['Omni pins'], [(0.0, -0.35, 0.0)]),
+          (['Omni wheel', 'Omni pins'], [(0.0, 0.0, -9.0)]),
+          (['Omni arm', 'Omni spring'], [(0.0, 0.0, 12.0)])]),
     ]
 
 
@@ -725,9 +878,30 @@ def report_omni(ctx):
     return 'omni sweep done'
 
 
-def report_tof(ctx):
-    """Nine 25 degree cones, 17 rays each, against every part but the ToF boards. Rev 3 model: no ray blocked on any sensor."""
-    K3.tof_cones(ctx)
+def report_tof(ctx, half_angle=12.5, reach=12.0):
+    """Nine 25 degree cones, 17 rays each (the axis and two rings of eight), from 1 mm in front of the chip's face, against every part but the board's own. Expect no ray blocked: the tunnels, the recess and the ring
+    must leave the cone free, and so must the lid, the cameras and the dropper."""
+    root = ctx.root
+    print('ToF cones (rev 4 positions), half angle %.1f deg, blocked rays / 17 and the first blocker:' % half_angle)
+    for nm, (x, y, aim) in T.sensors().items():
+        a = math.radians(aim)
+        u = (math.cos(a), math.sin(a), 0.0)
+        n = (-math.sin(a), math.cos(a), 0.0)
+        o = T.beam_origin(nm)
+        dirs = [u]
+        for rho in (half_angle / 2, half_angle):
+            for k in range(8):
+                ph = math.radians(45 * k)
+                side = L.vadd(L.vmul(n, math.cos(ph)), (0.0, 0.0, math.sin(ph)))
+                dirs.append(L.unit(L.vadd(L.vmul(u, math.cos(math.radians(rho))), L.vmul(side, math.sin(math.radians(rho))))))
+        blocked, first = 0, None
+        for d in dirs:
+            hits = [h for h in K3._cast(root, o, d, own=('ToF ' + nm,)) if h[0] < reach]
+            if hits:
+                blocked += 1
+                if first is None or hits[0][0] < first[0]:
+                    first = (round(hits[0][0], 2), hits[0][1])
+        print('  %-4s blocked %2d / %d  first blocker %s' % (nm, blocked, len(dirs), first))
     return 'ToF cones done'
 
 
@@ -744,11 +918,26 @@ SPEC_PAIRS = [   # (component, component, number quoted by the spec or None, sma
     ('N20 motor', 'Motor L', 10.6, 5.0, 'N20 to the left drive motor (first model 10.6 mm)'),
     ('Chute B left', 'Wheel L', 5.6, 5.0, 'chute to the left wheel (rev 3 6.7 mm; 8.2 mm with the first rev 4 chute, 5.6 mm with the 18 mm channel)'),
     ('Chute A right', 'Wheel R', 5.6, 5.0, 'chute to the right wheel (mirror of the left)'),
-    ('Omni wheel', 'GIGA posts', 2.7, 2.0, 'omni wheel to GIGA post H1 (spec 2.7 mm)'),
+    ('Omni wheel', 'GIGA posts', 2.9, 2.0, 'omni wheel to GIGA post H1 (spec 2.9 mm)'),
+    ('Wi-Fi antenna', 'Bumper switch R', None, 3.0, 'Wi-Fi antenna to the right bumper switch'),
+    ('Wi-Fi antenna', 'USB-C service socket', None, 3.0, 'Wi-Fi antenna to the USB-C socket above it'),
+    ('Omni wheel', 'Tub', 1.5, 1.0, 'omni wheel to the floor opening and the pillar at rest (bay clearance 1.5 mm)'),
+    ('Omni wheel', 'Omni pivot', None, 3.0, 'omni wheel to the stop screw head at rest'),
+    ('Omni arm', 'Battery', None, 1.5, 'omni arm to the battery at rest'),
     ('Arduino GIGA R1', 'Tub', 1.7, 1.0, 'GIGA stack to the tub (3.1 mm plain wall, 1.7 mm behind the right bumper)'),
     ('Battery', 'Motor L', 1.0, 0.5, 'battery above the left drive motor (spec 1.0 mm)'),
     ('Dropper plate', 'Lid', None, 5.0, 'kit plate to the lid'),
-    ('Camera L', 'Wheel L', 3.6, 2.5, 'camera lens block to the wheel top (rev 3 3.6 mm)'),
+    ('Camera L', 'Wheel L', 3.6, 2.5, 'camera board and holder to the wheel top (rev 3 3.6 mm with the lens block; the real board is taller)'),
+    ('Camera cage L', 'Wheel L', None, 2.5, 'camera cage to the wheel top'),
+    ('Camera L', 'Lid', None, 1.5, 'camera board and screw heads to the lid hump ceiling'),
+    ('Camera cage L', 'Lid', None, 1.5, 'camera cage to the lid'),
+    ('Camera L', 'Battery', None, 3.0, 'left camera tail to the battery'),
+    ('Camera R', 'Arduino GIGA R1', None, 3.0, 'right camera tail to the GIGA board (the tail points forward on both sides)'),
+    ('Camera L', 'Dropper plate', None, 5.0, 'left camera to the kit plate'),
+    ('BNO055 IMU', 'N20 motor', None, 5.0, 'IMU board to the N20 gearmotor above and ahead of it'),
+    ('BNO055 IMU', 'Hopper A right', None, 10.0, 'IMU board to the right hopper above it'),
+    ('Floor port FP', 'Omni arm', None, 3.0, 'front floor port (the real 20.3 mm board) to the omni arm'),
+    ('Floor port FP', 'GIGA posts', None, 3.0, 'front floor port to the GIGA post H1'),
     (GHOST, 'Main PCB', 5.0, 3.0, 'stepper bay to the GIGA stack, nearest at the shield (spec 5.0 mm in plan view; 3D is larger where the heights differ)'),
     (GHOST, 'Hopper B left', 4.0, 3.0, 'stepper bay to hopper B (spec 4.0 mm; 5.2 mm with the first hopper)'),
     (GHOST, 'Battery', 8.2, 5.0, 'stepper bay to the battery (spec 8.2 mm)'),
@@ -764,6 +953,36 @@ def report_clearances(ctx):
         good = best >= minimum
         ok = ok and good
         lines.append('  %s %6.2f mm  (spec %s, at least %.1f)  %-24s | %-18s  %s' % ('ok  ' if good else 'FAIL', best, '%.1f' % quoted if quoted else '--', minimum, a, b, label))
+    lines.append('RESULT: ' + ('PASS' if ok else 'FAIL'))
+    return '\n'.join(lines)
+
+
+def _named_body(ctx, comp, body):
+    for b in _bodies(ctx, comp):
+        if b.name == body:
+            return b
+    raise KeyError((comp, body))
+
+
+LEG_PAIRS = [   # (component, body, component, body, smallest acceptable mm, label): the forward spring leg and its seat pin turn with the arm, so the model (at rest) is their closest position to the stop screw's rest end
+    ('Omni arm', 'Spring forward leg', 'Omni pivot', 'Stop screw', 1.0, 'forward spring leg over the stop screw (at rest, the screw is at the rest end of the slot: the closest position; 1.07 mm by the 2D check over the travel)'),
+    ('Omni arm', 'Seat pin', 'Omni pivot', 'Stop screw', 1.0, 'seat pin to the stop screw (rest)'),
+    ('Omni arm', 'Spring forward leg', 'Omni wheel', 'Omni wheel', 1.5, 'forward spring leg tip to the wheel rim (the wheel is a plain cylinder here, its rollers stand out of its plates)'),
+    ('Omni arm', 'Seat pin', 'Omni wheel', 'Omni wheel', 1.5, 'seat pin to the wheel rim'),
+    ('Omni spring', 'Spring arbor', 'Omni spring', 'Spring coil', 0.4, 'arbor to the coil (0.5 mm of air all round when the coil is free)'),
+    ('Omni spring', 'Spring rear leg', 'Omni adjuster', 'Adjuster screw head', 0.0, 'rear leg on the adjuster head (they touch by design: the leg lies on it)'),
+]
+
+
+def report_legs(ctx):
+    """10 Oct: the forward spring leg and its seat pin (parts of the arm's component, they turn with it), the arbor and the rear leg, body by body, at rest. The sweep report covers the motion."""
+    mm = ctx.app.measureManager
+    lines, ok = [], True
+    for ca, ba, cb, bb, minimum, label in LEG_PAIRS:
+        d = mm.measureMinimumDistance(_named_body(ctx, ca, ba), _named_body(ctx, cb, bb)).value * 10.0
+        good = d >= minimum - 1e-6
+        ok = ok and good
+        lines.append('  %s %6.2f mm  (at least %.1f)  %-22s | %-18s  %s' % ('ok  ' if good else 'FAIL', d, minimum, ba, bb, label))
     lines.append('RESULT: ' + ('PASS' if ok else 'FAIL'))
     return '\n'.join(lines)
 
@@ -813,7 +1032,7 @@ def report_mass(ctx):
     lines += ['  %6.1f g  %-26s %-12s vol %8.2f cm3  x %6.2f  z %5.2f' % (g, nm, note, vol, x, z) for g, nm, vol, x, z, note in sorted(rows, reverse=True)[:14]]
     lift = 9.81 * X / Z if Z > 0 else 0.0
     lines.append('total %.0f g (rev 3 budget 1070 g), centre of mass x %+.2f  y %+.2f  z %.2f cm (rev 3: +0.90 and 6.3)' % (tot, X, Y, Z))
-    lines.append('front load %.1f %% at the omni 7.0 cm ahead (rev 3: 11.9 %% at 7.95)' % (100.0 * X / P.OMNI['rest'][0]))
+    lines.append('front load %.1f %% at the omni %.2f cm ahead (rev 3: 11.9 %% at 7.95)' % (100.0 * X / P.OMNI['rest'][0], P.OMNI['rest'][0]))
     lines.append('front lift limit g x COM_x / COM_h = %.2f m/s^2 (rev 3: 1.5; the firmware PWM ramp assumes at least 1.0)' % lift)
     problems = []
     if unassigned:

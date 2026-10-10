@@ -1,18 +1,7 @@
-Fusion analysis with coincident faces counted, 51 occurrences: 16 touch or overlap no other component
-  known Camera L               nearest  0.48 mm (Lid / Lid plate): the board floats under its lid hump; its cradle with the snap tabs is not modelled
-  known Camera R               nearest  0.48 mm (Lid / Lid plate): the board floats under its lid hump; its cradle with the snap tabs is not modelled
-  known Floor port FP          nearest  0.50 mm (Tub / Tub shell): in its floor hole with clearance; the snap pocket is not modelled
+Fusion analysis with coincident faces counted, 57 occurrences: 5 touch or overlap no other component
+  known Floor port FP          nearest  0.50 mm (Tub / Tub shell): the real 20.3 mm TCS34725 board in its floor hole with clearance; its holder is not designed yet (spec 5.3)
   known Rear nub               nearest  2.11 mm (Tub / Tub shell): the nub boss and its M5 thread are not modelled, so the nub stops short of the tub
-  known Silver module SM       nearest  0.50 mm (Tub / Tub shell): in its floor hole with clearance; the snap pocket is not modelled
-  known ToF F                  nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
-  known ToF FL                 nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
-  known ToF FR                 nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
-  known ToF RL                 nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
-  known ToF RR                 nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
-  known ToF SFL                nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
-  known ToF SFR                nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
-  known ToF SRL                nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
-  known ToF SRR                nearest  0.50 mm (Upper frame / Frame ring): the board sits in its ring pocket with clearance; the snap tab is not modelled
+  known Silver module SM       nearest  0.50 mm (Tub / Tub shell): a placeholder in its floor hole with clearance; the parts are not chosen yet (the silver bench test decides, spec 5.3)
   known USB-C service socket   nearest  0.50 mm (Tub / Tub shell): in its wall hole with clearance; the fixing is not modelled
   known Wi-Fi antenna          nearest  0.05 mm (Tub / Tub shell): stuck on the wall with adhesive; modelled 0.05 to 0.1 mm off the wall face on purpose
 RESULT: PASS

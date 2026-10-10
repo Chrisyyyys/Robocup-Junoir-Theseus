@@ -1,5 +1,4 @@
 chute model against the Fusion bodies: 7000 random points in x (-7.2, -2.6), y (0.8, 9.2), z (6.6, 9.3) and 8000 points 0.3 mm either side of the faces of the pieces
-  random points: 478 inside some body, 0 disagree with the model, 1 more disagree within 0.2 mm of a surface (ignored)
-  face points: 8000, 1 on the wrong side (0.01 %)
-    at [-5.742, 3.486, 8.73] model [False, False, True] Fusion [False, False, False]
+  random points: 497 inside some body, 0 disagree with the model, 1 more disagree within 0.2 mm of a surface (ignored)
+  face points: 8000, 0 on the wrong side (0.00 %)
 RESULT: PASS

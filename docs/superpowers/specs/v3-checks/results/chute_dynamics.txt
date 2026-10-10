@@ -1,122 +1,136 @@
-kit chute dynamics (MuJoCo 3.15.0), kit 10.3 mm, 1.2 g, slot B (left) to the exit at the body wall; slot 16.0 mm, hopper void 16.0 mm, bore 18.0 mm; the geometry is the Fusion model (chute_geometry_check.py: PASS); plate pocket walls in the model, 0.3 mm above the floor
+kit chute dynamics (MuJoCo 3.15.0), kit 10.3 mm, 1.2 g, slot B (left) to the exit at the body wall; slot 17.0 mm, hopper void 17.0 mm, bore 19.0 mm; the geometry is the Fusion model (chute_geometry_check.py: PASS); plate pocket walls in the model, 0.3 mm above the floor
   ok   control: cube on a plane tilted 32.2 degrees, mu 0.25: acceleration 3.02 m/s2 in the simulation, 3.15 by g (sin a - mu cos a)
   ok   control: cube on a plane tilted 32.2 degrees, mu 0.35: acceleration 2.28 m/s2 in the simulation, 2.32 by g (sin a - mu cos a)
   ok   control: cube on a plane tilted 32.2 degrees, mu 0.45: acceleration 1.45 m/s2 in the simulation, 1.49 by g (sin a - mu cos a)
   ok   control: the same cube at mu 0.70 (above tan 32.2 = 0.63), once settled, creeps 0.001 cm in 0.5 s: it must hold
-  ok   control: a 17.5 mm cube (too big for the 16 mm slot) must not get out: 0 of 4 got out
-100 kits per friction value, each with its own random turn (+-29 degrees) and place in the pocket, plate parked exactly, robot level, damping ratio 1 (nearly inelastic):
+  ok   control: a 18.5 mm cube (too big for the 17 mm slot) must not get out: 0 of 4 got out
+100 kits per friction value, each with its own random turn (up to +-18 degrees, the most the 13 mm pocket allows) and place in the pocket, plate parked exactly, robot level, damping ratio 1 (nearly inelastic):
    mu   exit  stuck  lost  timeout   exit speed m/s (min / mean / max)   time to exit s (mean)
-  0.15  100     0     0      0      0.76 / 0.79 / 0.85           0.21
-  0.20  100     0     0      0      0.72 / 0.75 / 0.81           0.22
-  0.25  100     0     0      0      0.67 / 0.71 / 0.77           0.22
+  0.15  100     0     0      0      0.77 / 0.79 / 0.83           0.21
+  0.20  100     0     0      0      0.73 / 0.75 / 0.81           0.22
+  0.25  100     0     0      0      0.69 / 0.71 / 0.75           0.22
   0.30  100     0     0      0      0.63 / 0.67 / 0.73           0.23
-  0.35  100     0     0      0      0.52 / 0.63 / 0.69           0.23
-  0.40  100     0     0      0      0.47 / 0.58 / 0.64           0.24
-  0.45  100     0     0      0      0.40 / 0.52 / 0.59           0.25
-  0.50  100     0     0      0      0.41 / 0.47 / 0.53           0.27
-  0.55  100     0     0      0      0.31 / 0.41 / 0.48           0.28
-  0.60  100     0     0      0      0.25 / 0.33 / 0.42           0.31
+  0.35  100     0     0      0      0.59 / 0.63 / 0.67           0.23
+  0.40  100     0     0      0      0.54 / 0.58 / 0.63           0.24
+  0.45  100     0     0      0      0.44 / 0.53 / 0.58           0.25
+  0.50  100     0     0      0      0.37 / 0.47 / 0.53           0.26
+  0.55  100     0     0      0      0.28 / 0.41 / 0.48           0.28
+  0.60  100     0     0      0      0.26 / 0.35 / 0.48           0.30
   kits that get out, by the turn of the kit from the slot square (degrees):
    turn          mu 0.15  mu 0.20  mu 0.25  mu 0.30  mu 0.35  mu 0.40  mu 0.45  mu 0.50  mu 0.55  mu 0.60
-  -29 to -20    19/19    19/19    16/16    16/16    13/13    14/14    16/16    13/13    20/20    16/16  
-  -20 to -10    13/13    19/19    22/22    21/21    20/20    18/18    23/23    25/25    19/19    20/20  
-  -10 to  +0     9/9     15/15    15/15    18/18    18/18    14/14    17/17    21/21    18/18    12/12  
-   +0 to +10    23/23    14/14    15/15    16/16    16/16    19/19    16/16    11/11    18/18    19/19  
-  +10 to +20    19/19    18/18    18/18    14/14    20/20    15/15    13/13    17/17    13/13    16/16  
-  +20 to +29    17/17    15/15    14/14    15/15    13/13    20/20    15/15    13/13    12/12    17/17  
-the same with the plate parked up to 2 mm off along the ring (+-3 degrees, the limit of plate_tolerance):
+  -18 to -12    19/19    19/19    18/18    18/18    13/13    14/14    16/16    16/16    24/24    19/19  
+  -12 to  -6    14/14    18/18    20/20    19/19    20/20    18/18    21/21    22/22    15/15    17/17  
+   -6 to  +0     8/8     15/15    14/14    17/17    17/17    13/13    16/16    21/21    18/18    12/12  
+   +0 to  +6    21/21    14/14    13/13    16/16    15/15    19/19    15/15    11/11    16/16    19/19  
+   +6 to +12    20/20    15/15    20/20    14/14    17/17    15/15    14/14    15/15    15/15    16/16  
+  +12 to +19    18/18    18/18    14/14    15/15    17/17    20/20    15/15    15/15    12/12    17/17  
+the same with the plate parked up to 2.0 mm off along the ring, the allowance (slot - pocket) / 2 (+-3.0 degrees at the ring):
    mu   exit  stuck  lost  timeout   exit speed m/s (min / mean / max)   time to exit s (mean)
-  0.15   85     0     0     15      0.75 / 0.79 / 0.83           0.21
-  0.20   92     0     0      8      0.71 / 0.75 / 0.80           0.22
-  0.25   90     0     0     10      0.66 / 0.72 / 0.77           0.22
-  0.30   81     0     0     19      0.62 / 0.67 / 0.73           0.22
-  0.35   85     0     0     15      0.52 / 0.63 / 0.69           0.24
-  0.40   77     0     0     23      0.47 / 0.58 / 0.64           0.24
-  0.45   78     0     0     22      0.47 / 0.52 / 0.57           0.25
-  0.50   77     0     0     23      0.38 / 0.47 / 0.54           0.26
-  0.55   81     0     0     19      0.32 / 0.40 / 0.48           0.29
-  0.60   82     0     0     18      0.22 / 0.32 / 0.43           0.32
-    mu 0.15 timeout: kit turned -28 deg, place (-0.00, -0.00) cm in the pocket, plate +1.6 mm off along the ring
-    mu 0.15 timeout: kit turned -7 deg, place (-0.10, -0.06) cm in the pocket, plate +2.0 mm off along the ring
-    mu 0.15 timeout: kit turned +26 deg, place (-0.00, -0.01) cm in the pocket, plate +1.8 mm off along the ring
-    mu 0.20 timeout: kit turned -24 deg, place (-0.01, +0.00) cm in the pocket, plate +1.5 mm off along the ring
-    mu 0.20 timeout: kit turned +18 deg, place (-0.04, -0.04) cm in the pocket, plate +1.7 mm off along the ring
-    mu 0.20 timeout: kit turned -1 deg, place (+0.02, -0.14) cm in the pocket, plate +1.4 mm off along the ring
-    mu 0.25 timeout: kit turned -3 deg, place (+0.11, +0.15) cm in the pocket, plate -1.7 mm off along the ring
-    mu 0.25 timeout: kit turned -27 deg, place (-0.00, -0.01) cm in the pocket, plate +1.7 mm off along the ring
-    mu 0.25 timeout: kit turned +2 deg, place (+0.03, +0.10) cm in the pocket, plate -1.9 mm off along the ring
-    mu 0.30 timeout: kit turned -19 deg, place (+0.04, -0.04) cm in the pocket, plate +1.4 mm off along the ring
-    mu 0.30 timeout: kit turned +28 deg, place (+0.00, +0.00) cm in the pocket, plate -1.1 mm off along the ring
-    mu 0.30 timeout: kit turned -20 deg, place (+0.02, -0.03) cm in the pocket, plate +1.4 mm off along the ring
-    mu 0.35 timeout: kit turned -19 deg, place (-0.02, -0.02) cm in the pocket, plate +2.0 mm off along the ring
-    mu 0.35 timeout: kit turned -29 deg, place (+0.00, +0.00) cm in the pocket, plate +1.4 mm off along the ring
-    mu 0.35 timeout: kit turned -27 deg, place (-0.00, -0.00) cm in the pocket, plate +1.6 mm off along the ring
-    mu 0.40 timeout: kit turned -26 deg, place (-0.00, +0.01) cm in the pocket, plate -1.2 mm off along the ring
-    mu 0.40 timeout: kit turned +24 deg, place (-0.01, -0.01) cm in the pocket, plate +2.0 mm off along the ring
-    mu 0.40 timeout: kit turned +28 deg, place (-0.00, -0.00) cm in the pocket, plate +1.4 mm off along the ring
-    mu 0.45 timeout: kit turned +27 deg, place (-0.00, +0.00) cm in the pocket, plate -1.1 mm off along the ring
-    mu 0.45 timeout: kit turned +24 deg, place (-0.00, -0.01) cm in the pocket, plate -1.7 mm off along the ring
-    mu 0.45 timeout: kit turned -19 deg, place (-0.02, +0.04) cm in the pocket, plate +1.8 mm off along the ring
-    mu 0.50 timeout: kit turned -29 deg, place (+0.00, -0.00) cm in the pocket, plate +1.0 mm off along the ring
-    mu 0.50 timeout: kit turned -21 deg, place (-0.01, +0.02) cm in the pocket, plate -1.4 mm off along the ring
-    mu 0.50 timeout: kit turned +20 deg, place (-0.04, -0.03) cm in the pocket, plate +1.8 mm off along the ring
-    mu 0.55 timeout: kit turned +21 deg, place (-0.02, +0.00) cm in the pocket, plate +1.7 mm off along the ring
-    mu 0.55 timeout: kit turned +22 deg, place (+0.01, +0.02) cm in the pocket, plate -1.7 mm off along the ring
-    mu 0.55 timeout: kit turned -25 deg, place (-0.01, +0.00) cm in the pocket, plate -1.6 mm off along the ring
-    mu 0.60 timeout: kit turned -20 deg, place (+0.01, +0.03) cm in the pocket, plate -1.9 mm off along the ring
-    mu 0.60 timeout: kit turned +24 deg, place (-0.00, +0.02) cm in the pocket, plate +1.7 mm off along the ring
-    mu 0.60 timeout: kit turned +17 deg, place (+0.02, +0.05) cm in the pocket, plate -1.1 mm off along the ring
-the same with the plate parked up to 1 mm off (1.5 degrees):
+  0.15  100     0     0      0      0.75 / 0.79 / 0.84           0.21
+  0.20  100     0     0      0      0.73 / 0.75 / 0.80           0.21
+  0.25  100     0     0      0      0.67 / 0.72 / 0.76           0.22
+  0.30  100     0     0      0      0.64 / 0.68 / 0.73           0.22
+  0.35  100     0     0      0      0.60 / 0.63 / 0.68           0.23
+  0.40  100     0     0      0      0.44 / 0.58 / 0.63           0.24
+  0.45  100     0     0      0      0.47 / 0.53 / 0.59           0.25
+  0.50  100     0     0      0      0.41 / 0.48 / 0.53           0.26
+  0.55   99     0     0      1      0.28 / 0.41 / 0.53           0.28
+  0.60  100     0     0      0      0.25 / 0.34 / 0.49           0.30
+    mu 0.55 timeout: kit turned +18 deg, place (+0.00, +0.00) cm in the pocket, plate -1.9 mm off along the ring
+the same with the plate parked up to 1.0 mm off, half the allowance:
    mu   exit  stuck  lost  timeout   exit speed m/s (min / mean / max)   time to exit s (mean)
-  0.15  100     0     0      0      0.74 / 0.79 / 0.82           0.21
+  0.15  100     0     0      0      0.77 / 0.79 / 0.84           0.21
   0.20  100     0     0      0      0.73 / 0.75 / 0.80           0.22
-  0.25  100     0     0      0      0.67 / 0.71 / 0.76           0.22
-  0.30  100     0     0      0      0.63 / 0.67 / 0.73           0.23
-  0.35  100     0     0      0      0.50 / 0.62 / 0.68           0.23
-  0.40  100     0     0      0      0.49 / 0.58 / 0.63           0.24
-  0.45  100     0     0      0      0.44 / 0.53 / 0.60           0.25
-  0.50  100     0     0      0      0.37 / 0.47 / 0.57           0.26
-  0.55  100     0     0      0      0.31 / 0.40 / 0.49           0.29
-  0.60  100     0     0      0      0.22 / 0.32 / 0.40           0.32
+  0.25  100     0     0      0      0.69 / 0.71 / 0.77           0.22
+  0.30  100     0     0      0      0.64 / 0.67 / 0.72           0.22
+  0.35  100     0     0      0      0.59 / 0.62 / 0.68           0.23
+  0.40  100     0     0      0      0.47 / 0.58 / 0.64           0.24
+  0.45  100     0     0      0      0.45 / 0.53 / 0.59           0.25
+  0.50  100     0     0      0      0.40 / 0.48 / 0.56           0.26
+  0.55  100     0     0      0      0.32 / 0.42 / 0.53           0.28
+  0.60  100     0     0      0      0.25 / 0.35 / 0.52           0.30
+the same with the plate parked up to 3.0 mm off, 1 mm beyond the allowance (reported, not pass/fail):
+   mu   exit  stuck  lost  timeout   exit speed m/s (min / mean / max)   time to exit s (mean)
+  0.15   92     0     0      8      0.76 / 0.80 / 0.85           0.21
+  0.20   88     0     0     12      0.71 / 0.76 / 0.81           0.21
+  0.25   91     0     0      9      0.66 / 0.72 / 0.77           0.22
+  0.30   86     0     0     14      0.62 / 0.67 / 0.73           0.22
+  0.35   91     0     0      9      0.57 / 0.63 / 0.68           0.23
+  0.40   87     0     0     13      0.53 / 0.59 / 0.63           0.24
+  0.45   88     0     0     12      0.47 / 0.53 / 0.61           0.25
+  0.50   86     0     0     14      0.41 / 0.48 / 0.55           0.26
+  0.55   87     0     0     13      0.27 / 0.41 / 0.52           0.28
+  0.60   83     0     0     17      0.20 / 0.34 / 0.42           0.31
+    mu 0.15 timeout: kit turned +13 deg, place (+0.03, -0.00) cm in the pocket, plate +2.7 mm off along the ring
+    mu 0.15 timeout: kit turned -18 deg, place (-0.00, -0.00) cm in the pocket, plate +2.6 mm off along the ring
+    mu 0.15 timeout: kit turned +14 deg, place (-0.02, -0.02) cm in the pocket, plate -2.7 mm off along the ring
+    mu 0.20 timeout: kit turned -5 deg, place (-0.08, -0.04) cm in the pocket, plate +2.4 mm off along the ring
+    mu 0.20 timeout: kit turned -9 deg, place (-0.04, -0.05) cm in the pocket, plate +3.0 mm off along the ring
+    mu 0.20 timeout: kit turned +5 deg, place (-0.05, -0.09) cm in the pocket, plate +2.8 mm off along the ring
+    mu 0.25 timeout: kit turned +7 deg, place (+0.07, +0.06) cm in the pocket, plate -2.7 mm off along the ring
+    mu 0.25 timeout: kit turned -0 deg, place (-0.11, -0.13) cm in the pocket, plate +2.6 mm off along the ring
+    mu 0.25 timeout: kit turned +15 deg, place (+0.00, +0.01) cm in the pocket, plate +2.8 mm off along the ring
+    mu 0.30 timeout: kit turned -5 deg, place (-0.01, +0.04) cm in the pocket, plate -3.0 mm off along the ring
+    mu 0.30 timeout: kit turned +14 deg, place (+0.01, +0.00) cm in the pocket, plate +3.0 mm off along the ring
+    mu 0.30 timeout: kit turned -11 deg, place (+0.01, +0.03) cm in the pocket, plate +3.0 mm off along the ring
+    mu 0.35 timeout: kit turned +13 deg, place (+0.01, +0.03) cm in the pocket, plate -2.6 mm off along the ring
+    mu 0.35 timeout: kit turned +17 deg, place (+0.00, -0.01) cm in the pocket, plate -2.8 mm off along the ring
+    mu 0.35 timeout: kit turned +3 deg, place (+0.04, -0.06) cm in the pocket, plate +2.8 mm off along the ring
+    mu 0.40 timeout: kit turned -14 deg, place (+0.01, -0.01) cm in the pocket, plate -2.9 mm off along the ring
+    mu 0.40 timeout: kit turned -11 deg, place (+0.02, +0.02) cm in the pocket, plate +2.7 mm off along the ring
+    mu 0.40 timeout: kit turned -16 deg, place (+0.01, +0.01) cm in the pocket, plate +2.3 mm off along the ring
+    mu 0.45 timeout: kit turned -11 deg, place (-0.02, +0.05) cm in the pocket, plate +2.9 mm off along the ring
+    mu 0.45 timeout: kit turned -9 deg, place (-0.03, +0.03) cm in the pocket, plate +3.0 mm off along the ring
+    mu 0.45 timeout: kit turned +6 deg, place (+0.04, +0.06) cm in the pocket, plate -2.5 mm off along the ring
+    mu 0.50 timeout: kit turned -18 deg, place (-0.00, +0.00) cm in the pocket, plate +2.3 mm off along the ring
+    mu 0.50 timeout: kit turned -6 deg, place (+0.05, -0.04) cm in the pocket, plate +2.9 mm off along the ring
+    mu 0.50 timeout: kit turned +9 deg, place (-0.01, +0.01) cm in the pocket, plate -2.8 mm off along the ring
+    mu 0.55 timeout: kit turned -14 deg, place (-0.01, +0.02) cm in the pocket, plate -2.8 mm off along the ring
+    mu 0.55 timeout: kit turned -13 deg, place (-0.01, +0.01) cm in the pocket, plate +2.7 mm off along the ring
+    mu 0.55 timeout: kit turned -18 deg, place (-0.00, +0.00) cm in the pocket, plate +2.3 mm off along the ring
+    mu 0.60 timeout: kit turned -14 deg, place (+0.02, -0.00) cm in the pocket, plate -2.6 mm off along the ring
+    mu 0.60 timeout: kit turned +15 deg, place (+0.01, -0.01) cm in the pocket, plate +2.9 mm off along the ring
+    mu 0.60 timeout: kit turned -13 deg, place (+0.02, +0.03) cm in the pocket, plate +2.8 mm off along the ring
 the same with bouncier impacts (damping ratio 0.3), plate parked exactly:
    mu   exit  stuck  lost  timeout   exit speed m/s (min / mean / max)   time to exit s (mean)
-  0.15  100     0     0      0      0.71 / 0.78 / 0.87           0.21
-  0.20  100     0     0      0      0.64 / 0.74 / 0.85           0.23
-  0.25  100     0     0      0      0.63 / 0.70 / 0.84           0.23
-  0.30  100     0     0      0      0.57 / 0.65 / 0.79           0.24
-  0.35  100     0     0      0      0.52 / 0.61 / 0.76           0.25
-  0.40  100     0     0      0      0.47 / 0.56 / 0.71           0.26
-  0.45  100     0     0      0      0.39 / 0.51 / 0.78           0.27
-  0.50  100     0     0      0      0.33 / 0.47 / 0.69           0.28
-  0.55  100     0     0      0      0.27 / 0.39 / 0.68           0.30
-  0.60  100     0     0      0      0.19 / 0.34 / 0.57           0.31
-  share of kits that get out: 100.0 % plate parked exactly (1000 kits), 100.0 % plate up to 1 mm off (1000), 82.8 % up to 2 mm off (1000), 100.0 % bouncy impacts (1000)
-  the kits of the 2 mm sweep above, by how far off the plate was (mm) (all friction values together):
-   0.0 to 0.5: 262 of 262;  0.5 to 1.0: 256 of 258;  1.0 to 1.5: 198 of 253;  1.5 to 2.0: 112 of 227
+  0.15  100     0     0      0      0.75 / 0.80 / 0.87           0.21
+  0.20  100     0     0      0      0.65 / 0.76 / 0.87           0.22
+  0.25  100     0     0      0      0.63 / 0.72 / 0.81           0.22
+  0.30  100     0     0      0      0.61 / 0.68 / 0.80           0.22
+  0.35  100     0     0      0      0.54 / 0.64 / 0.81           0.23
+  0.40  100     0     0      0      0.49 / 0.57 / 0.74           0.25
+  0.45  100     0     0      0      0.42 / 0.53 / 0.80           0.26
+  0.50  100     0     0      0      0.35 / 0.48 / 0.80           0.27
+  0.55  100     0     0      0      0.28 / 0.44 / 0.71           0.27
+  0.60  100     0     0      0      0.23 / 0.36 / 0.55           0.30
+  share of kits that get out: 100.0 % plate parked exactly (1000 kits), 100.0 % up to 1.0 mm off (1000), 99.9 % up to 2.0 mm off, the allowance (1000), 87.9 % up to 3.0 mm off, beyond it (1000), 100.0 % bouncy impacts (1000)
+  the kits of the widest parking sweep above, by how far off the plate was (mm) (all friction values together):
+   0.0 to 0.5: 146 of 146;  0.5 to 1.0: 168 of 168;  1.0 to 1.5: 165 of 165;  1.5 to 2.0: 161 of 164;  2.0 to 2.5: 156 of 180;  2.5 to 3.0: 83 of 177
   kits that get out (of 100 each) against the plate parked this far off along the ring, either way (the pocket turns with the plate: 1 mm is 1.5 degrees):
    off mm        mu 0.35  mu 0.55
     0.0         100/100   100/100
-    0.5         100/100   100/100
-    1.0          96/100    95/100
-    1.5          59/100    56/100
-    2.0          26/100    38/100
+    1.0         100/100   100/100
+    1.5         100/100   100/100
+    2.0          90/100    87/100
+    2.5          57/100    61/100
+    3.0          27/100    40/100
   kits that get out (of 100 each) with the plate parked up to 2 mm off, against the clearance under the plate:
    gap mm        mu 0.35  mu 0.55
-    0.1          86/100    76/100
-    0.3          86/100    76/100
-    0.6          79/100    90/100
+    0.1         100/100   100/100
+    0.3          99/100   100/100
+    0.6         100/100   100/100
   kits that get out (of 30 each) when the plate turns the pocket onto the slot from 20 degrees away (13 mm of ring) and stops there; 100 degrees/s is 0.07 m/s at the ring:
    deg/s         mu 0.15  mu 0.35  mu 0.55
-      60         30/30     30/30      4/30 
+      60         30/30     30/30     30/30 
      120         30/30     30/30     30/30 
      200         30/30     30/30     30/30 
   tolerance corners (kits that get out of 60 per friction value, 180 in all; plate parked exactly):
    case                                         damping 1         damping 0.3 (bouncy)
-   kit 10.3 mm, bore 18.0 mm (as designed)      180/180  100.0 %     180/180  100.0 %
-   kit 10.5 mm, bore 18.0 mm                    180/180  100.0 %     177/180   98.3 %
-   kit 10.3 mm, bore printed 17.6 mm            180/180  100.0 %     177/180   98.3 %
-   kit 10.5 mm, bore printed 17.6 mm            180/180  100.0 %     171/180   95.0 %
+   kit 10.3 mm, bore 19.0 mm (as designed)      180/180  100.0 %     180/180  100.0 %
+   kit 10.5 mm, bore 19.0 mm                    180/180  100.0 %     180/180  100.0 %
+   kit 10.3 mm, bore printed 18.6 mm            180/180  100.0 %     180/180  100.0 %
+   kit 10.5 mm, bore printed 18.6 mm            180/180  100.0 %     180/180  100.0 %
    kit 10.3 mm, 6 g (the mass budget)           180/180  100.0 %     180/180  100.0 %
-  limits found (reported, not pass/fail): (1) the plate parked more than 1.0 mm off along the ring, which is all the 16 mm slot leaves over a kit lying corner to corner in the 14 mm pocket: 82.8 % of the kits get out with the plate up to 2 mm off; (2) a plate that turns onto the slot at 60 degrees/s and stops there at once, at friction 0.55: 4 of 30 get out (120 degrees/s and faster: 30 of 30); (3) the bore, 0.16 mm wider than the space diagonal of the cube: with bouncy impacts a 10.5 mm kit or a bore printed 0.4 mm small loses 2 to 5 % (the tolerance corners)
-time 317 s
-RESULT: PASS (for the plate parked within 1.0 mm: see the limits above)
+  limits found (reported, not pass/fail): (1) the plate parked more than 2.0 mm off along the ring, which is all the 17 mm slot leaves over a kit lying corner to corner in the 13 mm pocket: 87.9 % of the kits get out with the plate up to 3.0 mm off; (2) with every kit at exactly the same offset (the table above) 99 % or more get out up to 1.5 mm; at the geometric allowance, 2.0 mm, a kit lying corner to corner just touches the slot edge and 87 to 90 % get out; (3) a plate that turns onto the slot at 60 degrees/s and stops there at once, at friction 0.55: 30 of 30 get out (120 degrees/s and faster: 30 of 30); (4) the bore, 1.16 mm wider than the space diagonal of the cube: the worst tolerance corner (a 10.5 mm kit, a bore printed 0.4 mm small, a 6 g kit; plate parked exactly) lets 100.0 % of the kits out
+time 283 s
+RESULT: PASS (for the plate parked within 1.5 mm: see the limits above)

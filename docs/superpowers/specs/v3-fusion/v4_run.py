@@ -36,7 +36,7 @@ def stage(names, reset=False, build=True, check=True):
 
 
 def report(kind, **kw):
-    """Run one whole-model report from v4_checks3d: interference, envelope, belly, removal, access, mass, clearances, tof, camera, omni, stepper."""
+    """Run one whole-model report from v4_checks3d: interference, envelope, belly, removal, access, mass, clearances, tof, camera, omni, legs, stepper."""
     M, K = _load()
     return getattr(K, 'report_' + kind)(M.make_ctx(), **kw)
 

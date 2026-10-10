@@ -1,0 +1,53 @@
+wheel: Nexus 14145, 60 mm x 25.6 mm, bore 12 mm, 73 g (the 8 Oct budget: 30 g)
+--- layout of 8 Oct: wheel 2.00 cm wide, y -1.00 to 1.00, arm 4.49 cm long at y 1.10 to 1.50
+  pivot (2.550, 3.60), rest axle (7.00, 3.00), arm angle -7.7 deg at rest and +25.0 deg fully compressed (32.7 deg of swing); axle x at rest 7.00, at the end 6.62
+  front rim: largest x 10.04 (front edge at rest 10.00); gap from the rim's outer corner to the wall over the travel 2.1 mm ok
+  wheel face to the GIGA post H1: 2.7 mm ok
+  wheel top fully compressed z 8.50, bridge underside 8.70: 2.0 mm
+--- layout of 9 Oct: wheel 2.56 cm wide, y -0.98 to 1.58, arm 4.60 cm long at y 1.68 to 1.98
+  pivot (2.409, 4.20), rest axle (6.85, 3.00), arm angle -15.1 deg at rest and +16.4 deg fully compressed (31.5 deg of swing); axle x at rest 6.85, at the end 6.82
+  front rim: largest x 10.01 (front edge at rest 9.85); gap from the rim's outer corner to the wall over the travel 1.7 mm ok
+  wheel face to the GIGA post H1: 2.9 mm ok
+  wheel top fully compressed z 8.50, bridge underside 8.70: 2.0 mm
+--- pivot at z 3.60: pin hole bottom 3.44 (printed material under it -0.6 mm: floor 4 mm + the ear), coil (OD 11.6 mm) bottom 3.02 (belly 3.50), arm bottom at the pivot 3.00
+  NOT OK (needs 3.5 mm under the hole, 1 mm under the coil, and nothing under the belly line z 3.5)
+--- pivot at z 4.20: pin hole bottom 4.04 (printed material under it 5.4 mm: floor 4 mm + the ear), coil (OD 11.6 mm) bottom 3.62 (belly 3.50), arm bottom at the pivot 3.60
+  ok (needs 3.5 mm under the hole, 1 mm under the coil, and nothing under the belly line z 3.5)
+--- neighbours of the new layout
+  arm slot y 1.58 to 2.10, floor port (the 20.3 mm board, moved out to y 3.5) hole from y 2.44: floor wall 3.3 mm
+  battery (tray underside z 4.9): its near edge is at y 2.19..2.43 over the pivot x range 1.71..3.11, lowest corner (0.76, 2.02); the outer ear stands at y 2.10..2.98, top z 4.70: 2.0 mm under the tray
+  left drive motor body x up to 1.0 (y from 1.4): the outer ear starts at x 1.91 (9.1 mm clear in x); the pillar at y 0.35 to 0.75 is clear of the motor in y
+  the wheel's rear surface (rest and compressed, z 4.0 to 5.2) against the pillar's front face at x 3.55: 2.9 mm at the closest
+  Wi-Fi antenna on the wall at -22.0 degrees: nearest point of the aluminium wheel 25.0 mm over the travel (a metal body within a few mm detunes it: the antenna moved from -6 to -22.0 degrees; at -6 it was 2.8 mm)
+--- stop: a fixed M3 x 25 screw at (3.209, 4.209), 8 mm ahead of the pivot (0.6 deg above it), head on the pillar's inboard face, through the pillar (hole 3.2 mm), across the pocket and the arm's slot, into the ear (2.6 mm pilot hole, 7.6 mm deep)
+  the arm's arc slot: radius 8 mm about the pivot, 3.3 mm wide, from -16.1 deg (compression stop) to 16.1 deg (rest stop) of the round-end centres, the screw sits at 15.8 deg at rest and -15.8 deg fully compressed; material left between the slot and the arm's edge 2.1 mm, to the pivot bore 3.8 mm
+  a slot end that is 0.2 mm off moves the wheel 1.1 mm (the lever is 5.6 times the stop radius): file or shim the rest end when the ride height is measured
+  coil clearance: the screw's surface is 0.7 mm outside the coil's outer surface (radius 5.8 mm)
+--- spring: mass 1.29 kg (12.6 N), COM 1.09 cm ahead of the axle and 6.79 cm high, omni 6.85 cm ahead: front load 15.9 % = 2.01 N level; 7.8 N descending a 25 degree ramp
+  design: preload 2.41 N at the axle, 8.47 N at full travel (8 % over the ramp load), rate 2.42 N/cm (the 8 Oct spec at 1.07 kg: 1.8)
+  lever 4.44 cm at rest, 4.41 cm at full travel -> torque 107 N.mm at rest, 374 N.mm at full travel over 31.5 deg: 484 N.mm/rad (8.45 N.mm per degree)
+  spring: music wire 1.6 mm, mean coil 10.0 mm (OD 11.6, ID 8.4), 4.37 active turns = 4.15 body turns + legs 10.0 and 11.0 mm; length close wound 8.2 mm; index 6.25, Ki 1.135
+  chosen in v3_params4: 4.29 active turns, 4.07 body turns: rate 493 N.mm/rad (needed 484)
+  bending stress 1055 MPa at full travel (48 % of 2200 MPa tensile), 302 MPa at rest, range 753 MPa: ok (not over 50 % of the tensile strength)
+  preload angle 12.7 deg, total working angle 44.2 deg; one turn of the M3 adjuster screw (0.5 mm on a 10 mm leg) = 2.86 deg = 24.2 N.mm = 0.55 N at the axle
+  the rear leg (10 mm behind the pivot) rests on the head of an adjuster bolt and is pushed down with 11 N at rest and 37 N at full travel; the forward leg (11 mm out, on its seat pin) presses the arm with 10 N at rest and 34 N at full travel
+  fallback, a compression spring 25 mm from the pivot pushing down from above: 4.3 N preload, 15.0 N at full, stroke 14.1 mm, rate 0.76 N/mm (wire 0.8 mm, OD 9.7, about 9 active coils, free length about 31 mm)
+--- forward leg, seat pin and arbor (10 Oct, spec 4.3): the leg's centre line is 1.5 mm inboard of the arm's face, 5 mm above the arm's axis at the coil and 4 degrees up from it; it rests on a 2 mm pin 11 mm out
+  smallest over the travel: leg over the stop screw 1.07 mm, seat pin to the screw 1.26 mm, leg tip to the wheel's rim 3.70 mm, pin to the rim 4.23 mm; 1.02 mm of bar over the pin's hole
+  the pin carries 10 N at rest and 34 N at full travel: bending 64 MPa at its root (stainless yields at about 500), bearing 6.8 MPa on 2.5 mm in the bar (aluminium yields at 240)
+  arbor: a printed 7.4 mm sleeve on the 5 mm tube, 9.0 mm long (y 0.75 to 1.65), under the coil (ID 8.4 mm free): 0.50 mm radial clearance when free; the load opens the coil to a mean diameter of 10.31 mm, so it can sit up to 0.65 mm off-centre (top of the wire at z 4.86, the battery tray's underside 4.9)
+--- spring order sheet: music wire (ASTM A228 / EN 10270-1 SH) 1.60 mm; mean coil diameter 10.0 mm (ID 8.4, OD 11.6 when free); 4.07 body turns, close wound, body length 8.1 mm; RIGHT-HAND wound
+  legs, both straight and tangent to the coil, leaving its top, one at each end of the body: REAR pointing back (horizontal), 10 mm from the tangent point to where it lies on the adjuster head, 12 mm in all; FORWARD 4 degrees up from the direction of the arm (11.1 degrees below horizontal installed at rest), 11 mm to its seat pin, 12 mm in all; bend radius at the roots 1.6 to 2.4 mm, ends rounded
+  free angle between the legs 203.6 degrees (counterclockwise from the forward leg to the rear leg, seen from the right with the forward leg at the far end) = 4 whole turns and 23.6 degrees; installed at rest the coil is opened by 12.4 degrees and at full travel by 44.0 degrees
+  rate 493 N.mm/rad = 8.60 N.mm per degree (+-8 %; 484 needed); torque 107 N.mm at 12.4 degrees of opening and 378 N.mm at 44.0 degrees (+-10 %); the load OPENS the coil; stress at full travel 1055 MPa = 48 % of the wire's strength
+--- strength at 8.5 N (impact case 21.2 N); the wheel's mid-plane is 15.3 mm from the arm's
+  M4 axle: bending 47 MPa at the arm face (steel, 8.8 class yield 640 MPa)
+  arm aluminium 3 x 12: in-plane bending 14 MPa (yield 240), torsion from the wheel offset 130 N.mm twists the wheel 0.14 deg
+  arm PETG 4 x 12: in-plane bending 10 MPa (yield 40), torsion from the wheel offset 130 N.mm twists the wheel 2.20 deg
+  full travel on the spring: the forward leg presses the arm with 34 N, the rear leg the adjuster with 37 N; the arm's 5 mm pivot bore carries 25 N = 1.7 MPa on its 5 x 3 mm (aluminium yields at 240)
+  hit at 21.2 N with the arm on its compression stop: the stop screw takes 70 N (M3 bending 150 MPa between two supports 16.5 mm apart, 8.8 yields at 640; on the slot end 7.8 MPa over 3 x 3 mm), the bore 83 N = 5.5 MPa; the 5 x 3.1 mm steel tube between pillar and ear bends at 27 MPa; the pillar and the ear each take about half of that load through the M3 screw: 3.2 MPa on a 3.2 x 4 mm bearing patch (PETG about 40)
+--- statics of the 9 Oct model (1.286 kg, COM 1.09 cm ahead of the axle, 6.79 cm high, omni 6.85 cm ahead): front load 15.9 %
+  omni over a 1 cm step, pushed by the drive wheels (traction 1.5 assumed): push needed 0.18 W, traction 1.26 W, margin x7.1
+  omni over a 2 cm step, pushed by the drive wheels (traction 1.5 assumed): push needed 0.45 W, traction 1.26 W, margin x2.8
+  motor torque per wheel: 2 cm riser 1.87 kg.cm, 25 degree ramp 1.09 kg.cm (gearbox limit 5.0)
+  25 degree ramp: no rock-back needs the COM 3.2 cm ahead (front load 46 %); descending it the front load is 62 % = 7.8 N

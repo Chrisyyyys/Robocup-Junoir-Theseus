@@ -1,4 +1,4 @@
-ToF cones (fixed positions), half angle 12.5 deg, blocked rays / 17 and the first blocker:
+ToF cones (rev 4 positions), half angle 12.5 deg, blocked rays / 17 and the first blocker:
   F    blocked  0 / 17  first blocker None
   FL   blocked  0 / 17  first blocker None
   FR   blocked  0 / 17  first blocker None

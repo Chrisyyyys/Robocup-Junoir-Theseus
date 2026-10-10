@@ -1,0 +1,6 @@
+arm: 6061-T6 flat bar 12 x 3 mm, 58 mm long (46.0 mm between the centres, ends R6), profile 610 mm2, mass 4.9 g (+ 0.15 g pin; the model budgets 6 g)
+pivot bore 5.05 mm (reamed, H8) for the 5.00 mm tube; axle hole M4 x 0.7 tapped through (drill 3.3), 46.0 mm from the pivot
+stop slot: arc of radius 8.00 mm about the pivot, 3.30 mm wide, round-end centres at +16.13 degrees (rest stop) and -16.13 degrees (compression stop), i.e. at (7.69, +2.22) and (7.69, -2.22) mm; the ends are 0.2 mm beyond the 3.0 mm screw at each stop; a slot end filed 0.2 mm moves the wheel 1.1 mm
+spring seat: 2.00 mm hole (H7, through) at (11.00, +3.98) mm for the 2 x 6 mm pin, 3.5 mm standing out of the inboard face, 2.5 mm in the bar
+bar left: 1.02 mm above the seat hole, 2.13 mm above and below the slot, 3.82 mm between the slot and the pivot bore, 34.7 mm from the slot to the axle hole
+wrote omni_arm.dxf and fig13_omni_arm.png/.svg in C:\Users\christopher.shu\OneDrive - St. Andrew's College\Desktop\Robocup-Junoir-Theseus\docs\superpowers\specs\v3-figures

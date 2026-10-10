@@ -1,19 +1,19 @@
 mass budget [placeholder]: printed = volume x 1.27 g/cm3 x fill 0.45, bought = rev 3 budget (com.py)
+   134.2 g  Upper frame                printed      vol   234.85 cm3  x   0.05  z 10.20
    110.0 g  Battery                    bought       vol    61.25 cm3  x   3.90  z  6.35
-   106.2 g  Upper frame                printed      vol   185.81 cm3  x   0.31  z  9.98
     95.0 g  Motor R                    bought       vol    14.72 cm3  x   0.00  z  4.00
     95.0 g  Motor L                    bought       vol    14.72 cm3  x   0.00  z  4.00
-    80.4 g  Tub                        printed      vol   140.70 cm3  x   1.09  z  4.84
-    70.0 g  BNO055, TCS34725, LCD, hardware not modelled vol     0.00 cm3  x   0.00  z  7.00
-    57.4 g  Lid                        printed      vol   100.48 cm3  x  -0.45  z 11.43
+    80.7 g  Tub                        printed      vol   141.25 cm3  x   1.06  z  4.85
+    77.0 g  Omni wheel                 bought       vol    70.50 cm3  x   6.85  z  3.00
+    63.0 g  LCD, second colour sensor, hardware not modelled vol     0.00 cm3  x   0.00  z  7.00
+    56.7 g  Lid                        printed      vol    99.17 cm3  x  -0.45  z 11.88
     55.0 g  mux, regulator, wiring     not modelled vol     0.00 cm3  x   0.00  z  6.00
     55.0 g  Wheel R                    bought       vol   100.39 cm3  x   0.00  z  4.00
     55.0 g  Wheel L                    bought       vol   100.39 cm3  x   0.00  z  4.00
     55.0 g  Arduino GIGA R1            bought       vol    12.76 cm3  x   2.37  z  6.39
     48.0 g  Kits                       bought       vol     8.74 cm3  x  -0.39  z  9.52
-    41.2 g  Dropper plate              printed      vol    72.11 cm3  x  -2.42  z  9.60
-    40.0 g  cables and fasteners       not modelled vol     0.00 cm3  x   0.00  z  8.00
-total 1198 g (rev 3 budget 1070 g), centre of mass x +0.89  y +0.15  z 6.81 cm (rev 3: +0.90 and 6.3)
-front load 12.8 % at the omni 7.0 cm ahead (rev 3: 11.9 % at 7.95)
-front lift limit g x COM_x / COM_h = 1.29 m/s^2 (rev 3: 1.5; the firmware PWM ramp assumes at least 1.0)
+    42.7 g  Dropper plate              printed      vol    74.70 cm3  x  -2.35  z  9.60
+total 1287 g (rev 3 budget 1070 g), centre of mass x +1.09  y +0.17  z 6.79 cm (rev 3: +0.90 and 6.3)
+front load 15.9 % at the omni 6.85 cm ahead (rev 3: 11.9 % at 7.95)
+front lift limit g x COM_x / COM_h = 1.58 m/s^2 (rev 3: 1.5; the firmware PWM ramp assumes at least 1.0)
 RESULT: PASS

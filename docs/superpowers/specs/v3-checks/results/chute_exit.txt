@@ -1,7 +1,7 @@
-exit axis z 3.75  slope 34.9 deg   round r0.9 lowest z  2.63   square outer 16.2 lowest z  2.56   18 mm channel (outer 21.2, lifted 1 mm) lowest z  2.32
-exit axis z 4.00  slope 33.2 deg   round r0.9 lowest z  2.90   square outer 16.2 lowest z  2.84   18 mm channel (outer 21.2, lifted 1 mm) lowest z  2.61
-exit axis z 4.10  slope 32.6 deg   round r0.9 lowest z  3.01   square outer 16.2 lowest z  2.95   18 mm channel (outer 21.2, lifted 1 mm) lowest z  2.72
-exit axis z 4.15  slope 32.2 deg   round r0.9 lowest z  3.06   square outer 16.2 lowest z  3.00   18 mm channel (outer 21.2, lifted 1 mm) lowest z  2.78
-exit axis z 4.20  slope 31.9 deg   round r0.9 lowest z  3.12   square outer 16.2 lowest z  3.06   18 mm channel (outer 21.2, lifted 1 mm) lowest z  2.84
+exit axis z 3.75  slope 34.9 deg   round r0.9 lowest z  2.63   square outer 16.2 lowest z  2.56   19 mm channel (outer 22.2, lifted 1.5 mm) lowest z  2.31
+exit axis z 4.00  slope 33.2 deg   round r0.9 lowest z  2.90   square outer 16.2 lowest z  2.84   19 mm channel (outer 22.2, lifted 1.5 mm) lowest z  2.60
+exit axis z 4.10  slope 32.6 deg   round r0.9 lowest z  3.01   square outer 16.2 lowest z  2.95   19 mm channel (outer 22.2, lifted 1.5 mm) lowest z  2.71
+exit axis z 4.15  slope 32.2 deg   round r0.9 lowest z  3.06   square outer 16.2 lowest z  3.00   19 mm channel (outer 22.2, lifted 1.5 mm) lowest z  2.77
+exit axis z 4.20  slope 31.9 deg   round r0.9 lowest z  3.12   square outer 16.2 lowest z  3.06   19 mm channel (outer 22.2, lifted 1.5 mm) lowest z  2.83
 square channel: exit axis z 4.15 puts the lowest point at z 3.00 (slope 32.3 deg)
-18 mm channel: exit axis z 4.34 would put the lowest point at z 3.00 (slope 30.9 deg); the design keeps z 4.15 and accepts 2.78
+19 mm channel: exit axis z 4.35 would put the lowest point at z 3.00 (slope 30.9 deg); the design keeps z 4.15 and accepts 2.77

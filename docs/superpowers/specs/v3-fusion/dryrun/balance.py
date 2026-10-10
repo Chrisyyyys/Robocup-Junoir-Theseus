@@ -68,14 +68,14 @@ M_TOT = sum(r[2] for r in rows)
 
 GROUPS = {
     'drive train (wheels, motors, face plates)': ['Wheel L', 'Wheel R', 'Motor L', 'Motor R', 'Face plate L', 'Face plate R'],
-    'omni module': ['Omni wheel', 'Omni arm', 'Omni pins'],
+    'omni module': ['Omni wheel', 'Omni arm', 'Omni pins', 'Omni pivot', 'Omni spring', 'Omni adjuster'],
     'battery': ['Battery'],
-    'GIGA, shield, floor sensors, posts': ['Arduino GIGA R1', 'Main PCB', 'Floor port FP', 'Silver module SM', 'GIGA posts'],
-    'ToF boards (9) and cameras (2)': ['ToF ' + n for n, x, y, a in P.TOF] + ['Camera L', 'Camera R'],
+    'GIGA, shield, floor sensors, IMU, posts': ['Arduino GIGA R1', 'Main PCB', 'Floor port FP', 'Silver module SM', 'GIGA posts', 'BNO055 IMU'],
+    'ToF boards (9), cameras (2) and their cages': ['ToF ' + n for n, x, y, a in P.TOF] + ['Camera L', 'Camera R', 'Camera cage L', 'Camera cage R'],
     'tub, bumpers, nub, USB socket, antenna': ['Tub', 'Bumper L', 'Bumper R', 'Bumper switch L', 'Bumper switch R', 'Rear nub', 'USB-C service socket', 'Wi-Fi antenna'],
     'upper frame, lid, handle bar, control parts': ['Upper frame', 'Lid', 'Handle bar', 'Victim LED'] + [c[0] for c in P.CONTROLS],
     'dropper (floor, plate, kits, N20, hoppers, channels)': ['Dropper floor', 'Dropper plate', 'Kits', 'N20 motor', 'N20 face plate', 'Hopper A right', 'Hopper B left', 'Chute A right', 'Chute B left'],
-    'not modelled (wiring, IMU, LCD, fasteners)': [r[0] for r in rows if r[1] == 'unmodelled'],
+    'not modelled (wiring, LCD, second colour sensor, fasteners)': [r[0] for r in rows if r[1] == 'unmodelled'],
 }
 used = set(n for v in GROUPS.values() for n in v)
 left = [r[0] for r in rows if r[0] not in used]

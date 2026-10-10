@@ -1,14 +1,29 @@
-  ok     5.00 mm  (spec --, at least 3.0)  Silver module SM         | Omni wheel          silver module (x 7.5, beside the omni bay) to the omni wheel [placeholder module size]
+  ok     6.20 mm  (spec --, at least 3.0)  Silver module SM         | Omni wheel          silver module (x 7.5, beside the omni bay) to the omni wheel [placeholder module size]
   ok     2.78 mm  (spec --, at least 1.5)  Silver module SM         | GIGA posts          silver module to the GIGA post H1 [placeholder module size]
-  ok    10.50 mm  (spec --, at least 5.0)  Wi-Fi antenna            | Omni wheel          Wi-Fi antenna on the front wall to the omni wheel at rest
+  ok    25.21 mm  (spec --, at least 5.0)  Wi-Fi antenna            | Omni wheel          Wi-Fi antenna on the front wall to the omni wheel at rest
   ok    10.86 mm  (spec 10.6, at least 5.0)  N20 motor                | Motor L             N20 to the left drive motor (first model 10.6 mm)
-  ok     5.62 mm  (spec 5.6, at least 5.0)  Chute B left             | Wheel L             chute to the left wheel (rev 3 6.7 mm; 8.2 mm with the first rev 4 chute, 5.6 mm with the 18 mm channel)
-  ok     5.62 mm  (spec 5.6, at least 5.0)  Chute A right            | Wheel R             chute to the right wheel (mirror of the left)
-  ok     2.67 mm  (spec 2.7, at least 2.0)  Omni wheel               | GIGA posts          omni wheel to GIGA post H1 (spec 2.7 mm)
+  ok     5.12 mm  (spec 5.6, at least 5.0)  Chute B left             | Wheel L             chute to the left wheel (rev 3 6.7 mm; 8.2 mm with the first rev 4 chute, 5.6 mm with the 18 mm channel)
+  ok     5.12 mm  (spec 5.6, at least 5.0)  Chute A right            | Wheel R             chute to the right wheel (mirror of the left)
+  ok     2.87 mm  (spec 2.9, at least 2.0)  Omni wheel               | GIGA posts          omni wheel to GIGA post H1 (spec 2.9 mm)
+  ok     8.65 mm  (spec --, at least 3.0)  Wi-Fi antenna            | Bumper switch R     Wi-Fi antenna to the right bumper switch
+  ok     6.10 mm  (spec --, at least 3.0)  Wi-Fi antenna            | USB-C service socket  Wi-Fi antenna to the USB-C socket above it
+  ok     1.50 mm  (spec 1.5, at least 1.0)  Omni wheel               | Tub                 omni wheel to the floor opening and the pillar at rest (bay clearance 1.5 mm)
+  ok     5.61 mm  (spec --, at least 3.0)  Omni wheel               | Omni pivot          omni wheel to the stop screw head at rest
+  ok     4.36 mm  (spec --, at least 1.5)  Omni arm                 | Battery             omni arm to the battery at rest
   ok     1.72 mm  (spec 1.7, at least 1.0)  Arduino GIGA R1          | Tub                 GIGA stack to the tub (3.1 mm plain wall, 1.7 mm behind the right bumper)
   ok     1.10 mm  (spec 1.0, at least 0.5)  Battery                  | Motor L             battery above the left drive motor (spec 1.0 mm)
-  ok    10.00 mm  (spec --, at least 5.0)  Dropper plate            | Lid                 kit plate to the lid
-  ok     3.60 mm  (spec 3.6, at least 2.5)  Camera L                 | Wheel L             camera lens block to the wheel top (rev 3 3.6 mm)
+  ok    15.00 mm  (spec --, at least 5.0)  Dropper plate            | Lid                 kit plate to the lid
+  ok     7.21 mm  (spec 3.6, at least 2.5)  Camera L                 | Wheel L             camera board and holder to the wheel top (rev 3 3.6 mm with the lens block; the real board is taller)
+  ok     9.98 mm  (spec --, at least 2.5)  Camera cage L            | Wheel L             camera cage to the wheel top
+  ok     2.89 mm  (spec --, at least 1.5)  Camera L                 | Lid                 camera board and screw heads to the lid hump ceiling
+  ok     2.07 mm  (spec --, at least 1.5)  Camera cage L            | Lid                 camera cage to the lid
+  ok     9.66 mm  (spec --, at least 3.0)  Camera L                 | Battery             left camera tail to the battery
+  ok    14.12 mm  (spec --, at least 3.0)  Camera R                 | Arduino GIGA R1     right camera tail to the GIGA board (the tail points forward on both sides)
+  ok     8.00 mm  (spec --, at least 5.0)  Camera L                 | Dropper plate       left camera to the kit plate
+  ok    11.54 mm  (spec --, at least 5.0)  BNO055 IMU               | N20 motor           IMU board to the N20 gearmotor above and ahead of it
+  ok    25.62 mm  (spec --, at least 10.0)  BNO055 IMU               | Hopper A right      IMU board to the right hopper above it
+  ok     5.05 mm  (spec --, at least 3.0)  Floor port FP            | Omni arm            front floor port (the real 20.3 mm board) to the omni arm
+  ok    37.98 mm  (spec --, at least 3.0)  Floor port FP            | GIGA posts          front floor port to the GIGA post H1
   ok     5.76 mm  (spec 5.0, at least 3.0)  Stepper bay 28BYJ-48     | Main PCB            stepper bay to the GIGA stack, nearest at the shield (spec 5.0 mm in plan view; 3D is larger where the heights differ)
   ok     3.97 mm  (spec 4.0, at least 3.0)  Stepper bay 28BYJ-48     | Hopper B left       stepper bay to hopper B (spec 4.0 mm; 5.2 mm with the first hopper)
   ok     8.23 mm  (spec 8.2, at least 5.0)  Stepper bay 28BYJ-48     | Battery             stepper bay to the battery (spec 8.2 mm)

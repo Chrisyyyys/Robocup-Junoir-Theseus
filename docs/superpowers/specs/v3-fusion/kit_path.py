@@ -1,13 +1,13 @@
 """Kit path check on the finished rev 4 model: can a 10.3 mm rescue-kit cube get from its plate pocket to the outside? Static, geometry only (whether a real kit tumbles into the channel
 and slides at 32 degrees is the bench test, spec section 12). Made after the plan's reports; not part of the plan's code and not in the dry-run emulator.
 
-1. Drop: the cube, turned like the slot (a 16 mm square at 45 degrees), falls straight down the slot and the hopper from where it rests in the plate pocket (z 9.0) to 2 mm above the
+1. Drop: the cube, turned like the slot (a 17 mm square at 45 degrees), falls straight down the slot and the hopper from where it rests in the plate pocket (z 9.0) to 2 mm above the
    channel's floor slab (the trough is open down to the floor, so nothing but the slab is there).
 2. Widths: the channel runs at an angle to the slot square, so a kit that falls square to the slot arrives turned. The slot and the bore must be wider than the cube's face diagonal, so that a
    kit turned any angle fits and needs no turning room (the check fails if either is not, as the 14.5 mm slot of the first design was not). Standing on a corner the cube needs a slot
    of size (1 + sqrt 3) / sqrt 3 = 16.25 mm: the line says so (v3-checks/cube_slot.py counts the attitudes). Arithmetic, not a sweep.
-3. Slide: the cube, turned like the channel (faces along and across the 18 mm bore), moves along the channel axis from the hopper to 2 cm beyond the exit, centred and shifted 3 mm
-   to each side and 2.5 mm up and down (the bore leaves 3.85 mm to a side, 2.85 mm to the floor and 4.85 mm to the ceiling).
+3. Slide: the cube, turned like the channel (faces along and across the 19 mm bore), moves along the channel axis from the hopper to 2 cm beyond the exit, centred and shifted 3 mm
+   to each side and 2.5 mm up and down (the 19 mm bore leaves 4.35 mm to a side, 3.35 mm to the floor and 5.35 mm to the ceiling).
 Steps 1 and 3 are tested against every body except the kits, the plate and the hidden stepper bay (temporary B-rep intersections, overlaps under 1e-3 cm3 ignored). Two controls, a cube too
 big for the slot and a cube too big for the bore, must be blocked, or the check could not see a blockage and fails. Whether a real kit tumbles into the channel and keeps sliding at 32 degrees
 is not geometry: it is the bench test.
@@ -155,13 +155,15 @@ def report(sides=(1, -1)):
         ok = ok and good
         lines.append('  %s kit %.1f mm slides down channel %s to 2 cm beyond the exit: %d positions (centred, 3 mm to each side and 2.5 mm up and down), worst overlap %.4f cm3%s' % ('ok  ' if good else 'FAIL', P.KIT * 10, nm, n, v, '' if good else '  with ' + who))
     side = sides[0]
-    (v, who), n = drop(side, targets, size=1.75, step=0.5)
+    big_slot = round(P.PLATE['slot'] + 0.05, 2)
+    big_bore = round(P.CHUTE['in_w'] + 0.1, 2)
+    (v, who), n = drop(side, targets, size=big_slot, step=0.5)
     good = v > FLOOR
     ok = ok and good
-    lines.append('  %s control: a 17.5 mm cube in the 16 mm slot is %s (%.4f cm3 with %s)' % ('ok  ' if good else 'FAIL', 'blocked, as it must be' if good else 'NOT blocked: the check cannot see a blockage', v, who))
-    (v, who), n = slide(side, targets, size=1.90, offsets=((0.0, 0.0),), step=0.5)
+    lines.append('  %s control: a %.1f mm cube in the %.0f mm slot is %s (%.4f cm3 with %s)' % ('ok  ' if good else 'FAIL', big_slot * 10, P.PLATE['slot'] * 10, 'blocked, as it must be' if good else 'NOT blocked: the check cannot see a blockage', v, who))
+    (v, who), n = slide(side, targets, size=big_bore, offsets=((0.0, 0.0),), step=0.5)
     good = v > FLOOR
     ok = ok and good
-    lines.append('  %s control: a 19.0 mm cube in the 18 mm channel is %s (%.4f cm3 with %s)' % ('ok  ' if good else 'FAIL', 'blocked, as it must be' if good else 'NOT blocked: the check cannot see a blockage', v, who))
+    lines.append('  %s control: a %.1f mm cube in the %.0f mm channel is %s (%.4f cm3 with %s)' % ('ok  ' if good else 'FAIL', big_bore * 10, P.CHUTE['in_w'] * 10, 'blocked, as it must be' if good else 'NOT blocked: the check cannot see a blockage', v, who))
     lines.append('RESULT: ' + ('PASS' if ok else 'FAIL'))
     return '\n'.join(lines)

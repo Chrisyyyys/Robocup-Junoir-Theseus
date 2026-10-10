@@ -1,4 +1,4 @@
-Fusion interference analysis, 51 occurrences (90 bodies), coincident faces not counted: 10 overlapping body pairs
+Fusion interference analysis, 57 occurrences (193 bodies), coincident faces not counted: 11 overlapping body pairs
   ok     0.12587 cm3  Tub shell  x  Cradle prong rear R   (at most 0.13) the prong's root is sunk 0.5 mm into the floor and its outer end sits inside the cradle ledge (a separate body only because it flexes; one printed part with the tub)
   ok     0.12587 cm3  Tub shell  x  Cradle prong rear L   (at most 0.13) the prong's root is sunk 0.5 mm into the floor and its outer end sits inside the cradle ledge (a separate body only because it flexes; one printed part with the tub)
   ok     0.12587 cm3  Tub shell  x  Cradle prong front R   (at most 0.13) the prong's root is sunk 0.5 mm into the floor and its outer end sits inside the cradle ledge (a separate body only because it flexes; one printed part with the tub)
@@ -9,4 +9,5 @@ Fusion interference analysis, 51 occurrences (90 bodies), coincident faces not c
   ok     0.00975 cm3  Lid plate  x  Hook bump +114   (at most 0.011) the bump's outer face is sunk 0.1 to 0.2 mm into the skirt's inner face (a separate body only because it flexes; one printed part with the lid)
   ok     0.00035 cm3  Bumper plate L  x  Microswitch L   (at most 0.0004) the bumper plate rests on its microswitch (touching, as in the rev 3 model)
   ok     0.00035 cm3  Bumper plate R  x  Microswitch R   (at most 0.0004) the bumper plate rests on its microswitch (touching, as in the rev 3 model)
+  ok     0.00000 cm3  Seat pin  x  Spring forward leg   (at most 0.0001) the spring's forward leg lies on the seat pin's top: a line contact, no volume (10 Oct)
 RESULT: PASS

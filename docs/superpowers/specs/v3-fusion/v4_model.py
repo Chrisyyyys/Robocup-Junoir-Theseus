@@ -16,6 +16,7 @@ if CHECKS not in sys.path:
     sys.path.insert(0, CHECKS)
 import v3_params4 as P
 import v3_model as M3
+import tof_mount as T
 
 STAGES = []                        # (name, builder) in build order; each task appends its stages
 
@@ -40,9 +41,7 @@ def rot(cx, cy, deg, lx, ly):
 
 def make_ctx():
     ctx = M3.Ctx('fixed')
-    for nm, x, y, aim in P.TOF:                       # the rev 3 'fixed' ToF positions are the rev 4 ones
-        got = ctx.tof[nm]
-        assert abs(got[0] - x) < 1e-6 and abs(got[1] - y) < 1e-6 and got[2] == aim, 'ToF %s differs between v3_model and v3_params4' % nm
+    ctx.tof = {nm: (x, y, aim) for nm, x, y, aim in P.TOF}      # 9 Oct: the rev 4 positions (the wider real board moved the front-left, side and rear sensors), not the rev 3 'fixed' ones
     return ctx
 
 
@@ -115,15 +114,23 @@ def build_tub(ctx):
         cut('Shaft notch ' + tag, 'xz', [rect(0, 3.95, 2 * C['notch_half'], 1.0)], y0, y1)
         y0, y1 = ymirror(s, *C['slot_y'])
         cut('Plate slot ' + tag, 'xy', [rect((C['slot_x'][0] + C['slot_x'][1]) / 2, (y0 + y1) / 2, C['slot_x'][1] - C['slot_x'][0], y1 - y0)], C['slot_z'][0], C['slot_z'][1])
-    # omni bay (wheel path, swept rest -> half travel -> full travel) and arm slot. The arm slot is cut at rest only: the floor is 4 mm thick, so the arm at half and
-    # full travel only crosses floor that the rest-position slot has already removed (a cut that removes nothing makes Fusion raise, so the extra cuts are left out)
+    # the floor opening for the omni, 9 Oct: two plan cuts through the floor only (the stadium cuts of 8 Oct, extruded over the whole height, nicked the front wall and the +12 degree frame boss): the wheel's
+    # opening (y -1.13 to 1.73, x 3.65 to 10.1) and the arm's corridor (y 0.75 to 2.10, x 1.66 to 8.0), which holds the spring coil, the arm and the stop screw. Pillar, tail and ear stand on the floor beside them (spec 4.1)
     ox, oz = P.OMNI['rest']
     px, pz = P.OMNI['pivot']
-    xc, zc = P.omni_at(P.OMNI['travel'])
-    xm, zm = P.omni_at(P.OMNI['travel'] / 2)
-    cut('Omni bay 1', 'xz', [stadium((ox, oz), (xm, zm), P.OMNI['r'] + 0.15)], *P.OMNI_BAY_Y)
-    cut('Omni bay 2', 'xz', [stadium((xm, zm), (xc, zc), P.OMNI['r'] + 0.15)], *P.OMNI_BAY_Y)
-    cut('Arm slot', 'xz', [stadium((px, pz), (ox, oz), 0.8)], *P.OMNI_ARM_SLOT_Y)
+    OM = P.OMNI_MOUNT
+    Op = P.OMNI_OPENING
+    for nm, o in (('Omni wheel opening', Op['wheel']), ('Omni arm corridor', Op['arm'])):
+        cut(nm, 'xy', [rect((o['x'][0] + o['x'][1]) / 2, (o['y'][0] + o['y'][1]) / 2, o['x'][1] - o['x'][0], o['y'][1] - o['y'][0])], P.Z_BELLY - 0.1, zf + 0.1)
+    for nm, key in (('Omni pillar', 'pillar'), ('Omni pillar tail', 'tail'), ('Omni ear', 'ear')):
+        bx = OM[key]
+        join(nm, 'xy', [rect((bx['x'][0] + bx['x'][1]) / 2, (bx['y'][0] + bx['y'][1]) / 2, bx['x'][1] - bx['x'][0], bx['y'][1] - bx['y'][0])], zf - 0.05, bx['z'][1])
+    stx, stz = P.omni_stop_pin()
+    cut('Pivot hole pillar', 'xz', [circle((px, pz), OM['hole_r'])], OM['pillar']['y'][0] - 0.1, OM['pillar']['y'][1] + 0.1)
+    cut('Pivot thread hole ear', 'xz', [circle((px, pz), P.OMNI_PIVOT['screw_r'])], OM['ear']['y'][0] - 0.05, OM['ear']['y'][0] + P.OMNI_PIVOT['hole_depth'])    # the M3 insert's thread and the blind hole behind it, modelled at the screw's radius
+    cut('Stop hole pillar', 'xz', [circle((stx, stz), OM['stop']['hole_r'])], OM['pillar']['y'][0] - 0.1, OM['pillar']['y'][1] + 0.1)
+    cut('Stop thread hole ear', 'xz', [circle((stx, stz), OM['stop']['pin_r'])], OM['ear']['y'][0] - 0.05, OM['ear']['y'][0] + OM['stop']['ear_depth'])         # pilot hole 2.6 mm, the screw cuts its thread: modelled at the screw's radius
+    cut('Adjuster hole tail', 'xy', [circle((OM['adjuster']['x'], OM['adjuster']['y']), OM['adjuster']['shank_r'])], OM['adjuster']['head_z'][0] - OM['adjuster']['bolt_len'], OM['tail']['z'][1] + 0.1)    # the M3 x 5.7 insert's thread, modelled at the bolt's radius
     fp, sm = P.FLOOR_FRONT, P.SILVER
     cut('Floor port FP hole', 'xy', [rect(fp['x'], fp['y'], fp['w'] + 0.1, fp['w'] + 0.1)], P.Z_BELLY - 0.1, zf + 0.1)
     cut('Silver module SM hole', 'xy', [rect(sm['x'], sm['y'], sm['l'] + 0.1, sm['w'] + 0.1)], P.Z_BELLY - 0.1, zf + 0.1)
@@ -166,6 +173,10 @@ def build_tub(ctx):
     for a in P.screw_angles():
         x, y = P.polar(S['r'], a)
         cut('Insert hole %+.0f' % a, 'xy', [circle((x, y), S['insert_r'])], P.Z_TUB_TOP - S['insert_depth'], P.Z_TUB_TOP + 0.1)
+    I = P.IMU                                                  # four posts for the BNO055 breakout, 5 mm tall, with pilot holes for M2.5 self-tapping screws (square in the model)
+    posts = [(I['x'] + sx * I['holes'][0], I['y'] + sy * I['holes'][1]) for sx in (1, -1) for sy in (1, -1)]
+    join('IMU posts', 'xy', [rect(px, py, I['post'], I['post']) for px, py in posts], zf - 0.05, zf + I['post_h'])
+    cut('IMU post pilots', 'xy', [rect(px, py, I['pilot'], I['pilot']) for px, py in posts], zf + I['post_h'] - 0.45, zf + I['post_h'] + 0.1)
     U = P.USB
     ua = math.radians(U['angle'])
     cut('USB-C socket hole', 'xy', [rect((U['r_face'] - 0.1) * math.cos(ua), (U['r_face'] - 0.1) * math.sin(ua), 0.9, 2 * U['half'], U['angle'])], U['z'][0], U['z'][1])
@@ -188,28 +199,109 @@ def build_cartridges(ctx):
         ctx.pal.paint(pl, '#B4B2A9')
 
 
+def _stop_slot_polygon():
+    """The arm's arc slot at the rest position, as a world polygon in the x-z plane: a capsule about the arc of radius r from the compression-stop end to the rest-stop end, round ends of the slot's half width."""
+    px, pz = P.OMNI['pivot']
+    ox, oz = P.OMNI['rest']
+    sl = P.omni_stop_slot()
+    phi = math.atan2(oz - pz, ox - px)
+    r, hw = sl['r'], sl['hw']
+    lo, hi = math.radians(sl['a_lo']), math.radians(sl['a_hi'])
+
+    def pt(rad, ang):
+        return (px + rad * math.cos(phi + ang), pz + rad * math.sin(phi + ang))
+
+    n = 10
+    pts = [pt(r + hw, lo + (hi - lo) * k / n) for k in range(n + 1)]
+    for k in range(1, 8):                                      # round end at the rest-stop end (outer side -> tangent direction -> inner side)
+        s_ = math.pi * k / 8
+        cx, cz = pt(r, hi)
+        er, et = (math.cos(phi + hi), math.sin(phi + hi)), (-math.sin(phi + hi), math.cos(phi + hi))
+        pts.append((cx + hw * (math.cos(s_) * er[0] + math.sin(s_) * et[0]), cz + hw * (math.cos(s_) * er[1] + math.sin(s_) * et[1])))
+    pts += [pt(r - hw, hi - (hi - lo) * k / n) for k in range(n + 1)]
+    for k in range(1, 8):                                      # round end at the compression-stop end (inner -> minus tangent -> outer)
+        s_ = math.pi * k / 8
+        cx, cz = pt(r, lo)
+        er, et = (math.cos(phi + lo), math.sin(phi + lo)), (-math.sin(phi + lo), math.cos(phi + lo))
+        pts.append((cx - hw * (math.cos(s_) * er[0] + math.sin(s_) * et[0]), cz - hw * (math.cos(s_) * er[1] + math.sin(s_) * et[1])))
+    return pts
+
+
 @stage('omni')
 def build_omni(ctx):
-    """60 mm omni at x 7.0 on ONE arm on the +y side; the pivot pin and the axle are as long as the floor slot allows (spec 4)."""
-    O = P.OMNI
+    """Front omni wheel and its mount (spec 4.1): the Nexus 14145 on two 604 bearings and an M4 axle screw tapped into ONE 3 x 12 mm aluminium arm on the +y side; the arm turns on a tube on the M4 pivot screw
+    and carries an arc slot for the fixed M3 stop screw; a torsion spring on the tube, its rear leg on an M3 adjuster screw in the pillar's tail. Moving in the sweep: wheel, arm, axle set."""
+    O, W, B, X, V, SP = P.OMNI, P.OMNI_WHEEL, P.OMNI_BEARING, P.OMNI_AXLE, P.OMNI_PIVOT, P.OMNI_SPRING
+    OM, S = P.OMNI_MOUNT, P.OMNI_MOUNT['stop']
     ox, oz = O['rest']
     px, pz = O['pivot']
-    hw = O['w'] / 2
+    w0, w1 = O['y_wheel']
+    a0, a1 = O['arm_y']
+    # wheel: a solid cylinder (the rollers are not modelled), the 12 mm hole, a 604 bearing flush with each face
     occ, comp = L.new_part(ctx.root, 'Omni wheel')
-    wh = L.prism(comp, 'Omni wheel', 'xz', [circle((ox, oz), O['r'])], -hw, hw)
-    L.prism(comp, 'Omni hub', 'xz', [circle((ox, oz), 1.0)], -hw - 0.1, hw + 0.1, op=JOIN, targets=[wh])
-    L.prism(comp, 'Axle bore', 'xz', [circle((ox, oz), O['axle_r'])], -hw - 0.2, hw + 0.2, op=CUT, targets=[wh])
+    wh = L.prism(comp, 'Omni wheel', 'xz', [circle((ox, oz), O['r'])], w0, w1)
+    L.prism(comp, 'Wheel bore', 'xz', [circle((ox, oz), W['bore_r'])], w0 - 0.1, w1 + 0.1, op=CUT, targets=[wh])
+    y_b1 = w0 + X['seat']                                      # the inboard bearing is seated 5 mm in: the screw's head and its washer sit in front of it, inside the bore
+    b1 = L.ring_prism(comp, 'Bearing inboard', 'xz', circle((ox, oz), B['od_r']), circle((ox, oz), B['bore_r']), y_b1, y_b1 + B['w'])
+    b2 = L.ring_prism(comp, 'Bearing outboard', 'xz', circle((ox, oz), B['od_r']), circle((ox, oz), B['bore_r']), w1 - B['w'], w1)
+    sl = L.ring_prism(comp, 'Axle sleeve', 'xz', circle((ox, oz), X['sleeve_r'][1]), circle((ox, oz), X['sleeve_r'][0]), y_b1 + B['w'], w1 - B['w'])
+    sp = L.ring_prism(comp, 'Axle spacer', 'xz', circle((ox, oz), X['sleeve_r'][1]), circle((ox, oz), X['sleeve_r'][0]), w1, a0)
     ctx.pal.paint(wh, '#1D9E75')
+    ctx.pal.paint([b1, b2], '#8A8A84')
+    ctx.pal.paint([sl, sp], '#B7B6B0')
+    # the arm: a 3 x 12 mm bar, 6 mm pivot bore for the tube, M4 axle hole, the arc slot for the stop screw
     occ, comp = L.new_part(ctx.root, 'Omni arm')
-    y0, y1 = O['arm_y']
-    arm = L.prism(comp, 'Arm plate', 'xz', [stadium((px, pz), (ox, oz), O['arm_half'])], y0, y1)
-    L.prism(comp, 'Pivot hole', 'xz', [circle((px, pz), O['pin_r'])], y0 - 0.1, y1 + 0.1, op=CUT, targets=[arm])
-    L.prism(comp, 'Axle hole', 'xz', [circle((ox, oz), O['axle_r'])], y0 - 0.1, y1 + 0.1, op=CUT, targets=[arm])
+    arm = L.prism(comp, 'Arm bar', 'xz', [stadium((px, pz), (ox, oz), O['arm_half'])], a0, a1)
+    L.prism(comp, 'Pivot bore', 'xz', [circle((px, pz), O['pivot_hole_r'])], a0 - 0.1, a1 + 0.1, op=CUT, targets=[arm])
+    L.prism(comp, 'Axle hole', 'xz', [circle((ox, oz), O['axle_r'])], a0 - 0.1, a1 + 0.1, op=CUT, targets=[arm])
+    L.prism(comp, 'Stop slot', 'xz', [poly(_stop_slot_polygon())], a0 - 0.1, a1 + 0.1, op=CUT, targets=[arm])
+    # the spring's seat (10 Oct): a 2 mm stainless pin in a 2.0 mm hole, 3.5 mm standing out of the arm's inboard face and 2.5 mm in the bar, and on it the forward spring leg, a wire that lies on the pin's top, runs
+    # along the arm splayed 4 degrees up from it and turns with it (so it is part of this moving component here, though it is the spring's)
+    K = P.OMNI_SEAT
+    kx, kz = P.omni_seat(0.0)
+    L.prism(comp, 'Seat hole', 'xz', [circle((kx, kz), K['hole_r'])], a0 - 0.1, a1 + 0.1, op=CUT, targets=[arm])
+    seat = L.prism(comp, 'Seat pin', 'xz', [circle((kx, kz), K['r'])], K['y'][0], K['y'][1])
+    (lx0, lz0), (lx1, lz1) = P.omni_leg(0.0)
+    leg_f = L.prism(comp, 'Spring forward leg', 'xz', [rect((lx0 + lx1) / 2, (lz0 + lz1) / 2, math.hypot(lx1 - lx0, lz1 - lz0), SP['wire'], math.degrees(math.atan2(lz1 - lz0, lx1 - lx0)))],
+                    SP['y'][1] - SP['wire'], SP['y'][1])
     ctx.pal.paint(arm, '#0F6E56')
+    ctx.pal.paint([seat, leg_f], '#B4B2A9')
+    # axle set: the M4 x 25 screw with its head and 0.5 mm washer in the wheel's bore (head underside 0.5 mm in front of the inboard bearing), tip 0.3 mm inside the arm's outer face
     occ, comp = L.new_part(ctx.root, 'Omni pins')
-    pv = L.prism(comp, 'Pivot pin', 'xz', [circle((px, pz), O['pin_r'])], *O['pin_y'])
-    ax = L.prism(comp, 'Axle pin', 'xz', [circle((ox, oz), O['axle_r'])], -hw - 0.05, y1 + 0.1)
-    ctx.pal.paint([pv, ax], '#5F5E5A')
+    y_under = w0 + X['seat'] - X['washer_h']
+    ax = L.prism(comp, 'Axle screw', 'xz', [circle((ox, oz), O['axle_r'])], y_under, y_under + X['screw_len'])
+    hd = L.prism(comp, 'Axle screw head', 'xz', [circle((ox, oz), X['head_r'])], y_under - X['head_h'], y_under)
+    wa = L.ring_prism(comp, 'Axle washer', 'xz', circle((ox, oz), X['washer_r']), circle((ox, oz), X['sleeve_r'][0]), y_under, w0 + X['seat'])
+    ctx.pal.paint([ax, hd, wa], '#5F5E5A')
+    # pivot hardware (fixed): the M4 pivot screw from the pillar's inboard face into the ear's insert, the M3 stop screw alongside it
+    occ, comp = L.new_part(ctx.root, 'Omni pivot')
+    py0 = OM['pillar']['y'][0]
+    pv = L.prism(comp, 'Pivot screw', 'xz', [circle((px, pz), V['screw_r'])], py0, py0 + V['screw_len'])
+    pvh = L.prism(comp, 'Pivot screw head', 'xz', [circle((px, pz), V['head_r'])], py0 - V['head_h'], py0)
+    stx, stz = P.omni_stop_pin()
+    st = L.prism(comp, 'Stop screw', 'xz', [circle((stx, stz), S['pin_r'])], py0, py0 + S['screw_len'])
+    sth = L.prism(comp, 'Stop screw head', 'xz', [circle((stx, stz), S['head_r'])], py0 - S['head_h'], py0)
+    ctx.pal.paint([pv, pvh, st, sth], '#5F5E5A')
+    # the spring on its tube: the tube (5 x 3.1 mm, pillar to ear), the printed arbor on it, the coil on the arbor and the rear leg, a straight wire that lies on the adjuster head; the forward leg is in the arm's
+    # component (it turns with the arm)
+    occ, comp = L.new_part(ctx.root, 'Omni spring')
+    tube = L.ring_prism(comp, 'Pivot tube', 'xz', circle((px, pz), V['tube_r'][1]), circle((px, pz), V['tube_r'][0]), OM['pillar']['y'][1], OM['ear']['y'][0])
+    coil = L.ring_prism(comp, 'Spring coil', 'xz', circle((px, pz), SP['od'] / 2), circle((px, pz), SP['id'] / 2), *SP['y'])
+    zl = pz + SP['mean_d'] / 2
+    wr = SP['wire']
+    ad = OM['adjuster']
+    x_tip = ad['x'] - 0.2                                                                       # the leg ends 2 mm past the middle of the adjuster head (12 mm in all)
+    leg1 = L.prism(comp, 'Spring rear leg', 'xz', [rect((px - 0.46 + x_tip) / 2, zl, (px - 0.46) - x_tip, wr)], ad['y'] - wr / 2, ad['y'] + wr / 2)
+    AB = P.OMNI_ARBOR
+    arbor = L.ring_prism(comp, 'Spring arbor', 'xz', circle((px, pz), AB['r']), circle((px, pz), AB['r_in']), *AB['y'])
+    ctx.pal.paint([tube, coil, leg1], '#B4B2A9')
+    ctx.pal.paint(arbor, '#1D9E75')
+    # adjuster: M3 hex screw in the tail (insert), the rear leg lies on its head
+    occ, comp = L.new_part(ctx.root, 'Omni adjuster')
+    hexpts = [(ad['x'] + ad['head_r'] * math.cos(math.radians(60 * k)), ad['y'] + ad['head_r'] * math.sin(math.radians(60 * k))) for k in range(6)]
+    ah = L.prism(comp, 'Adjuster screw head', 'xy', [poly(hexpts)], *ad['head_z'])
+    asx = L.prism(comp, 'Adjuster screw', 'xy', [circle((ad['x'], ad['y']), ad['shank_r'])], ad['head_z'][0] - ad['bolt_len'], ad['head_z'][0])
+    ctx.pal.paint([ah, asx], '#5F5E5A')
 
 
 STAGES.append(('nub', M3.build_rear_nub))
@@ -237,6 +329,8 @@ def build_frame(ctx):
     join('Spoke rib', [rect((Sp['x0'] + Sp['x_rib1']) / 2, 0, Sp['x_rib1'] - Sp['x0'], 2 * Sp['rib_half'])], z0 + ft - 0.05, Sp['rib_z1'])
     join('Control deck', [rect((Dk['x0'] + Dk['x1']) / 2, (Dk['y0'] + Dk['y1']) / 2, Dk['x1'] - Dk['x0'], Dk['y1'] - Dk['y0'])], z0, z0 + ft)
     join('Handle post', [rect(H['x'], 0, H['post_w'], H['post_w'])], H['post_z'][0], H['post_z'][1])
+    for nm in T.sensors():                     # a box of wall round each ToF pocket: where the pocket hangs in the bore it needs a rear wall, side walls and a front wall (the pocket is cut out of it below)
+        join('ToF block ' + nm, [poly(T.block_plan(nm))], z0, z1)
     m = D['seat_margin']                       # half-lap seats of the lift-out dropper floor: each tab (top half of the disc thickness) lies in a rebate (upper half of the web removed) on the web's lower half
     for i, (x0, x1, y0, y1) in enumerate(D['tabs']):
         yc, wy = (y0 + y1) / 2, y1 - y0 + 2 * m
@@ -251,30 +345,139 @@ def build_frame(ctx):
     for a in P.hook_angles():
         cut('Hook rebate %+.0f' % a, 'xy', [sector(Hk['r_in'], Hk['r_out'] + 0.1, a - Hk['half_deg'] - 0.5, a + Hk['half_deg'] + 0.5)], Hk['skirt_z0'], z1 + 0.1)
         cut('Hook groove %+.0f' % a, 'xy', [sector(Hk['groove_r_in'], Hk['r_in'] + 0.01, a - Hk['groove_half_deg'], a + Hk['groove_half_deg'])], Hk['bump_z'][0], Hk['bump_z'][1])
-    t_half = P.TOF_T / 2 + 0.06
-    for nm, (x, y, aim) in ctx.tof.items():
-        cut('Pocket ' + nm, 'xy', [M3.tof_rect(x, y, aim, -t_half, t_half, P.TOF_W + 0.12)], P.TOF_Z - P.TOF_H / 2 - 0.05, z1 + 0.1)          # open at the top: the board drops in from above
-        cut('Beam ' + nm, 'xy', [M3.tof_rect(x, y, aim, 0.0, M3.t_exit(x, y, aim), 1.8)], 9.1, 10.9)
+    TM, TB = P.TOF_MOUNT, P.TOF_BOARD
+    hz = T.hole_z()
+    for nm in T.sensors():
+        cut('ToF pocket ' + nm, 'xy', [poly(T.pocket_plan(nm))], TM['floor_z'], z1 + 0.1)                       # open at the top: the board drops in from above, the lid covers it
+        cut('ToF plug shaft ' + nm, 'xy', [poly(T.shaft_plan(nm))], z0 - 0.1, TM['floor_z'] + 0.05)             # the plug of the lower connector and its cable go straight down through the floor
+        cut('ToF tunnel ' + nm, 'xy', [poly(T.tunnel_plan(nm))], P.TOF_Z - TM['tunnel_w'], P.TOF_Z + TM['tunnel_w'])
+        join('ToF posts ' + nm, [poly(q) for q in T.post_plans(nm)], hz - TM['post_r'], hz + TM['post_r'])      # two posts in front of the upper holes (square in the model)
+        cut('ToF pilots ' + nm, 'xy', [poly(q) for q in T.pilot_plans(nm)], hz - TM['pilot_r'], hz + TM['pilot_r'])
+        cut('ToF screw access ' + nm, 'xy', [poly(q) for q in T.access_plans(nm)], hz - TM['access_r'], hz + TM['access_r'])    # the screwdriver reaches the screws through the rear wall
     for s, tag in ((1, 'L'), (-1, 'R')):
         y0, y1 = ymirror(s, 8.4, 10.8)
-        cut('Camera window ' + tag, 'xz', [rect(P.CAM_X, (z0 - 0.1 + 10.6) / 2, M3.CAM_WINDOW_W, 10.6 - (z0 - 0.1))], y0, y1)
+        cut('Camera window ' + tag, 'xz', [rect(P.CAM_X, (z0 - 0.1 + 10.6) / 2, P.CAMERA['window_w'], 10.6 - (z0 - 0.1))], y0, y1)
+    CG = P.CAGE
+    for s, tag in ((1, 'L'), (-1, 'R')):                       # the two M3 inserts of the camera cage, in the ring's inner face beside the window (square holes in the model, 6 mm deep)
+        shapes = []
+        for e in (1, -1):
+            xe = P.CAM_X + e * CG['ear_x']
+            yf = math.sqrt(P.FRAME['r_in'] ** 2 - xe ** 2)
+            shapes.append(rect(xe, s * (yf + 0.25), CG['insert_d'], 0.7))
+        zc = (CG['ear_z'][0] + CG['ear_z'][1]) / 2
+        cut('Camera insert holes ' + tag, 'xy', shapes, zc - CG['insert_d'] / 2, zc + CG['insert_d'] / 2)
     ctx.pal.paint(ring, '#B4B2A9', 0.55)
 
 
 @stage('tof')
 def build_tof_modules(ctx):
-    """Nine VL53L0X boards, 1.8 x 2.1 x 0.45 cm, at z 10.0, in the pockets of the ring."""
-    for nm, (x, y, aim) in ctx.tof.items():
+    """Nine Adafruit VL53L0X boards (the STEMMA QT version: 25.4 x 17.78 x 1.6 mm, standing on the short end, the chip in the middle and a JST SH connector at each end on the front face) in their pockets, each held on two
+    posts by two M2.5 screws from behind (spec 8.3). Holes and screws are square in the model (a sketch cannot draw a hole along the aim without a tool body); the connectors are boxes, the plugs and cables are not modelled."""
+    B = P.TOF_BOARD
+    zc = P.TOF_Z
+    hz = T.hole_z()
+    hd, hh = B['screw_head']
+    S, Lh = B['short'] / 2, B['long'] / 2
+    for nm, (x, y, aim) in T.sensors().items():
         occ, comp = L.new_part(ctx.root, 'ToF ' + nm)
-        mod = L.prism(comp, 'VL53L0X module ' + nm, 'xy', [rect(x, y, P.TOF_T, P.TOF_W, aim)], P.TOF_Z - P.TOF_H / 2, P.TOF_Z + P.TOF_H / 2)
-        a = math.radians(aim)
-        off = P.TOF_T / 2 + 0.05
-        chip = L.prism(comp, 'VL53L0X chip ' + nm, 'xy', [rect(x + off * math.cos(a), y + off * math.sin(a), 0.1, 0.44, aim)], P.TOF_Z - 0.12, P.TOF_Z + 0.12)
-        ctx.pal.paint(mod, '#378ADD')
+        fr = T.frame(x, y, aim)
+        pcb = L.prism(comp, 'VL53L0X board ' + nm, 'xy', [poly(T.rect_pts(fr, -B['t'], 0.0, -S, S))], zc - Lh, zc + Lh)
+        for dz in (B['hole_long'], -B['hole_long']):                    # the four M2.5 holes (2.5 mm across, drawn as squares)
+            L.prism(comp, 'Board holes', 'xy', [poly(T.rect_pts(fr, -B['t'] - 0.05, 0.05, v * B['hole_short'] - B['hole_d'] / 2, v * B['hole_short'] + B['hole_d'] / 2)) for v in (1, -1)],
+                    zc + dz - B['hole_d'] / 2, zc + dz + B['hole_d'] / 2, op=CUT, targets=[pcb])
+        e0, e1 = Lh - B['conn_end'] - B['conn_len'], Lh - B['conn_end']
+        conn = []
+        for lo, hi in ((e0, e1), (-e1, -e0)):                           # the connector at the top end and the one at the bottom end
+            conn.append(L.prism(comp, 'QT connector ' + nm, 'xy', [poly(T.rect_pts(fr, 0.0, B['conn_h'], -B['conn_w'] / 2, B['conn_w'] / 2))], zc + lo, zc + hi))
+        chip = L.prism(comp, 'VL53L0X chip ' + nm, 'xy', [poly(T.rect_pts(fr, 0.0, B['chip_u'], -B['chip_v'] / 2, B['chip_v'] / 2))], zc - B['chip_w'] / 2, zc + B['chip_w'] / 2)
+        heads, shafts = T.screw_plans(nm)
+        sh = L.prism(comp, 'M2.5 screw heads ' + nm, 'xy', [poly(q) for q in heads], hz - hd / 2, hz + hd / 2)
+        sf = L.prism(comp, 'M2.5 screw shafts ' + nm, 'xy', [poly(q) for q in shafts], hz - 0.10, hz + 0.10)
+        ctx.pal.paint(pcb, '#378ADD')
+        ctx.pal.paint(conn, '#EEEEEE')
         ctx.pal.paint(chip, '#042C53')
+        ctx.pal.paint(list(sh) + list(sf), '#5F5E5A')
 
 
-STAGES.append(('cameras', M3.build_cameras))             # two OpenMV H7 Plus boards tilted 20 degrees behind the windows: unchanged from rev 3
+def camera_frame(s):
+    """Lens tip, the view axis backwards (from the tip towards the board) and the placement matrix of a camera: local z along that axis, local y up in the board's plane, local x = world x for the left camera, -x for the right."""
+    t = math.radians(P.CAM['tilt'])
+    psi = math.radians(P.CAM['psi'])
+    tip = (P.CAM_X, s * P.CAM['tip_r'] * math.sin(psi), P.CAM['zl'])
+    ez = (0.0, -s * math.cos(t), math.sin(t))
+    return tip, ez, L.frame_from_zy(tip, ez, (0.0, 0.0, 1.0))
+
+
+def camera_hole_positions(s):
+    """Local (x, y) of the four mounting holes with their drill diameters. The board's long tail points to world +x on both sides; v is measured from the camera end, which lies lens_v behind the lens axis."""
+    C = P.CAMERA
+    out = []
+    for u, v, d in C['holes']:
+        out.append((s * (v - C['lens_v']), u - C['lens_u'], d))
+    return out
+
+
+@stage('cameras')
+def build_cameras4(ctx):
+    """Two OpenMV Cam H7 Plus boards (35.56 x 44.45 x 1.6 mm, four holes at the camera end, lens holder and M12 barrel on the front face) tilted 20 degrees behind the windows, each on a printed cage (spec 8.4).
+    The lens axis, the holder size and the tip height are estimates (v3_params4.CAMERA); the board's long tail points to +x on both sides."""
+    C, G = P.CAMERA, P.CAGE
+    bw, bl, bt = C['board']
+    tip_h = C['tip']
+    for s, tag in ((1, 'L'), (-1, 'R')):
+        tip, ez, mat = camera_frame(s)
+        occ, comp = L.new_part(ctx.root, 'Camera ' + tag, mat)
+        x0 = s * (-C['lens_v'])                         # the camera end
+        x1 = s * (bl - C['lens_v'])                     # the tail end
+        pcb = L.prism(comp, 'OpenMV H7 Plus board ' + tag, 'xy', [rect((x0 + x1) / 2, 0.0, abs(x1 - x0), bw)], tip_h, tip_h + bt)
+        holes = camera_hole_positions(s)
+        L.prism(comp, 'Board holes', 'xy', [rect(hx, hy, d, d) for hx, hy, d in holes], tip_h - 0.05, tip_h + bt + 0.05, op=CUT, targets=[pcb])
+        hold = L.prism(comp, 'Lens holder ' + tag, 'xy', [rect(0.0, 0.0, C['holder'][1], C['holder'][0])], tip_h - C['holder'][2], tip_h)
+        barrel = L.prism(comp, 'Lens barrel ' + tag, 'xy', [circle((0.0, 0.0), C['barrel_d'] / 2)], 0.0, tip_h - C['holder'][2])
+        sd = L.prism(comp, 'micro-SD socket ' + tag, 'xy', [rect(s * (-C['lens_v'] + 1.8), 0.7, C['sd'][1], C['sd'][0])], tip_h + bt, tip_h + bt + C['sd'][2])
+        d25, h25d, h25h = G['screw25']
+        heads = L.prism(comp, 'M2.5 screw heads ' + tag, 'xy', [rect(hx, hy, h25d, h25d) for hx, hy, d in holes], tip_h + bt, tip_h + bt + h25h)
+        shafts = L.prism(comp, 'M2.5 screw shafts ' + tag, 'xy', [rect(hx, hy, 0.19, 0.19) for hx, hy, d in holes], tip_h - G['frame_t'] + 0.06, tip_h + bt)
+        ctx.pal.paint(pcb, '#7F77DD')
+        ctx.pal.paint([hold, barrel], '#3C3489')
+        ctx.pal.paint(sd, '#C8C6BE')
+        ctx.pal.paint(list(heads) + list(shafts), '#5F5E5A')
+
+        # the cage, in world coordinates: tilted bodies are drawn in the camera's frame and moved there, the ears in the world frame
+        occ2, cage = L.new_part(ctx.root, 'Camera cage ' + tag)
+
+        def tilted(name, shapes, z0, z1):
+            b = L.prism(cage, name, 'xy', shapes, z0, z1)
+            bs = list(b) if isinstance(b, (list, tuple)) else [b]
+            for one in bs:
+                L.move_body(cage, one, mat)
+            return bs
+
+        fz0, fz1 = tip_h - G['frame_t'], tip_h
+        fr = L.ring_prism(cage, 'Cage frame ' + tag, 'xy', rect(0.0, 0.0, 2 * G['frame_x'], 2 * G['frame_y']), rect(0.0, 0.0, 2 * G['open_x'], 2 * G['open_y']), fz0, fz1)
+        L.move_body(cage, fr, mat)
+        rails = tilted('Cage rails ' + tag, [rect(e * (G['rail_x'][0] + G['rail_x'][1]) / 2, 0.0, G['rail_x'][1] - G['rail_x'][0], 2 * G['rail_y']) for e in (1, -1)], G['flange_z'][0], fz0 + 0.05)
+        L.combine(cage, fr, rails, op=JOIN)
+        fl = tilted('Cage flange ' + tag, [rect(0.0, 0.0, 2 * G['flange_x'], 2 * G['rail_y'])], G['flange_z'][0], G['flange_z'][1])
+        L.combine(cage, fr, fl, op=JOIN)
+        bore = tilted('Cage barrel opening ' + tag, [circle((0.0, 0.0), G['hole_d'] / 2)], G['flange_z'][0] - 0.1, G['flange_z'][1] + 0.1)
+        L.combine(cage, fr, bore, op=CUT)
+        pil = tilted('Cage pilots ' + tag, [rect(hx, hy, 0.20, 0.20) for hx, hy, d in holes], fz0 - 0.0 + 0.04, fz1 + 0.02)
+        L.combine(cage, fr, pil, op=CUT)
+        # the ears: world-aligned boxes from the flange to the ring's inner face, 3 mm thick walls cut by the face itself; each ear carries one M3 hole along world y
+        ears = []
+        for e in (1, -1):
+            xe = P.CAM_X + e * G['ear_x']
+            y_face = math.sqrt(P.FRAME['r_in'] ** 2 - (abs(xe) + G['ear_w'] / 2) ** 2)          # the ring's inner face at the ear's outer edge: the ear's flat face never reaches into the ring
+            ears.append(rect(xe, s * ((8.0 + y_face) / 2), G['ear_w'], y_face - 8.0))
+        ear_b = L.prism(cage, 'Cage ears ' + tag, 'xy', ears, G['ear_z'][0], G['ear_z'][1])
+        L.combine(cage, fr, ear_b if isinstance(ear_b, (list, tuple)) else [ear_b], op=JOIN)
+        for e in (1, -1):
+            xe = P.CAM_X + e * G['ear_x']
+            y_face = math.sqrt(P.FRAME['r_in'] ** 2 - (abs(xe) + G['ear_w'] / 2) ** 2)
+            zc = (G['ear_z'][0] + G['ear_z'][1]) / 2
+            L.prism(cage, 'Cage M3 hole %+d' % e, 'xy', [rect(xe, s * (y_face - 0.45), G['m3_d'], 0.9)], zc - G['m3_d'] / 2, zc + G['m3_d'] / 2, op=CUT, targets=[fr])
+        ctx.pal.paint(fr, '#B4B2A9')
 
 
 @stage('lid')
@@ -284,11 +487,13 @@ def build_lid(ctx):
     occ, comp = L.new_part(ctx.root, 'Lid')
     lid = L.prism(comp, 'Lid plate', 'xy', [circle((0, 0), P.R_BODY)], Ld['z0'], Ld['z1'])
     for s in (1, -1):
-        y0, y1 = ymirror(s, 5.3, 9.3)
-        L.prism(comp, 'Camera hump', 'xy', [rect(P.CAM_X, (y0 + y1) / 2, 5.0, y1 - y0)], P.Z_ROOF - 0.05, P.Z_LID + Ld['hump_skin'], op=JOIN, targets=[lid])
+        y0, y1 = ymirror(s, *P.CAMERA['hump_y'])               # the board's top part, the screw heads and the cage frame's top bar (y 6.1 to 7.1) stand up into the pocket: 2 cm deep; wider and the hump's corner leaves the body radius
+        px0, px1 = P.CAMERA['pocket_x']
+        L.prism(comp, 'Camera hump', 'xy', [rect((px0 + px1) / 2, (y0 + y1) / 2, px1 - px0 + 0.4, y1 - y0)], P.Z_ROOF - 0.05, P.Z_LID + Ld['hump_skin'], op=JOIN, targets=[lid])
     for s in (1, -1):
-        y0, y1 = ymirror(s, 5.5, 9.1)
-        L.prism(comp, 'Camera pocket', 'xy', [rect(P.CAM_X, (y0 + y1) / 2, 4.6, y1 - y0)], Ld['z0'] - 0.1, P.Z_LID, op=CUT, targets=[lid])
+        y0, y1 = ymirror(s, *P.CAMERA['pocket_y'])
+        px0, px1 = P.CAMERA['pocket_x']                       # the board's tail (to x 4.25) and the lens holder's overhang (to x -0.56) stand up into the lid: 4.4 mm to spare at each end
+        L.prism(comp, 'Camera pocket', 'xy', [rect((px0 + px1) / 2, (y0 + y1) / 2, px1 - px0, y1 - y0)], Ld['z0'] - 0.1, P.Z_LID, op=CUT, targets=[lid])
     sx0, sx1 = Ld['slot_x']
     L.prism(comp, 'Handle slot', 'xy', [rect((sx0 + sx1) / 2, 0, sx1 - sx0, 2 * Ld['slot_half'])], Ld['z0'] - 0.1, Ld['z1'] + 0.1, op=CUT, targets=[lid])
     fx0, fx1, fy0, fy1 = Ld['front_notch']
@@ -377,7 +582,7 @@ def build_dropper(ctx):
 
 @stage('chutes')
 def build_chutes(ctx):
-    """Per side: a hopper sealed to the underside of the dropper floor under the 16 mm slot (with a socket cut for the channel), and the 18 mm square channel from the slot axis to the
+    """Per side: a hopper sealed to the underside of the dropper floor under the 17 mm slot (with a socket cut for the channel), and the 19 mm square channel from the slot axis to the
     body radius. Inside the hopper the channel is an open trough: everything of the tube inside the hopper's void is cut away and only the floor slab is laid back, so that a kit lands
     on the inclined floor with no wall end, ledge or ceiling edge to catch it (spec 6.2; the first design left low side walls inside the void and jammed kits in the chute simulation).
     The hopper and the channel do not overlap, so the channel can slide out."""
@@ -453,6 +658,25 @@ def build_antenna(ctx):
     occ, comp = L.new_part(ctx.root, 'Wi-Fi antenna')
     strip = L.prism(comp, 'Wi-Fi antenna', 'xy', [rect(cx, cy, A['t'], A['w'], ang)], A['z'][0], A['z'][1])
     ctx.pal.paint(strip, '#F0997B')
+
+
+@stage('imu')
+def build_imu(ctx):
+    """Adafruit BNO055 breakout (20 x 27 x 1.6 mm board, 4 mm with the header) on the four tub posts, header edge forward, four M2.5 screws (spec 8.6)."""
+    I = P.IMU
+    z0 = P.Z_FLOOR_TOP + I['post_h']
+    length, width, t = I['size']
+    pts = [(I['x'] + sx * I['holes'][0], I['y'] + sy * I['holes'][1]) for sx in (1, -1) for sy in (1, -1)]
+    occ, comp = L.new_part(ctx.root, 'BNO055 IMU')
+    pcb = L.prism(comp, 'BNO055 board', 'xy', [rect(I['x'], I['y'], length, width)], z0, z0 + t)
+    L.prism(comp, 'Board holes', 'xy', [rect(px, py, I['hole_d'], I['hole_d']) for px, py in pts], z0 - 0.05, z0 + t + 0.05, op=CUT, targets=[pcb])
+    chip = L.prism(comp, 'BNO055 chip', 'xy', [rect(I['x'], I['y'], I['chip'][0], I['chip'][1])], z0 + t, z0 + t + I['chip'][2])
+    hd, hh = I['screw_head']
+    heads = L.prism(comp, 'M2.5 screw heads', 'xy', [rect(px, py, hd, hd) for px, py in pts], z0 + t, z0 + t + hh)
+    shafts = L.prism(comp, 'M2.5 screw shafts', 'xy', [rect(px, py, 0.19, 0.19) for px, py in pts], z0 - 0.4, z0 + t)
+    ctx.pal.paint(pcb, '#0F6E56')
+    ctx.pal.paint(chip, '#222222')
+    ctx.pal.paint(list(heads) + list(shafts), '#5F5E5A')
 
 
 @stage('stepper')

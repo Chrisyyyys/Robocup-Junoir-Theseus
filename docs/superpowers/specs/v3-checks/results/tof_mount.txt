@@ -1,0 +1,10 @@
+F    (  9.50,   0.00) aim    0  pocket corner radius 9.91 (limit 10.25)
+FL   (  8.95,   3.99) aim   25  pocket corner radius 10.22 (limit 10.25)
+FR   (  8.95,  -3.99) aim  -25  pocket corner radius 10.22 (limit 10.25)
+SFL  (  6.85,   6.00) aim   90  pocket corner radius 10.08 (limit 10.25)
+SFR  (  6.85,  -6.00) aim  -90  pocket corner radius 10.08 (limit 10.25)
+SRL  ( -6.85,   6.00) aim   90  pocket corner radius 10.08 (limit 10.25)
+SRR  ( -6.85,  -6.00) aim  -90  pocket corner radius 10.08 (limit 10.25)
+RL   ( -8.40,   3.60) aim  180  pocket corner radius 9.88 (limit 10.25)
+RR   ( -8.40,  -3.60) aim  180  pocket corner radius 9.88 (limit 10.25)
+board z 9.01 to 11.55, pocket floor 9.00, upper holes at z 11.296, ring top 11.70

@@ -1,0 +1,7 @@
+  ok     1.07 mm  (at least 1.0)  Spring forward leg     | Stop screw          forward spring leg over the stop screw (at rest, the screw is at the rest end of the slot: the closest position; 1.07 mm by the 2D check over the travel)
+  ok     1.26 mm  (at least 1.0)  Seat pin               | Stop screw          seat pin to the stop screw (rest)
+  ok     4.32 mm  (at least 1.5)  Spring forward leg     | Omni wheel          forward spring leg tip to the wheel rim (the wheel is a plain cylinder here, its rollers stand out of its plates)
+  ok     4.23 mm  (at least 1.5)  Seat pin               | Omni wheel          seat pin to the wheel rim
+  ok     0.50 mm  (at least 0.4)  Spring arbor           | Spring coil         arbor to the coil (0.5 mm of air all round when the coil is free)
+  ok     0.00 mm  (at least 0.0)  Spring rear leg        | Adjuster screw head  rear leg on the adjuster head (they touch by design: the leg lies on it)
+RESULT: PASS

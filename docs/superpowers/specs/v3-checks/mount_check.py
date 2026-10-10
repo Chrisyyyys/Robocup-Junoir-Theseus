@@ -10,8 +10,11 @@ HOLES = {'H1 (15.24, 2.54)': (15.24, 2.54), 'H2 (90.17, 2.54)': (90.17, 2.54), '
          'H5 (66.1, 17.8)': (66.1, 17.8), 'H6 (66.1, 45.6)': (66.1, 45.6)}
 STACK_X0, STACK_X1, STACK_Y0, STACK_Y1 = 2.32 - 5.076, 2.32 + 5.076, -4.03 - 2.667, -4.03 + 2.667     # packing (pack_v3.json): x -2.76..7.40, y -6.70..-1.36
 BOSS_R = 0.35                                                                                       # M3 heat-set boss, 7 mm across
-OMNI_X = 7.0                                                                                        # omni centre in the mechanical design (rev 3: 7.95)
-PIV_X = OMNI_X - math.sqrt(4.4905 ** 2 - 0.36)                                                      # arm length kept at 4.49
+import v3_params4 as P4                                                                              # 9 Oct: the omni layout comes from the one source (it was typed in here: 7.0, pivot 2.55, a 20 mm wheel)
+OMNI_X = P4.OMNI['rest'][0]                                                                         # omni centre in the mechanical design (rev 3: 7.95; 8 Oct: 7.0; 9 Oct: 6.85)
+PIV_X = P4.OMNI['pivot'][0]
+W0, W1 = P4.OMNI['y_wheel']                                                                         # the real 25.6 mm wheel: y -0.98 to 1.58
+A0, A1 = P4.OMNI['arm_y']                                                                           # the arm outboard of it: y 1.68 to 1.98
 
 def robot_xy(u, v, connector_front=True, top_inboard=True):
     x = (STACK_X1 - u / 10.0) if connector_front else (STACK_X0 + u / 10.0)
@@ -23,11 +26,11 @@ KEEP = {
     'right motor prongs': box(-1.30, -6.05, 1.30, -2.85),
     'right motor ledges': box(-1.6, -6.05, 2.75, -5.65),                 # front ledge x 1.06 .. 2.75 carries the plate ear, rear ledge only x -1.6 .. -1.06 (the GIGA post H4 is at x -2.27)
     'right motor web and plate slot': box(-1.6, -6.7, 2.75, -6.05),
-    'omni arm swing, two plates': box(PIV_X - 0.5, -1.7, OMNI_X + 0.6, 1.7),
-    'omni arm swing, one plate on +y': box(PIV_X - 0.5, 1.0, OMNI_X + 0.6, 1.7),
-    'omni wheel': box(OMNI_X - 3.0, -1.05, OMNI_X + 3.0, 1.05),
+    'omni arm swing, two plates': box(PIV_X - 0.5, W0 - 0.4, OMNI_X + 0.6, A1),                      # the first model's second plate, mirrored, 1 mm clear of the real wheel (kept for the comparison)
+    'omni arm swing, one plate on +y': box(PIV_X - 0.5, A0, OMNI_X + 0.6, A1),
+    'omni wheel': box(OMNI_X - 3.0, W0 - 0.05, OMNI_X + 3.0, W1 + 0.05),                              # the wheel padded by 0.5 mm
     'silver module SM': box(-1.0, -1.1, 1.0, 1.1),
-    'chute A channel': LineString([(-4.73, -2.73), (-6.0, -8.62)]).buffer(1.10),                      # the 18 mm square channel: outer 21.2 mm plus 0.4 mm
+    'chute A channel': LineString([(-4.73, -2.73), (-6.0, -8.62)]).buffer(1.15),                      # the 19 mm square channel: half of its 22.2 mm outside, 1.11, plus 0.4 mm (9 Oct; 1.10 for the 18 mm one)
 }
 
 if __name__ == '__main__':
@@ -51,7 +54,8 @@ if __name__ == '__main__':
         print(f'\nUSB-C J12 at x {STACK_X1:.2f}, y {y:.2f} (top edge {"inboard" if top_in else "outboard"}); free space in front of the stack edge: to the tub wall (r 10.3, below z 8.7) {math.sqrt(10.3 ** 2 - y * y) - STACK_X1:.2f} cm, to the ring (r 9.0, above z 8.7) {math.sqrt(81 - y * y) - STACK_X1:.2f} cm')
 
     # ToF cable runs: module to the nearest edge of the GIGA stack in plan, routed estimate = x1.3 + 3 cm vertical
-    fixed = {'F': (9.5, 0.0), 'FL': (8.97, 4.18), 'FR': (8.97, -4.18), 'SFL': (7.18, 6.0), 'SFR': (7.18, -6.0), 'SRL': (-7.18, 6.0), 'SRR': (-7.18, -6.0), 'RL': (-8.4, 4.5), 'RR': (-8.4, -4.5)}
+    import v3_params4 as P4                                                                         # 9 Oct: the positions of the standing boards come from the one source (they were typed in here before)
+    fixed = {nm: (x, y) for nm, x, y, aim in P4.TOF}
     stack = box(STACK_X0, STACK_Y0, STACK_X1, STACK_Y1)
     print('\nToF module to the nearest edge of the GIGA stack (plan) and a routed estimate (x1.3 + 3 cm):')
     worst, short = 0, 0
@@ -81,5 +85,6 @@ if __name__ == '__main__':
     print('  (smooth cylinder: the hook can only hold a few N; ears in grooves take the torque. Pull-out is estimated from the wedge angle at the hook, friction 0.35)')
     print('  ear: gearbox limit 5 kg.cm = 490 N.mm over ONE front ear at about 19.5 mm from the axle: %.1f N; bearing area 8 x 3 mm = 24 mm^2: %.2f MPa' % (490 / 19.5, 490 / 19.5 / 24))
     print('torque needed: 1.63 kg.cm (2 cm riser), gearbox limit 5 kg.cm, motor stall 10 kg.cm (Pololu 3493)')
-    print('cube 10.3 mm: face diagonal %.2f mm, space diagonal %.2f mm; 16 mm slot and hopper void: %.2f mm of slack over the face diagonal; 18 mm bore: %.2f mm over the space diagonal, '
-          '%.2f mm per side for a cube lying square (first design, 13 mm bore: %.2f mm in total, and kits that arrived turned jammed in it)' % (10.3 * math.sqrt(2), 10.3 * math.sqrt(3), 16 - 10.3 * math.sqrt(2), 18 - 10.3 * math.sqrt(3), (18 - 10.3) / 2, 13 - 10.3))
+    slot, bore = P4.PLATE['slot'] * 10, P4.CHUTE['in_w'] * 10                                       # 9 Oct: 17 and 19 mm from the one source (16 and 18 mm before, typed in here)
+    print('cube 10.3 mm: face diagonal %.2f mm, space diagonal %.2f mm; %.0f mm slot and hopper void: %.2f mm of slack over the face diagonal; %.0f mm bore: %.2f mm over the space diagonal (%.2f mm for a 10.5 mm kit), '
+          '%.2f mm per side for a cube lying square (first design, 13 mm bore: %.2f mm in total, and kits that arrived turned jammed in it)' % (10.3 * math.sqrt(2), 10.3 * math.sqrt(3), slot, slot - 10.3 * math.sqrt(2), bore, bore - 10.3 * math.sqrt(3), bore - 10.5 * math.sqrt(3), (bore - 10.3) / 2, 13 - 10.3))

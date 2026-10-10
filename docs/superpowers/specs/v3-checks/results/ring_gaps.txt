@@ -1,17 +1,17 @@
 angular extent of each window at r 9.75 (screw radius) and r 10.5 (outer face), y >= 0 side:
-  F      r 9.75:    0.0 ..    7.0    r 10.5:    0.0 ..    7.2
-  FL     r 9.75:   18.2 ..   31.8    r 10.5:   18.2 ..   31.8
-  SFL    r 9.75:   32.5 ..   54.2    r 10.5:   36.8 ..   58.0
-  SRL    r 9.75:  125.8 ..  147.5    r 10.5:  122.0 ..  143.2
-  RL     r 9.75:  145.0 ..  160.8    r 10.5:  147.0 ..  163.0
+  F      r 9.75:    0.0 ..    5.5    r 10.5:    0.0 ..    4.8
+  FL     r 9.75:   18.5 ..   29.5    r 10.5:   19.2 ..   28.8
+  SFL    r 9.75:   36.8 ..   52.2    r 10.5:   42.5 ..   55.2
+  SRL    r 9.75:  127.8 ..  143.2    r 10.5:  124.8 ..  137.5
+  RL     r 9.75:  152.2 ..  163.8    r 10.5:  154.8 ..  165.0
   CAML   r 9.75:   80.0 ..   96.2    r 10.5:   80.8 ..   95.8
 free angular ranges on y >= 0 (centre of the feature may lie in these):
-  screws (hole 6.5 mm + 3 mm):   [(9.0, 16.5), (56.8, 78.0), (98.2, 123.2), (163.0, 180.0)]
-  hooks (tongue 20 mm + 3 mm):   [(63.8, 75.2), (101.2, 116.2), (169.0, 180.0)]
-proposed: screws at 12, 60, 118 degrees, hooks at 71 and 114 degrees (each +- on both sides); margin of each to the nearest window, mm along the circle:
-  screw   12 deg: nearest window   5.0 mm
-  screw   60 deg: nearest window   3.9 mm
-  screw  118 deg: nearest window   6.6 mm
-  hook    71 deg: nearest window   7.1 mm
-  hook   114 deg: nearest window   3.8 mm
-screw to hook separation: 60 -> 71 degrees = 19.4 mm at r 10.1; the rear screw (118) sits within the angular span of the hook at 114 but 2.9 mm inside it radially (counterbore r 10.05, rebate r 10.34)
+  screws (hole 6.5 mm + 3 mm):   [(9.2, 14.8), (56.8, 76.2), (100.0, 123.2), (167.5, 180.0)]
+  hooks (tongue 20 mm + 3 mm):   [(63.2, 73.2), (103.2, 116.8), (172.2, 180.0)]
+rev 4 as built: screws at (12.0, 60.0, 118.0), hooks at (71.0, 114.0) degrees (each +- on both sides); margin of each to the nearest window, mm:
+  screw   12 deg: counterbore edge to the nearest window   7.5 mm
+  screw   60 deg: counterbore edge to the nearest window   7.7 mm
+  screw  118 deg: counterbore edge to the nearest window  10.7 mm
+  hook    71 deg: tongue edge (20 mm wide) to the nearest window   6.9 mm
+  hook   114 deg: tongue edge (20 mm wide) to the nearest window   7.1 mm
+the rear screw (118) sits within the angular span of the hook at 114 but 2.9 mm inside it radially (counterbore r 10.05, rebate r 10.34)

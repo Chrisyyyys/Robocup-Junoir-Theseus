@@ -11,7 +11,7 @@ RUNS = [
     ('front_floor_port', ['fsens.py'], 'front floor port: clearance (section 5)'),
     ('ramp_foot', ['tofcone.py'], 'ToF reading at the foot of a 25 degree ramp (section 5)'),
     ('plate_variants', ['variants.py'], 'ring radius needed for 13 and 14 mm pockets (section 7)'),
-    ('plate_tolerance', ['platetol.py', '38.6', '14.0', '16.0'], 'plate positioning tolerance, 14 mm pockets and the 16 mm slot of rev 4 (section 7; rev 3 had 14.5)'),
+    ('plate_tolerance', ['platetol.py', '38.6', '13.0', '17.0'], 'plate positioning tolerance, 13 mm pockets and the 17 mm slot of rev 4 (section 7; rev 3 had 14 and 14.5, the first rev 4 design 14 and 16)'),
     ('kit_landing', ['kit_final.py'], 'chute exit speed, landing point, distance to the victim (section 7)'),
     ('bumper_and_chute_exit', ['geom_checks.py'], 'bumper end angle and chute exit x at R 10.5 (sections 6, 7)'),
     ('packing', ['final_pack2.py'], 'controller stack and battery packing, centre of mass (section 9)'),
@@ -28,14 +28,20 @@ RUNS = [
     ('statics_omni_7', ['statics.py', '7.0'], 'statics with the omni 7.0 cm ahead of the axle: front load, push, spring (mechanical design section 4)'),
     ('kit_landing_square', ['kit_final.py', '4.15'], 'chute exit speed and landing with the exit axis at z 4.15 (mechanical design section 6.2)'),
     ('structure_figs', ['structure_figs.py', '../v3-figures'], 'figures 7 to 9'),
-    ('cube_slot', ['cube_slot.py'], 'which cube attitudes fit a square slot: 16 mm leaves out only the corner stand (mechanical design section 6.2)'),
+    ('sensor_figs', ['sensor_figs.py', '../v3-figures'], 'figures 10 and 11: the ToF board and its mount, the OpenMV camera with what is known and what to measure'),
+    ('tof_mount', ['tof_mount.py'], 'the nine standing ToF boards: positions, pocket corner radii, board and hole heights (mechanical design section 8.3)'),
     ('fsens_front', ['fsens_front.py'], 'floor-sensor window clearance on the terrain cases with the sensors 6.5 to 8.5 cm ahead of the axle (mechanical design section 5.3)'),
     ('handle_calc', ['handle_calc.py'], 'front bridge as a cantilever under the handle post, and the nose-up angle when carried by the bar (mechanical design sections 3.2, 7.2)'),
     ('axle_shift', ['axle_shift.py'], 'terrain cases with the drive axle 0, 1, 2, 3 cm behind the body centre (mechanical design section 4, axle position)'),
+    ('omni_mount', ['omni_mount.py'], 'how the omni wheel is mounted: layout with the real wheel, pivot, stop, spring, strength, clearances (mechanical design section 4)'),
+    ('omni_figs', ['omni_figs.py', '../v3-figures'], 'figure 12: the omni mount (mechanical design section 4)'),
+    ('omni_arm', ['omni_arm.py', '../v3-figures'], 'figure 13 and the DXF cut file: the omni arm to make (mechanical design sections 4.2, 4.8)'),
+    ('omni_spring_sheet', ['omni_spring_sheet.py', '../v3-figures'], 'figure 14: the omni spring to order (mechanical design section 4.3)'),
     # slow (about 5-15 minutes each): only run when named
     ('controller_fit', ['fit_stack_only.py'], 'does the GIGA stack (1.5 / 1.9 / 2.5 cm) or a smaller main board fit at R 9.5, 10.0, 10.5 (sections 0.2, 9)', True),
     ('controller_fit_with_battery', ['fit_R.py'], 'same with the battery placed too, and the small-board case at R 9.5 (sections 0.5, 9)', True),
     ('omni_inside', ['omni_inside.py'], 'terrain cases with the omni moved inside the body, 7.95 / 7.3 / 7.0 / 6.5 (mechanical design section 4)', True),
+    ('omni_terrain9', ['omni_terrain9.py'], 'terrain cases with the 9 Oct omni layout (rest 6.85, pivot z 4.2, arm 4.6) against the 8 Oct one (mechanical design section 4)', True),
 ]
 
 if __name__ == '__main__':

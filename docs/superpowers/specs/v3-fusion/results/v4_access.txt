@@ -1,8 +1,8 @@
 share of the upper surface seen from straight above (grid of rays; the GIGA and its shield count as one stack):
   part                   lid off   lid + dropper unit off
-  ok   Arduino GIGA R1            55%                      86%   at least 70%
+  ok   Arduino GIGA R1            53%                      84%   at least 70%
   ok   Main PCB                   53%                      86%   at least 70%
-  ok   Battery                    77%                      91%   at least 80%
+  ok   Battery                    66%                      80%   at least 80%
   ok   Silver module SM           49%                      49%   frame off
   ok   Motor L                     0%                      54%   frame off
   ok   Motor R                     0%                       0%   frame off
